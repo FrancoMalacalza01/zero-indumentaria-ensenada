@@ -1,0 +1,110 @@
+[
+  {
+    "id": 1,
+    "name": "Remera Blank MC - 10206-10",
+    "category": "Hombre",
+    "priceARS": 35900,
+    "image": "/images/product-1.webp",
+    "sizes": ["XXXL", "XXXXL", "M", "XXL", "L", "XL"],
+    "source": "https://www.mistral.com.ar/productos/remera-blank-mc-10206-17-copia-bwr9n/"
+  },
+  {
+    "id": 2,
+    "name": "Remera Stripes MC - 10193-4",
+    "category": "Hombre",
+    "priceARS": 50900,
+    "image": "/images/product-2.webp",
+    "sizes": ["L", "XL", "M", "XXL", "XXXL"],
+    "source": "https://www.mistral.com.ar/productos/remera-stripes-mc-10193-4-aggyh/"
+  },
+  {
+    "id": 3,
+    "name": "Polo Pique Rayada MC - 20080-19",
+    "category": "Hombre",
+    "priceARS": 66900,
+    "image": "/images/product-3.webp",
+    "sizes": ["L", "S", "M", "XL", "XXL", "XXXL"],
+    "source": "https://www.mistral.com.ar/productos/polo-pique-rayada-mc-20080-19-5ald6/"
+  },
+  {
+    "id": 4,
+    "name": "Remera Blank MC - 10206-4",
+    "category": "Hombre",
+    "priceARS": 35900,
+    "image": "/images/product-4.webp",
+    "sizes": ["XXXL", "XXXXL", "L", "M", "XL", "XXL"],
+    "source": "https://www.mistral.com.ar/productos/remera-blank-mc-10206-4-7xkcw/"
+  },
+  {
+    "id": 5,
+    "name": "Remera Print MC - 10205-10",
+    "category": "Hombre",
+    "priceARS": 33900,
+    "image": "/images/product-5.webp",
+    "sizes": ["XXXL", "XXXXL", "L", "M", "XXL", "XL"],
+    "source": "https://www.mistral.com.ar/productos/remera-print-mc-10205-10-8ffrj/"
+  },
+  {
+    "id": 6,
+    "name": "Buzo Alva - 48108",
+    "category": "Mujer",
+    "priceARS": 87900,
+    "image": "/images/product-6.webp",
+    "sizes": ["S", "M", "L", "XL"],
+    "source": "https://www.mistral.com.ar/productos/buzo-alva-48108-1rt0f/"
+  },
+  {
+    "id": 7,
+    "name": "Remera Bellagio MC - 41341",
+    "category": "Mujer",
+    "priceARS": 41900,
+    "image": "/images/product-7.webp",
+    "sizes": ["S", "M", "L", "XL", "XXL"],
+    "source": "https://www.mistral.com.ar/productos/remera-bellagio-mc-41341-1vtkh/"
+  },
+  {
+    "id": 8,
+    "name": "Musculosa Tahiti - 40138",
+    "category": "Mujer",
+    "priceARS": 35900,
+    "image": "/images/product-8.webp",
+    "sizes": ["S", "M", "L", "XL"],
+    "source": "https://www.mistral.com.ar/productos/musculosa-tahiti-40138-1eg9c/"
+  },
+  {
+    "id": 9,
+    "name": "Vestido Guyana - 45479",
+    "category": "Mujer",
+    "priceARS": 54900,
+    "image": "/images/product-9.webp",
+    "sizes": ["S", "M", "L", "XL"],
+    "source": "https://www.mistral.com.ar/productos/vestido-guyana-45479-13ke1/"
+  },
+  {
+    "id": 10,
+    "name": "Blusa Laos Embroidery - 43007",
+    "category": "Mujer",
+    "priceARS": 64900,
+    "image": "/images/product-10.webp",
+    "sizes": ["S", "M", "L", "XL"],
+    "source": "https://www.mistral.com.ar/productos/blusa-laos-embroidery-43007-rpq83/"
+  },
+  {
+    "id": 11,
+    "name": "Cap Gaspard - Código 90000",
+    "category": "Accesorios",
+    "priceARS": 32900,
+    "image": "/images/product-11.webp",
+    "sizes": [],
+    "source": "https://www.mistral.com.ar/productos/cap-gaspard-codigo-90000/"
+  },
+  {
+    "id": 12,
+    "name": "Billetera Roger - 19803",
+    "category": "Accesorios",
+    "priceARS": 62200,
+    "image": "/images/product-12.webp",
+    "sizes": ["U"],
+    "source": "https://www.mistral.com.ar/productos/billetera-roger-19803/"
+  }
+]
