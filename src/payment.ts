@@ -41,7 +41,7 @@ export const payment = {
   bankHolder: "",
   bankAlias: "",
   bankCbu: "",
-  /** Efectivo al retirar el pedido en la sucursal. */
+  /** Efectivo al retirar el pedido en el local. */
   cash: true,
   /** Tarjeta por el posnet del local, al retirar. */
   cardInStore: true,

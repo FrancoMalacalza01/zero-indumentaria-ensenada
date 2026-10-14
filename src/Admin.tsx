@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { useStore } from "./Store";
 import type {
-  Branch,
   Category,
   Movement,
   MovementReason,
@@ -45,12 +44,12 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
     overview: {
       crumb: "Resumen",
       title: "Tu negocio, en un solo lugar.",
-      lead: "Una mirada rápida a lo que pasa en tus sucursales.",
+      lead: "Una mirada rápida a lo que pasa en el local.",
     },
     inventory: {
       crumb: "Productos y stock",
       title: "Productos y stock",
-      lead: "Administrá el catálogo y las unidades disponibles en cada sucursal.",
+      lead: "Administrá el catálogo y las unidades disponibles.",
     },
     stock: {
       crumb: "Cargar stock",
@@ -70,7 +69,6 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
   };
 const addReasons: MovementReason[] = ["Ingreso", "Devolución"];
 const removeReasons: MovementReason[] = ["Rotura", "Ajuste"];
-const branches: Branch[] = ["La Plata", "Ensenada"];
 const categories: Category[] = ["Hombre", "Mujer", "Accesorios"];
 const money = (value: number) =>
   new Intl.NumberFormat("es-AR", {
@@ -78,16 +76,8 @@ const money = (value: number) =>
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(value);
-const units = (product: Product, branch?: Branch) =>
-  (branch ? [branch] : branches).reduce(
-    (total, b) =>
-      total +
-      Object.values(product.stock[b] || {}).reduce(
-        (sum, value) => sum + value,
-        0,
-      ),
-    0,
-  );
+const units = (product: Product) =>
+  Object.values(product.stock || {}).reduce((sum, value) => sum + value, 0);
 const orderStatuses: Order["status"][] = [
   "Pendiente",
   "Preparando",
@@ -113,7 +103,6 @@ export default function Admin({ onExit }: { onExit: () => void }) {
   } = useStore();
   const [tab, setTab] = useState<Tab>("overview");
   const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState<Branch | "Todas">("Todas");
   const [categoryFilter, setCategoryFilter] = useState<Category | "Todas">(
     "Todas",
   );
@@ -134,10 +123,9 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             .toLowerCase()
             .includes(search.toLowerCase()) &&
           (categoryFilter === "Todas" || p.category === categoryFilter) &&
-          (!lowOnly ||
-            units(p, branchFilter === "Todas" ? undefined : branchFilter) <= 5),
+          (!lowOnly || units(p) <= 5),
       ),
-    [products, search, categoryFilter, lowOnly, branchFilter],
+    [products, search, categoryFilter, lowOnly],
   );
   const recentOrders = orders
     .slice()
@@ -167,23 +155,19 @@ export default function Admin({ onExit }: { onExit: () => void }) {
     // Editar las cantidades a mano también deja rastro: así el historial
     // explica cualquier diferencia entre lo que hay y lo que figura.
     const changes: StockChange[] = [];
-    branches.forEach((b) => {
-      const sizes = new Set([
-        ...Object.keys(previous?.stock[b] || {}),
-        ...Object.keys(product.stock[b] || {}),
-      ]);
-      sizes.forEach((size) => {
-        const delta =
-          (product.stock[b]?.[size] || 0) - (previous?.stock[b]?.[size] || 0);
-        if (delta)
-          changes.push({
-            productId: product.id,
-            size,
-            branch: b,
-            delta,
-            reason: exists ? "Ajuste" : "Ingreso",
-          });
-      });
+    const changedSizes = new Set([
+      ...Object.keys(previous?.stock || {}),
+      ...Object.keys(product.stock || {}),
+    ]);
+    changedSizes.forEach((size) => {
+      const delta = (product.stock[size] || 0) - (previous?.stock[size] || 0);
+      if (delta)
+        changes.push({
+          productId: product.id,
+          size,
+          delta,
+          reason: exists ? "Ajuste" : "Ingreso",
+        });
     });
     if (changes.length) recordMovements(changes);
     notify(
@@ -203,7 +187,6 @@ export default function Admin({ onExit }: { onExit: () => void }) {
         "Producto",
         "Categoría",
         "Color",
-        "Sucursal",
         "Talle",
         "Stock",
         "Precio ARS",
@@ -211,19 +194,16 @@ export default function Admin({ onExit }: { onExit: () => void }) {
       ],
     ];
     filtered.forEach((p) =>
-      (branchFilter === "Todas" ? branches : [branchFilter]).forEach((b) =>
-        p.sizes.forEach((s) =>
-          rows.push([
-            p.name,
-            p.category,
-            p.color,
-            b,
-            s,
-            String(p.stock[b]?.[s] || 0),
-            String(p.price),
-            p.active ? "Sí" : "No",
-          ]),
-        ),
+      p.sizes.forEach((s) =>
+        rows.push([
+          p.name,
+          p.category,
+          p.color,
+          s,
+          String(p.stock[s] || 0),
+          String(p.price),
+          p.active ? "Sí" : "No",
+        ]),
       ),
     );
     const csv =
@@ -265,7 +245,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
           </span>
           <div>
             <strong>Mistral local</strong>
-            <small>La Plata & Ensenada</small>
+            <small>Ensenada</small>
           </div>
           <ChevronDown size={15} />
         </div>
@@ -358,7 +338,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
           </div>
           <div className="admin-page-heading">
             <div>
-              <span className="admin-eyebrow">LA PLATA & ENSENADA</span>
+              <span className="admin-eyebrow">ENSENADA</span>
               <h1>
 {pageTitles[tab].title}
               </h1>
@@ -392,7 +372,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                   icon={<Boxes size={20} />}
                   label="Unidades en stock"
                   value={inventoryUnits.toLocaleString("es-AR")}
-                  foot="Entre las dos sucursales"
+                  foot="En el local"
                 />
                 <Metric
                   icon={<ShoppingBag size={20} />}
@@ -446,7 +426,9 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                             <strong>{order.customer}</strong>
                             <small>
                               #{order.id.slice(-8).toUpperCase()} ·{" "}
-                              {order.branch}
+                              {order.delivery === "shipping"
+                                ? order.zone || "Envío"
+                                : "Retiro"}
                             </small>
                           </span>
                           <span className="admin-order-summary">
@@ -473,19 +455,18 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                 <section className="admin-card">
                   <div className="admin-card-heading">
                     <div>
-                      <h2>Stock por sucursal</h2>
+                      <h2>Stock por categoría</h2>
                       <p>Disponibilidad actual del inventario.</p>
                     </div>
                     <MapPin size={20} />
                   </div>
                   <div className="admin-branch-cards">
-                    {branches.map((branch, i) => {
-                      const count = products.reduce(
-                        (sum, p) => sum + units(p, branch),
-                        0,
-                      );
+                    {categories.map((category, i) => {
+                      const count = products
+                        .filter((p) => p.category === category)
+                        .reduce((sum, p) => sum + units(p), 0);
                       return (
-                        <div key={branch} className="admin-branch-stock">
+                        <div key={category} className="admin-branch-stock">
                           <div>
                             <span
                               className={`admin-branch-symbol admin-branch-symbol-${i}`}
@@ -493,8 +474,8 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                               <Store size={20} />
                             </span>
                             <span>
-                              <strong>{branch}</strong>
-                              <small>Sucursal Mistral</small>
+                              <strong>{category}</strong>
+                              <small>Unidades en el local</small>
                             </span>
                             <b>
                               {count}
@@ -530,7 +511,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                       <h2>Atención al stock</h2>
                       <p>
                         {lowStock.length
-                          ? `${lowStock.length} productos con 5 unidades o menos entre ambas sucursales.`
+                          ? `${lowStock.length} productos con 5 unidades o menos.`
                           : "Todos los productos publicados tienen más de 5 unidades disponibles."}
                       </p>
                     </div>
@@ -592,21 +573,6 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                   />
                 </label>
                 <label className="admin-filter-select">
-                  <MapPin size={16} />
-                  <select
-                    aria-label="Filtrar por sucursal"
-                    value={branchFilter}
-                    onChange={(e) =>
-                      setBranchFilter(e.target.value as Branch | "Todas")
-                    }
-                  >
-                    <option value="Todas">Todas las sucursales</option>
-                    {branches.map((b) => (
-                      <option key={b}>{b}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="admin-filter-select">
                   <SlidersHorizontal size={16} />
                   <select
                     aria-label="Filtrar categoría"
@@ -640,12 +606,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                     <tr>
                       <th>PRODUCTO</th>
                       <th>PRECIO</th>
-                      {(branchFilter === "Todas"
-                        ? branches
-                        : [branchFilter]
-                      ).map((b) => (
-                        <th key={b}>{b.toUpperCase()}</th>
-                      ))}
+                      <th>STOCK</th>
                       <th>ESTADO</th>
                       <th>
                         <span className="admin-sr-only">Acciones</span>
@@ -668,18 +629,13 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                           </div>
                         </td>
                         <td className="admin-price-cell">{money(p.price)}</td>
-                        {(branchFilter === "Todas"
-                          ? branches
-                          : [branchFilter]
-                        ).map((b) => (
-                          <td key={b}>
-                            <span
-                              className={`admin-stock-pill ${units(p, b) === 0 ? "admin-stock-empty" : units(p, b) <= 5 ? "admin-stock-low" : ""}`}
-                            >
-                              <span /> {units(p, b)} unidades
-                            </span>
-                          </td>
-                        ))}
+                        <td>
+                          <span
+                            className={`admin-stock-pill ${units(p) === 0 ? "admin-stock-empty" : units(p) <= 5 ? "admin-stock-low" : ""}`}
+                          >
+                            <span /> {units(p)} unidades
+                          </span>
+                        </td>
                         <td>
                           <button
                             className={`admin-publish-status ${p.active ? "is-published" : ""}`}
@@ -732,7 +688,6 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                       onClick={() => {
                         setSearch("");
                         setCategoryFilter("Todas");
-                        setBranchFilter("Todas");
                         setLowOnly(false);
                       }}
                     >
@@ -841,13 +796,13 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                             <div className="admin-order-id">
                               <strong>
                                 {o.delivery === "pickup"
-                                  ? "Retiro en sucursal"
+                                  ? "Retiro en el local"
                                   : "Envío a domicilio"}
                               </strong>
                               <span>
                                 {o.delivery === "shipping"
-                                  ? o.zone || o.branch
-                                  : o.branch}
+                                  ? o.zone || "A convenir"
+                                  : "En el local"}
                               </span>
                               {o.payment && (
                                 <small>{paymentLabel(o.payment)}</small>
@@ -906,7 +861,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
           )}
           <footer className="admin-footer">
             <span>
-              mistral <span>·</span> La Plata & Ensenada
+              mistral <span>·</span> Ensenada
             </span>
             <span>Panel de administración · Prototipo</span>
           </footer>
@@ -924,7 +879,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
   );
 }
 
-/** Carga de stock pensada para el mostrador: elegís sucursal, buscás la prenda,
+/** Carga de stock pensada para el mostrador: buscás la prenda,
  *  escribís cuánto entró o salió y confirmás todo junto. */
 function StockLoader({
   products,
@@ -933,7 +888,6 @@ function StockLoader({
   products: Product[];
   onApply: (changes: StockChange[], label: string) => void;
 }) {
-  const [branch, setBranch] = useState<Branch>("La Plata");
   const [direction, setDirection] = useState<"add" | "remove">("add");
   const [reason, setReason] = useState<MovementReason>("Ingreso");
   const [query, setQuery] = useState("");
@@ -952,7 +906,6 @@ function StockLoader({
     changes.push({
       productId,
       size,
-      branch,
       delta: direction === "add" ? amount : -amount,
       reason,
     });
@@ -968,7 +921,7 @@ function StockLoader({
       changes,
       `${direction === "add" ? "Sumaste" : "Descontaste"} ${units} ${
         units === 1 ? "unidad" : "unidades"
-      } en ${branch}`,
+      }`,
     );
     setDraft({});
   }
@@ -984,18 +937,6 @@ function StockLoader({
         </div>
       </div>
       <div className="admin-stock-setup">
-        <div className="admin-stock-group" role="group" aria-label="Sucursal">
-          {branches.map((b) => (
-            <button
-              key={b}
-              className={branch === b ? "is-active" : ""}
-              aria-pressed={branch === b}
-              onClick={() => setBranch(b)}
-            >
-              <MapPin size={15} /> {b}
-            </button>
-          ))}
-        </div>
         <div className="admin-stock-group" role="group" aria-label="Tipo">
           <button
             className={direction === "add" ? "is-active" : ""}
@@ -1056,7 +997,7 @@ function StockLoader({
               <div className="admin-stock-sizes">
                 {p.sizes.map((size) => {
                   const key = `${p.id}|${size}`;
-                  const current = p.stock[branch]?.[size] || 0;
+                  const current = p.stock[size] || 0;
                   const typed = Math.floor(Number(draft[key]));
                   const valid = Number.isFinite(typed) && typed > 0;
                   const next = valid
@@ -1098,7 +1039,7 @@ function StockLoader({
           {changes.length
             ? `${units} ${units === 1 ? "unidad" : "unidades"} en ${changes.length} ${
                 changes.length === 1 ? "talle" : "talles"
-              } · ${reason} en ${branch}`
+              } · ${reason}`
             : "Escribí las cantidades y confirmá cuando esté listo."}
         </p>
         <div>
@@ -1123,14 +1064,11 @@ function StockLoader({
 }
 /** Historial completo: de dónde salió y a dónde fue cada unidad. */
 function MovementsView({ movements }: { movements: Movement[] }) {
-  const [branchFilter, setBranchFilter] = useState<Branch | "Todas">("Todas");
   const [reasonFilter, setReasonFilter] = useState<MovementReason | "Todos">(
     "Todos",
   );
   const visible = movements.filter(
-    (m) =>
-      (branchFilter === "Todas" || m.branch === branchFilter) &&
-      (reasonFilter === "Todos" || m.reason === reasonFilter),
+    (m) => reasonFilter === "Todos" || m.reason === reasonFilter,
   );
   return (
     <section className="admin-card">
@@ -1146,21 +1084,6 @@ function MovementsView({ movements }: { movements: Movement[] }) {
         </div>
       </div>
       <div className="admin-filters">
-        <label className="admin-filter-select">
-          <MapPin size={16} />
-          <select
-            aria-label="Filtrar por sucursal"
-            value={branchFilter}
-            onChange={(e) =>
-              setBranchFilter(e.target.value as Branch | "Todas")
-            }
-          >
-            <option value="Todas">Todas las sucursales</option>
-            {branches.map((b) => (
-              <option key={b}>{b}</option>
-            ))}
-          </select>
-        </label>
         <label className="admin-filter-select">
           <SlidersHorizontal size={16} />
           <select
@@ -1196,7 +1119,6 @@ function MovementsView({ movements }: { movements: Movement[] }) {
                 <th>FECHA</th>
                 <th>PRODUCTO</th>
                 <th>TALLE</th>
-                <th>SUCURSAL</th>
                 <th>MOTIVO</th>
                 <th>CANTIDAD</th>
               </tr>
@@ -1212,7 +1134,6 @@ function MovementsView({ movements }: { movements: Movement[] }) {
                     )}
                   </td>
                   <td>{m.size}</td>
-                  <td>{m.branch}</td>
                   <td>{m.reason}</td>
                   <td
                     className={`admin-movement-delta ${m.delta > 0 ? "is-in" : "is-out"}`}
@@ -1312,7 +1233,7 @@ function ProductEditor({
           color: "",
           colorHex: "#132457",
           sizes: ["S", "M", "L", "XL"],
-          stock: { "La Plata": {}, Ensenada: {} },
+          stock: {},
           isNew: true,
           active: true,
           description: "",
@@ -1453,15 +1374,7 @@ function ProductEditor({
       return;
     }
     const stock = Object.fromEntries(
-      branches.map((b) => [
-        b,
-        Object.fromEntries(
-          sizes.map((s) => [
-            s,
-            Math.max(0, Math.floor(draft.stock[b][s] || 0)),
-          ]),
-        ),
-      ]),
+      sizes.map((s) => [s, Math.max(0, Math.floor(draft.stock[s] || 0))]),
     ) as Product["stock"];
     onSave({
       ...draft,
@@ -1494,7 +1407,7 @@ function ProductEditor({
             <h2 id="admin-product-title">
               {product ? "Editar producto" : "Nuevo producto"}
             </h2>
-            <p>Un catálogo compartido. Stock por sucursal.</p>
+            <p>Un catálogo compartido. Stock por talle.</p>
           </div>
           <button
             type="button"
@@ -1739,39 +1652,32 @@ function ProductEditor({
                   <thead>
                     <tr>
                       <th>TALLE</th>
-                      {branches.map((b) => (
-                        <th key={b}>{b}</th>
-                      ))}
+                      <th>UNIDADES</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sizes.map((size) => (
                       <tr key={size}>
                         <th scope="row">{size}</th>
-                        {branches.map((b) => (
-                          <td key={b}>
-                            <input
-                              type="number"
-                              min="0"
-                              max="99999"
-                              step="1"
-                              aria-label={`Stock talle ${size} en ${b}`}
-                              value={draft.stock[b][size] ?? 0}
-                              onChange={(e) =>
-                                setDraft((prev) => ({
-                                  ...prev,
-                                  stock: {
-                                    ...prev.stock,
-                                    [b]: {
-                                      ...prev.stock[b],
-                                      [size]: Number(e.target.value),
-                                    },
-                                  },
-                                }))
-                              }
-                            />
-                          </td>
-                        ))}
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            max="99999"
+                            step="1"
+                            aria-label={`Stock talle ${size}`}
+                            value={draft.stock[size] ?? 0}
+                            onChange={(e) =>
+                              setDraft((prev) => ({
+                                ...prev,
+                                stock: {
+                                  ...prev.stock,
+                                  [size]: Number(e.target.value),
+                                },
+                              }))
+                            }
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>

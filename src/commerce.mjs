@@ -1,15 +1,7 @@
 export function cartKey(item) {
-  return `${item.productId}:${item.size}:${item.branch}`;
+  return `${item.productId}:${item.size}`;
 }
-export function prepareOrder(
-  products,
-  cart,
-  branch,
-  delivery,
-  customer,
-  id,
-  date,
-) {
+export function prepareOrder(products, cart, delivery, customer, id, date) {
   if (!cart.length) return { error: "Tu bolsa está vacía." };
   const counts = new Map();
   for (const item of cart) {
@@ -22,9 +14,7 @@ export function prepareOrder(
     const product = products.find((p) => p.id === item.productId);
     if (!product?.active)
       return { error: "Un producto ya no está disponible. Revisá tu bolsa." };
-    if (item.branch !== branch)
-      return { error: "Elegí la sucursal correspondiente a tu bolsa." };
-    if ((product.stock[branch]?.[item.size] || 0) < counts.get(cartKey(item)))
+    if ((product.stock?.[item.size] || 0) < counts.get(cartKey(item)))
       return {
         error: `No hay stock suficiente de ${product.name}, talle ${item.size}. Revisá tu bolsa.`,
       };
@@ -36,14 +26,9 @@ export function prepareOrder(
   const nextProducts = products.map((p) => ({
     ...p,
     stock: Object.fromEntries(
-      Object.entries(p.stock).map(([b, sizes]) => [
-        b,
-        Object.fromEntries(
-          Object.entries(sizes).map(([s, n]) => [
-            s,
-            n - (counts.get(`${p.id}:${s}:${b}`) || 0),
-          ]),
-        ),
+      Object.entries(p.stock).map(([size, n]) => [
+        size,
+        n - (counts.get(`${p.id}:${size}`) || 0),
       ]),
     ),
   }));
@@ -52,7 +37,6 @@ export function prepareOrder(
     date,
     items,
     total: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    branch,
     delivery,
     customer: customer.trim() || "Cliente de demostración",
     status: "Pendiente",

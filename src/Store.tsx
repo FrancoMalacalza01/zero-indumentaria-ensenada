@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type {
-  Branch,
   CartItem,
   Movement,
   Order,
@@ -17,7 +16,6 @@ type Data = {
   products: Product[];
   orders: Order[];
   cart: CartItem[];
-  branch: Branch;
   favorites: string[];
   movements: Movement[];
 };
@@ -25,7 +23,6 @@ const initial = (): Data => ({
   products: structuredClone(seedProducts),
   orders: [],
   cart: [],
-  branch: "La Plata",
   favorites: [],
   movements: [],
 });
@@ -36,16 +33,11 @@ function restore(): Data {
       data &&
       Array.isArray(data.products) &&
       data.products.every(
-        (p: Product) =>
-          p.id &&
-          p.stock?.["La Plata"] &&
-          p.stock?.Ensenada &&
-          Array.isArray(p.sizes),
+        (p: Product) => p.id && p.stock && Array.isArray(p.sizes),
       ) &&
       Array.isArray(data.orders) &&
       Array.isArray(data.cart) &&
-      Array.isArray(data.favorites) &&
-      ["La Plata", "Ensenada"].includes(data.branch)
+      Array.isArray(data.favorites)
     )
       // Los movimientos se incorporaron después: una demo guardada antes no
       // los tiene y no por eso hay que descartarla.
@@ -93,7 +85,6 @@ function buildMovements(
         products.find((p) => p.id === change.productId)?.name ||
         "Producto eliminado",
       size: change.size,
-      branch: change.branch,
       delta: change.delta,
       reason: change.reason,
       orderId: change.orderId,
@@ -105,9 +96,9 @@ function applyToProducts(products: Product[], changes: StockChange[]) {
     if (!mine.length) return product;
     const stock = structuredClone(product.stock);
     mine.forEach((change) => {
-      const current = stock[change.branch]?.[change.size] || 0;
+      const current = stock[change.size] || 0;
       // El stock nunca queda en negativo, por más que el ajuste lo pida.
-      stock[change.branch][change.size] = Math.max(0, current + change.delta);
+      stock[change.size] = Math.max(0, current + change.delta);
     });
     return { ...product, stock };
   });
@@ -139,17 +130,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setProducts: (products) => setData((d) => ({ ...d, products })),
     setOrders: (orders) => setData((d) => ({ ...d, orders })),
     setCart: (cart) => setData((d) => ({ ...d, cart })),
-    setBranch: (branch) => {
-      if (branch !== data.branch && data.cart.length)
-        notify(
-          "Cambiamos de sucursal. Tu bolsa se vació para consultar el stock correcto.",
-        );
-      setData((d) => ({
-        ...d,
-        branch,
-        cart: branch === d.branch ? d.cart : [],
-      }));
-    },
     recordMovements: (changes) =>
       setData((d) => ({
         ...d,
@@ -177,7 +157,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const result = prepareOrder(
         d.products,
         d.cart,
-        d.branch,
         delivery,
         customer,
         `M-${Date.now().toString(36).toUpperCase()}`,
@@ -196,7 +175,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         order.items.map((item) => ({
           productId: item.productId,
           size: item.size,
-          branch: order.branch,
           delta: -item.quantity,
           reason: "Venta" as const,
           orderId: order.id,

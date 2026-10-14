@@ -46,20 +46,9 @@ export const seedProducts: Product[] = source.map((p, index) => {
     isNew: index < 10,
     active: true,
     description:
-      "Un esencial Mistral para acompañarte todos los días. Elegí tu talle y consultá la disponibilidad de la sucursal antes de sumarlo a tu bolsa.",
-    stock: {
-      "La Plata": Object.fromEntries(
-        sizes.map((s, i) => [
-          s,
-          (index + i) % 5 === 0 ? 0 : 3 + ((index + i) % 8),
-        ]),
-      ),
-      Ensenada: Object.fromEntries(
-        sizes.map((s, i) => [
-          s,
-          (index + i) % 4 === 0 ? 0 : 2 + ((index + i) % 6),
-        ]),
-      ),
-    },
+      "Un esencial Mistral para acompañarte todos los días. Elegí tu talle y consultá la disponibilidad antes de sumarlo a tu bolsa.",
+    stock: Object.fromEntries(
+      sizes.map((s, i) => [s, (index + i) % 5 === 0 ? 0 : 3 + ((index + i) % 8)]),
+    ),
   };
 });

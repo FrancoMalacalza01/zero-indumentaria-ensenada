@@ -1,4 +1,3 @@
-export type Branch = "La Plata" | "Ensenada";
 export type Category = "Hombre" | "Mujer" | "Accesorios";
 export type PaymentMethodId =
   | "mercadopago"
@@ -18,7 +17,8 @@ export interface Product {
   color: string;
   colorHex: string;
   sizes: string[];
-  stock: Record<Branch, Record<string, number>>;
+  /** Unidades por talle. Un solo local, un solo stock. */
+  stock: Record<string, number>;
   isNew: boolean;
   active: boolean;
   description: string;
@@ -26,7 +26,6 @@ export interface Product {
 export interface CartItem {
   productId: string;
   size: string;
-  branch: Branch;
   quantity: number;
 }
 export interface Order {
@@ -34,7 +33,6 @@ export interface Order {
   date: string;
   items: (CartItem & { name: string; price: number; image: string })[];
   total: number;
-  branch: Branch;
   delivery: "pickup" | "shipping";
   status: "Pendiente" | "Preparando" | "Listo para retirar" | "Completado";
   customer: string;
@@ -59,7 +57,6 @@ export interface Movement {
   productId: string;
   productName: string;
   size: string;
-  branch: Branch;
   /** Positivo suma al stock, negativo lo descuenta. */
   delta: number;
   reason: MovementReason;
@@ -68,7 +65,6 @@ export interface Movement {
 export interface StockChange {
   productId: string;
   size: string;
-  branch: Branch;
   delta: number;
   reason: MovementReason;
   orderId?: string;
@@ -80,8 +76,6 @@ export interface StoreContextType {
   setOrders: (orders: Order[]) => void;
   cart: CartItem[];
   setCart: (cart: CartItem[]) => void;
-  branch: Branch;
-  setBranch: (branch: Branch) => void;
   notify: (text: string) => void;
   resetDemo: () => void;
 }

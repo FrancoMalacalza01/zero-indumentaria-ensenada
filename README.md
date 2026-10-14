@@ -1,4 +1,4 @@
-# Mistral · La Plata & Ensenada
+# Mistral · Ensenada
 
 Prototipo interactivo de tienda y administración, desarrollado con React, TypeScript y Vite. Adaptado a escritorio y celular.
 
@@ -24,11 +24,11 @@ pnpm preview
 - `/tienda`: catálogo con búsqueda, categorías, orden por precio, talles y disponibilidad.
 - `/producto/1`: detalle, selección de talle/cantidad y bolsa.
 - `/favoritos`: productos guardados.
-- `/checkout`: compra de demostración con retiro en la sucursal seleccionada.
-- `/sucursales`: La Plata y Ensenada, con contacto por Instagram.
-- `/admin`: pide contraseña (ver abajo). Resumen, alta/edición de productos, imagen, precios, stock por talle y sucursal, publicación, exportación CSV y estados de pedidos.
+- `/checkout`: compra de demostración, con retiro en el local o envío a La Plata, Berisso o Ensenada.
+- `/sucursales`: el local de Ensenada, con contacto por Instagram.
+- `/admin`: pide contraseña (ver abajo). Resumen, alta/edición de productos, imagen, precios, stock por talle, publicación, exportación CSV y estados de pedidos.
 
-Una compra descuenta el stock de la sucursal y talle seleccionados. El pedido aparece inmediatamente en administración. Cambiar de sucursal vacía la bolsa para evitar mezclar disponibilidades. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
+Una compra descuenta el stock del talle seleccionado. El pedido aparece inmediatamente en administración. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
 
 ## Paleta
 
@@ -120,7 +120,7 @@ alias vacíos: con uno cargado, un visitante puede pagar de verdad.
 
 Todos los cambios se guardan en `localStorage` (`mistral-local-demo-v1`). No hay servidor, sincronización entre dispositivos, autenticación, cobros procesados por el sitio, correos ni reservas reales: las formas de pago son un link y unos datos para transferir, el sitio no cobra ni confirma nada. No usar para gestionar stock o pedidos reales.
 
-Precios, imágenes y talles iniciales tomados del catálogo nacional como referencia; **el stock de ambas sucursales es ficticio**. Las direcciones, los horarios, las condiciones de entrega y los medios de pago deben confirmarse con el dueño. No se inventaron direcciones locales.
+Precios, imágenes y talles iniciales tomados del catálogo nacional como referencia; **el stock es ficticio**. Las direcciones, los horarios, las condiciones de entrega y los medios de pago deben confirmarse con el dueño. No se inventaron direcciones locales.
 
 Para reiniciar la demo, borrar los datos de este sitio en el navegador. No ingresar datos personales reales durante la presentación.
 
@@ -132,10 +132,10 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 ## Validación
 
-`pnpm test` ejecuta pruebas de la transacción de compra: inventario por sucursal/talle, duplicados, stock insuficiente, productos ocultos o eliminados, cantidades inválidas y conservación del estado al rechazar una operación. `pnpm build` comprueba TypeScript y genera el paquete de producción.
+`pnpm test` ejecuta 19 pruebas de la transacción de compra: inventario por talle, duplicados, stock insuficiente, productos ocultos o eliminados, cantidades inválidas y conservación del estado al rechazar una operación. `pnpm build` comprueba TypeScript y genera el paquete de producción.
 
 ## Imágenes y referencias
 
 Marca y fotografías: [Mistral Argentina](https://www.mistral.com.ar/). Contacto local: [@mistral.zero.indumentaria](https://www.instagram.com/mistral.zero.indumentaria/). La procedencia detallada está en `docs/asset-sources.json`; las fotos usadas están en `public/images`. Su uso aquí es para la presentación del prototipo; confirmar con la marca el uso en la tienda final.
 
-La siguiente etapa requiere backend, autenticación y roles, inventario transaccional, catálogo real de las sucursales, medios de pago y logística.
+La siguiente etapa requiere backend, autenticación y roles, inventario transaccional, catálogo real del local, medios de pago y logística.

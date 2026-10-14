@@ -11,7 +11,7 @@ const makeProducts = () => [
     image: "/shirt.webp",
     active: true,
     sizes: ["S", "M"],
-    stock: { "La Plata": { S: 4, M: 3 }, Ensenada: { S: 8, M: 6 } },
+    stock: { S: 4, M: 3 },
   },
   {
     id: "hoodie",
@@ -20,13 +20,12 @@ const makeProducts = () => [
     image: "/hoodie.webp",
     active: true,
     sizes: ["S", "L"],
-    stock: { "La Plata": { S: 7, L: 2 }, Ensenada: { S: 3, L: 5 } },
+    stock: { S: 7, L: 2 },
   },
 ];
 const line = (overrides = {}) => ({
   productId: "shirt",
   size: "M",
-  branch: "La Plata",
   quantity: 1,
   ...overrides,
 });
@@ -37,23 +36,22 @@ function freezeDeep(value) {
   }
   return value;
 }
-function place(products, cart, branch = "La Plata") {
+function place(products, cart) {
   return prepareOrder(
     products,
     cart,
-    branch,
     "pickup",
     "  Cliente de prueba  ",
     "M-TEST",
     orderDate,
   );
 }
-function expectRejectedWithoutMutation(products, cart, branch = "La Plata") {
+function expectRejectedWithoutMutation(products, cart) {
   const originalProducts = structuredClone(products);
   const originalCart = structuredClone(cart);
   freezeDeep(products);
   freezeDeep(cart);
-  const result = place(products, cart, branch);
+  const result = place(products, cart);
   assert.equal(typeof result.error, "string");
   assert.ok(result.error.length > 0);
   assert.equal(result.order, undefined);
@@ -70,7 +68,7 @@ function expectRejectedWithoutMutation(products, cart, branch = "La Plata") {
   );
 }
 
-test("a valid order consumes only the selected branch and sizes, preserving input data", () => {
+test("a valid order consumes only the selected sizes, preserving input data", () => {
   const products = makeProducts();
   const cart = [
     line({ quantity: 2 }),
@@ -86,8 +84,8 @@ test("a valid order consumes only the selected branch and sizes, preserving inpu
   assert.deepEqual(
     result.products.map((p) => p.stock),
     [
-      { "La Plata": { S: 4, M: 1 }, Ensenada: { S: 8, M: 6 } },
-      { "La Plata": { S: 7, L: 1 }, Ensenada: { S: 3, L: 5 } },
+      { S: 4, M: 1 },
+      { S: 7, L: 1 },
     ],
   );
   assert.deepEqual(products, originalProducts);
@@ -96,7 +94,6 @@ test("a valid order consumes only the selected branch and sizes, preserving inpu
   assert.equal(result.order.id, "M-TEST");
   assert.equal(result.order.date, orderDate);
   assert.equal(result.order.customer, "Cliente de prueba");
-  assert.equal(result.order.branch, "La Plata");
   assert.equal(result.order.delivery, "pickup");
   assert.equal(result.order.status, "Pendiente");
   assert.deepEqual(
@@ -112,20 +109,12 @@ test("a valid order consumes only the selected branch and sizes, preserving inpu
   );
 });
 
-test("an Ensenada order does not consume La Plata inventory", () => {
+test("buying one size leaves the other sizes and products untouched", () => {
   const products = makeProducts();
-  const result = place(
-    products,
-    [line({ branch: "Ensenada", quantity: 6 })],
-    "Ensenada",
-  );
+  const result = place(products, [line({ quantity: 3 })]);
   assert.equal(result.error, undefined);
-  assert.equal(result.products[0].stock.Ensenada.M, 0);
-  assert.deepEqual(
-    result.products[0].stock["La Plata"],
-    products[0].stock["La Plata"],
-  );
-  assert.equal(result.products[0].stock.Ensenada.S, 8);
+  assert.equal(result.products[0].stock.M, 0);
+  assert.equal(result.products[0].stock.S, 4);
   assert.deepEqual(result.products[1], products[1]);
 });
 
@@ -142,8 +131,8 @@ test("duplicate rows at exactly the available quantity decrement stock once for 
     line({ quantity: 2 }),
   ]);
   assert.equal(result.error, undefined);
-  assert.equal(result.products[0].stock["La Plata"].M, 0);
-  assert.equal(result.products[0].stock.Ensenada.M, 6);
+  assert.equal(result.products[0].stock.M, 0);
+  assert.equal(result.products[0].stock.S, 4);
   assert.equal(
     result.order.items.reduce((sum, item) => sum + item.quantity, 0),
     3,
@@ -169,10 +158,6 @@ test("a removed product rejects the order without consuming valid items", () => 
 
 test("a stale size with no stock rejects the entire order", () => {
   expectRejectedWithoutMutation(makeProducts(), [line({ size: "XL" })]);
-});
-
-test("a cart from another branch cannot consume inventory at checkout", () => {
-  expectRejectedWithoutMutation(makeProducts(), [line({ branch: "Ensenada" })]);
 });
 
 test("an empty cart does not produce an order or change stock", () => {
@@ -205,6 +190,6 @@ test("an invalid quantity after a valid item does not partially consume its stoc
 
 test("a stock change after adding to cart is enforced when the order is prepared", () => {
   const products = makeProducts();
-  products[0].stock["La Plata"].M = 1;
+  products[0].stock.M = 1;
   expectRejectedWithoutMutation(products, [line({ quantity: 2 })]);
 });

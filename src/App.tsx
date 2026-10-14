@@ -30,7 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { money, useStore } from "./Store";
-import type { Branch, PaymentMethodId, Product, Order } from "./types";
+import type { PaymentMethodId, Product, Order } from "./types";
 import { cartKey } from "./commerce.mjs";
 import {
   chargesRealMoney,
@@ -47,9 +47,9 @@ import {
 const Admin = lazy(() => import("./Admin"));
 const AdminGate = lazy(() => import("./AdminGate"));
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
-// Número de WhatsApp de cada sucursal, en formato internacional y sin el "+"
-// (por ejemplo "5492211234567"). Mientras queden vacíos, el pedido se abre en
-// WhatsApp con el mensaje escrito y la persona elige el contacto a mano.
+// WhatsApp del local, en formato internacional y sin el "+" (por ejemplo
+// "5492211234567"). Mientras quede vacío, el pedido se abre en WhatsApp con el
+// mensaje escrito y la persona elige el contacto a mano.
 // Las formas de pago se configuran aparte, en src/payment.ts, y las zonas de
 // envío en src/delivery.ts.
 // Dirección del local. Los horarios quedan sin completar a propósito: no se
@@ -61,13 +61,10 @@ const localAddress = {
   postalCode: "1925",
   hours: "",
 };
-const whatsappNumbers: Record<Branch, string> = {
-  "La Plata": "",
-  Ensenada: "",
-};
+const whatsappNumber = "";
 function whatsappOrderUrl(order: Order) {
   const text = [
-    `Hola Mistral ${order.branch}, quiero hacer este pedido:`,
+    `Hola Mistral, quiero hacer este pedido:`,
     "",
     ...order.items.map(
       (i) =>
@@ -77,14 +74,14 @@ function whatsappOrderUrl(order: Order) {
     `Total: ${money(order.total)}`,
     order.delivery === "shipping"
       ? `Envío a: ${order.zone}`
-      : `Retiro en: ${order.branch}`,
+      : `Retiro en: ${localAddress.street}, ${localAddress.city}`,
     `Pedido: ${order.id}`,
     ...(order.payment ? [`Pago: ${paymentLabel(order.payment)}`] : []),
     ...(paymentOptions().find((o) => o.id === order.payment)?.needsReceipt
       ? ["Te mando el comprobante por acá."]
       : []),
   ].join("\n");
-  return `https://wa.me/${whatsappNumbers[order.branch]}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
 }
 function navigate(path: string) {
   window.history.pushState({}, "", path);
@@ -123,7 +120,7 @@ function Brand({ light = false }: { light?: boolean }) {
   return (
     <span className={`brand ${light ? "brand-light" : ""}`}>
       <img src="/images/mistral-logo.png" alt="Mistral" />
-      <span>LA PLATA & ENSENADA</span>
+      <span>ENSENADA</span>
     </span>
   );
 }
@@ -208,8 +205,8 @@ function ProductImage({
   );
 }
 function ProductCard({ product: p }: { product: Product }) {
-  const { favorites, toggleFavorite, branch } = useStore();
-  const available = Object.values(p.stock[branch]).some((n) => n > 0);
+  const { favorites, toggleFavorite } = useStore();
+  const available = Object.values(p.stock).some((n) => n > 0);
   return (
     <article className="product-card">
       <div className="product-visual">
@@ -252,7 +249,7 @@ function ProductCard({ product: p }: { product: Product }) {
   );
 }
 function Header({ onCart }: { onCart: () => void }) {
-  const { cart, branch, setBranch, favorites } = useStore();
+  const { cart, favorites } = useStore();
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
   const [query, setQuery] = useState("");
@@ -267,7 +264,7 @@ function Header({ onCart }: { onCart: () => void }) {
       <div className="announcement">
         <span>EL ESPÍRITU MISTRAL, MÁS CERCA TUYO</span>
         <span>
-          La Plata & Ensenada <ArrowUpRightSmall />
+          Ensenada · Envíos a La Plata y Berisso <ArrowUpRightSmall />
         </span>
       </div>
       <header className="site-header">
@@ -279,18 +276,10 @@ function Header({ onCart }: { onCart: () => void }) {
           >
             <Menu />
           </button>
-          <label className="branch-picker">
+          <Link className="branch-picker" to="/sucursales">
             <MapPin size={16} />
-            <select
-              aria-label="Tu sucursal"
-              value={branch}
-              onChange={(e) => setBranch(e.target.value as typeof branch)}
-            >
-              <option>La Plata</option>
-              <option>Ensenada</option>
-            </select>
-            <ChevronDown size={13} />
-          </label>
+            {localAddress.city}
+          </Link>
           <Link className="brand-link" to="/">
             <Brand />
           </Link>
@@ -373,16 +362,6 @@ function Header({ onCart }: { onCart: () => void }) {
               </a>
             ))}
           </nav>
-          <label className="field">
-            Tu sucursal
-            <select
-              value={branch}
-              onChange={(e) => setBranch(e.target.value as typeof branch)}
-            >
-              <option>La Plata</option>
-              <option>Ensenada</option>
-            </select>
-          </label>
         </Overlay>
       )}
     </>
@@ -498,7 +477,7 @@ function Home() {
         </div>
         <span className="hero-side">MISTRAL — EVERYDAY ESSENTIALS</span>
         <div className="hero-bottom">
-          <span>LA PLATA & ENSENADA</span>
+          <span>ENSENADA</span>
           <a href="#novedades" aria-label="Ver novedades">
             <ArrowDown size={20} />
           </a>
@@ -508,8 +487,8 @@ function Home() {
       <div className="service-strip">
         <span>
           <Store size={21} />
-          <b>Elegí tu sucursal</b>
-          <small>La Plata o Ensenada</small>
+          <b>Retirá en el local</b>
+          <small>La Merced 327, Ensenada</small>
         </span>
         <span>
           <ShoppingBag size={21} />
@@ -592,12 +571,12 @@ function Home() {
           cerca tuyo.
         </h2>
         <p>
-          Dos ciudades. Una misma forma de vivir Mistral.
+          Un local, y envíos a tu ciudad.
           <br />
-          Descubrí nuestras tiendas en La Plata y Ensenada.
+          Pasá por el local en Ensenada, o te lo enviamos.
         </p>
         <Link className="button button-green" to="/sucursales">
-          Conocé las sucursales <ArrowRight size={18} />
+          Cómo llegar <ArrowRight size={18} />
         </Link>
         <div className="local-coordinates">
           LA PLATA / ENSENADA
@@ -609,7 +588,7 @@ function Home() {
   );
 }
 function Catalog({ favorites = false }: { favorites?: boolean }) {
-  const { products, favorites: saved, branch } = useStore();
+  const { products, favorites: saved } = useStore();
   const params = new URLSearchParams(location.search);
   const [category, setCategory] = useState(params.get("categoria") || "Todos");
   const [query, setQuery] = useState(params.get("q") || "");
@@ -630,8 +609,8 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
       (size === "Todos" || p.sizes.includes(size)) &&
       (!stock ||
         (size === "Todos"
-          ? Object.values(p.stock[branch]).some((n) => n > 0)
-          : (p.stock[branch][size] || 0) > 0)),
+          ? Object.values(p.stock).some((n) => n > 0)
+          : (p.stock[size] || 0) > 0)),
   );
   if (sort === "asc") result.sort((a, b) => a.price - b.price);
   if (sort === "desc") result.sort((a, b) => b.price - a.price);
@@ -719,7 +698,7 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
               checked={stock}
               onChange={(e) => setStock(e.target.checked)}
             />
-            Con stock en {branch}
+            Con stock
           </label>
           <button className="text-link" onClick={clear}>
             Limpiar filtros
@@ -768,7 +747,7 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
   );
 }
 function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
-  const { products, cart, setCart, branch, favorites, toggleFavorite, notify } =
+  const { products, cart, setCart, favorites, toggleFavorite, notify } =
     useStore();
   const [size, setSize] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -777,7 +756,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
   const [error, setError] = useState("");
   const p = products.find((p) => p.id === id && p.active);
   if (!p) return <NotFound />;
-  const max = size ? p.stock[branch][size] || 0 : 0;
+  const max = size ? p.stock[size] || 0 : 0;
   const photos = [p.image, ...(p.images || [])].filter(Boolean);
   const add = () => {
     if (!size) {
@@ -785,7 +764,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
       return;
     }
     const existing = cart.find(
-      (i) => i.productId === id && i.size === size && i.branch === branch,
+      (i) => i.productId === id && i.size === size,
     );
     if (quantity + (existing?.quantity || 0) > max) {
       setError("La cantidad supera el stock disponible para este talle.");
@@ -796,7 +775,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
         ? cart.map((i) =>
             i === existing ? { ...i, quantity: i.quantity + quantity } : i,
           )
-        : [...cart, { productId: id, size, branch, quantity }],
+        : [...cart, { productId: id, size, quantity }],
     );
     setError("");
     notify("Agregamos el producto a tu bolsa.");
@@ -867,7 +846,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
             {p.sizes.map((s) => (
               <button
                 key={s}
-                disabled={!p.stock[branch][s]}
+                disabled={!p.stock[s]}
                 aria-pressed={size === s}
                 className={size === s ? "selected" : ""}
                 onClick={() => {
@@ -883,8 +862,8 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
           <p className="stock-label">
             <MapPin size={15} />
             {size
-              ? `${max} unidades en ${branch}`
-              : `Disponibilidad en ${branch}`}
+              ? `${max} unidades disponibles`
+              : "Consultá disponibilidad"}
           </p>
           <div className="purchase-controls">
             <div className="quantity-control">
@@ -907,7 +886,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
             <button
               className="button button-green"
               onClick={add}
-              disabled={!Object.values(p.stock[branch]).some((n) => n > 0)}
+              disabled={!Object.values(p.stock).some((n) => n > 0)}
             >
               <ShoppingBag size={18} />
               Agregar a la bolsa
@@ -929,8 +908,8 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
           <div className="product-service">
             <Store size={21} />
             <div>
-              <b>Retiro en sucursal</b>
-              <span>Elegí La Plata o Ensenada al navegar.</span>
+              <b>Retiro en el local</b>
+              <span>La Merced 327, Ensenada. O te lo enviamos.</span>
             </div>
           </div>
           <details open>
@@ -970,11 +949,11 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
         <Overlay title="Encontrá tu talle" onClose={() => setGuide(false)}>
           <p className="modal-copy">
             En esta demo mostramos los talles del catálogo de referencia. La
-            tabla de medidas de cada prenda se incorporará con la información de
-            las sucursales.
+            tabla de medidas de cada prenda se incorporará con la información
+            del local.
           </p>
           <p className="modal-copy">
-            Para asesoramiento, podés consultar a Mistral La Plata.
+            Para asesoramiento, escribinos por Instagram.
           </p>
           <a
             className="button button-green"
@@ -990,7 +969,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
   );
 }
 function Cart({ onClose }: { onClose: () => void }) {
-  const { cart, setCart, products, branch } = useStore();
+  const { cart, setCart, products } = useStore();
   const entries = cart.map((i) => ({
     item: i,
     product: products.find((p) => p.id === i.productId),
@@ -1002,7 +981,7 @@ function Cart({ onClose }: { onClose: () => void }) {
   const invalid = entries.some(
     ({ item, product }) =>
       !product?.active ||
-      (product.stock[item.branch][item.size] || 0) < item.quantity,
+      (product.stock[item.size] || 0) < item.quantity,
   );
   return (
     <Overlay
@@ -1029,7 +1008,7 @@ function Cart({ onClose }: { onClose: () => void }) {
         <>
           <p className="cart-branch">
             <MapPin size={16} />
-            Productos de {branch}
+            Retirás en {localAddress.city} o te lo enviamos
           </p>
           <div className="cart-items">
             {entries.map(({ item, product }) => (
@@ -1065,7 +1044,7 @@ function Cart({ onClose }: { onClose: () => void }) {
                         disabled={
                           !product?.active ||
                           item.quantity >=
-                            (product?.stock[item.branch][item.size] || 0)
+                            (product?.stock[item.size] || 0)
                         }
                         onClick={() =>
                           setCart(
@@ -1088,7 +1067,7 @@ function Cart({ onClose }: { onClose: () => void }) {
                     </button>
                   </div>
                   {(!product?.active ||
-                    (product.stock[item.branch][item.size] || 0) <
+                    (product.stock[item.size] || 0) <
                       item.quantity) && (
                     <p className="form-error">
                       Stock modificado. Reducí la cantidad o quitá este
@@ -1104,7 +1083,7 @@ function Cart({ onClose }: { onClose: () => void }) {
               <span>Subtotal</span>
               <strong>{money(total)}</strong>
             </div>
-            <p>El retiro en sucursal no tiene costo en esta demo.</p>
+            <p>El retiro en el local no tiene costo.</p>
             {invalid && (
               <p className="form-error" role="alert">
                 Revisá los productos sin stock antes de continuar.
@@ -1193,7 +1172,7 @@ function PaymentBlock({ option }: { option: PaymentOption }) {
   );
 }
 function Checkout() {
-  const { cart, products, branch, placeOrder } = useStore();
+  const { cart, products, placeOrder } = useStore();
   const [name, setName] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
@@ -1233,20 +1212,20 @@ function Checkout() {
         <p>
           {order.delivery === "shipping"
             ? `Envío a ${order.zone}`
-            : `Retiro en ${order.branch}`}{" "}
+            : `Retiro en ${localAddress.city}`}{" "}
           · {money(order.total)}
         </p>
         <div className="demo-box">
           {chargesRealMoney ? (
             <>
               Todavía no se cobró nada. Si pagás con el link o transferís, ese
-              pago es real: confirmá antes con la sucursal que el precio y la
+              pago es real: confirmá antes con el local que el precio y la
               disponibilidad están bien.
             </>
           ) : (
             <>
-              No se realizó ningún cobro. Mandá el pedido por WhatsApp y la
-              sucursal te confirma la disponibilidad y el retiro.
+              No se realizó ningún cobro. Mandá el pedido por WhatsApp y te
+              confirmamos la disponibilidad y la entrega.
             </>
           )}
         </div>
@@ -1336,7 +1315,7 @@ function Checkout() {
                   />
                   <Store size={24} />
                   <div>
-                    <b>Retiro en {branch}</b>
+                    <b>Retiro en el local</b>
                     <span>Sin costo. Te avisamos cuando esté listo.</span>
                   </div>
                 </label>
@@ -1384,13 +1363,13 @@ function Checkout() {
               <div className="delivery-option">
                 <Store size={24} />
                 <div>
-                  <b>Retiro en {branch}</b>
+                  <b>Retiro en el local</b>
                   <span>Sin costo · disponibilidad simulada</span>
                 </div>
                 <Check size={20} />
               </div>
               <p className="reference-price">
-                Los envíos a domicilio se definirán con las sucursales.
+                Los envíos a domicilio se definirán con el local.
               </p>
             </>
           )}
@@ -1478,21 +1457,18 @@ function Stores() {
         <br />
         Y hacemos envíos a {deliveryZones.map((z) => z.name).join(", ")}.
       </p>
-      <div className="store-grid">
-        {["La Plata", "Ensenada"].map((b, i) => (
-          <article className="store-card" key={b}>
-            <span className="store-number">0{i + 1}</span>
+      <div className="store-grid store-grid-single">
+        {[localAddress].map((local) => (
+          <article className="store-card" key={local.city}>
             <MapPin size={30} />
-            <h2>{b}</h2>
+            <h2>{local.city}</h2>
             <p>
-              {b === localAddress.city
-                ? `${localAddress.street} · ${localAddress.city}, ${localAddress.region}`
-                : "Buenos Aires, Argentina"}
+              {local.street} · {local.city}, {local.region} (CP{" "}
+              {local.postalCode})
             </p>
             <p className="store-detail">
-              {b === localAddress.city
-                ? "Consultá horarios y disponibilidad por Instagram."
-                : "Consultá dirección, horarios y disponibilidad por Instagram."}
+              Consultá horarios y disponibilidad por Instagram. Hacemos envíos a{" "}
+              {deliveryZones.map((z) => z.name).join(", ")}.
             </p>
             <a
               href={instagram}
@@ -1500,7 +1476,7 @@ function Stores() {
               rel="noreferrer"
               className="button button-green"
             >
-              Consultar sucursal <Instagram size={17} />
+              Consultar por Instagram <Instagram size={17} />
             </a>
             <Link className="text-link" to="/tienda">
               Explorar la colección <ArrowRight size={16} />
@@ -1553,7 +1529,7 @@ function Footer() {
         <div className="footer-prototype">
           <h3>CONOCÉ EL PROTOTIPO</h3>
           <p>
-            Probá el catálogo, una compra y la gestión de las dos sucursales.
+            Probá el catálogo, una compra y la gestión del stock.
           </p>
           <Link className="admin-link" to="/admin">
             Panel interno · Demo <ArrowRight size={16} />
@@ -1561,7 +1537,7 @@ function Footer() {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} Mistral La Plata & Ensenada</span>
+        <span>© {new Date().getFullYear()} Mistral Ensenada</span>
         <span>
           Prototipo de presentación. Precios y stock de referencia. Sin ventas
           reales.
@@ -1590,15 +1566,15 @@ export default function App() {
     // Nombra la ciudad en cada título: es lo que se lee en la pestaña, en el
     // historial y en el resultado de Google.
     const titles: Record<string, string> = {
-      "/": "Mistral La Plata y Ensenada — Indumentaria",
-      "/tienda": "Tienda — Mistral La Plata y Ensenada",
-      "/sucursales": "Sucursales en La Plata y Ensenada — Mistral",
-      "/favoritos": "Favoritos — Mistral La Plata y Ensenada",
-      "/checkout": "Tu pedido — Mistral La Plata y Ensenada",
+      "/": "Mistral Ensenada — Indumentaria",
+      "/tienda": "Tienda — Mistral Ensenada",
+      "/sucursales": "Dónde estamos — Mistral Ensenada",
+      "/favoritos": "Favoritos — Mistral Ensenada",
+      "/checkout": "Tu pedido — Mistral Ensenada",
       "/admin": "Panel interno — Mistral",
     };
     document.title =
-      titles[path] || "Mistral La Plata y Ensenada — Indumentaria";
+      titles[path] || "Mistral Ensenada — Indumentaria";
   }, [path]);
   if (path === "/admin")
     return (
