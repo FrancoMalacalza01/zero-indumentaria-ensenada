@@ -1139,6 +1139,69 @@
   gap: 17px;
   margin: 0 0 18px;
 }
+.admin-gallery {
+  gap: 11px;
+}
+.admin-gallery-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.admin-gallery-list li {
+  position: relative;
+  width: 64px;
+  height: 74px;
+}
+.admin-gallery-list img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #eceff8;
+}
+.admin-gallery-list button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #d0d6e9;
+  color: #1f2431;
+  box-shadow: 0 1px 3px #13245726;
+}
+.admin-gallery-list button:hover {
+  background: #cc0035;
+  border-color: #cc0035;
+  color: #fff;
+}
+.admin-gallery-url {
+  display: flex;
+  gap: 8px;
+}
+.admin-gallery-url input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #d0d6e9;
+  border-radius: 5px;
+  padding: 11px 12px;
+  background: #fff;
+  color: #3e4b71;
+  font-size: 12px;
+  min-height: 39px;
+}
+.admin-gallery-url input::placeholder {
+  color: #9da6c0;
+}
+.admin-gallery-url button {
+  flex-shrink: 0;
+}
 .admin-image-upload > img,
 .admin-image-placeholder {
   width: 90px;

@@ -1279,6 +1279,8 @@ function Empty({
 
 const imagePattern =
   /^(https?:\/\/|data:image\/(jpeg|png|webp);base64,|\/)/i;
+/** Lado máximo al que se achican las fotos subidas, en píxeles. */
+const MAX_LADO = 1400;
 function ProductEditor({
   product,
   onSave,
@@ -1292,6 +1294,7 @@ function ProductEditor({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<Product>(
     product
       ? structuredClone(product)
@@ -1312,14 +1315,9 @@ function ProductEditor({
         },
   );
   const [sizeText, setSizeText] = useState(draft.sizes.join(", "));
-  const [galleryText, setGalleryText] = useState(
-    (draft.images || []).join("\n"),
-  );
+  const [gallery, setGallery] = useState<string[]>(draft.images || []);
+  const [galleryUrl, setGalleryUrl] = useState("");
   const [error, setError] = useState("");
-  const gallery = galleryText
-    .split("\n")
-    .map((url) => url.trim())
-    .filter(Boolean);
   const sizes = [
     ...new Set(
       sizeText
@@ -1341,25 +1339,87 @@ function ProductEditor({
   function set<K extends keyof Product>(key: K, value: Product[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
+  /**
+   * Deja la foto lista para guardar. La achica antes: una foto de celular
+   * pesa varios MB y acá todo se guarda en el navegador, que da poco lugar.
+   * Si el navegador no sabe achicar, se guarda tal cual y manda el límite.
+   */
+  async function prepareImage(file: File) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
+      throw new Error("Elegí imágenes JPG, PNG o WebP.");
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("No pudimos leer la imagen."));
+      reader.readAsDataURL(file);
+    });
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("imagen ilegible"));
+        el.src = dataUrl;
+      });
+      const lado = Math.max(img.width, img.height);
+      const escala = Math.min(1, MAX_LADO / lado);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * escala);
+      canvas.height = Math.round(img.height * escala);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("sin canvas");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const salida = canvas.toDataURL("image/webp", 0.82);
+      // Si el navegador no soporta WebP devuelve un PNG, que puede pesar más
+      // que el original: en ese caso conviene quedarse con el original.
+      if (salida.startsWith("data:image/webp") && salida.length < dataUrl.length)
+        return salida;
+    } catch {
+      /* Sin canvas se usa el archivo tal cual. */
+    }
+    if (file.size > 1024 * 1024)
+      throw new Error(
+        "La imagen debe pesar hasta 1 MB para guardarse en esta demo.",
+      );
+    return dataUrl;
+  }
   async function uploadImage(file?: File) {
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Elegí una imagen JPG, PNG o WebP.");
-      return;
-    }
-    if (file.size > 1024 * 1024) {
-      setError("La imagen debe pesar hasta 1 MB para guardarse en esta demo.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      set("image", String(reader.result));
+    try {
+      set("image", await prepareImage(file));
       setError("");
       notify("Imagen lista para guardar");
-    };
-    reader.onerror = () =>
-      setError("No pudimos leer la imagen. Probá con otro archivo.");
-    reader.readAsDataURL(file);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos leer la imagen.");
+    }
+  }
+  /** Varias fotos de una, para mostrar la prenda desde distintos ángulos. */
+  async function uploadGallery(files?: FileList | null) {
+    if (!files?.length) return;
+    const listos: string[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        listos.push(await prepareImage(file));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "No pudimos leer la imagen.");
+      }
+    }
+    if (!listos.length) return;
+    setGallery((prev) => [...prev, ...listos]);
+    setError("");
+    notify(
+      listos.length === 1 ? "Foto agregada" : `${listos.length} fotos agregadas`,
+    );
+  }
+  function addGalleryUrl() {
+    const url = galleryUrl.trim();
+    if (!url) return;
+    if (!imagePattern.test(url)) {
+      setError("El enlace tiene que empezar con https://");
+      return;
+    }
+    setGallery((prev) => [...prev, url]);
+    setGalleryUrl("");
+    setError("");
   }
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -1584,18 +1644,75 @@ function ProductEditor({
                 }
               />
             </label>
-            <label className="admin-field">
-              Más fotos de la prenda (una URL por línea)
-              <textarea
-                rows={3}
-                value={galleryText}
-                onChange={(e) => setGalleryText(e.target.value)}
-                placeholder={"https://ejemplo.com/espalda.jpg\nhttps://ejemplo.com/detalle.jpg"}
+            <div className="admin-field admin-gallery">
+              <span className="admin-gallery-label">
+                Más fotos de la prenda
+              </span>
+              {gallery.length > 0 && (
+                <ul className="admin-gallery-list">
+                  {gallery.map((src, i) => (
+                    <li key={`${src.slice(0, 40)}-${i}`}>
+                      <img src={src} alt={`Foto ${i + 2} de la prenda`} />
+                      <button
+                        type="button"
+                        aria-label={`Quitar la foto ${i + 2}`}
+                        onClick={() =>
+                          setGallery((prev) =>
+                            prev.filter((_, pos) => pos !== i),
+                          )
+                        }
+                      >
+                        <X size={13} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <button
+                className="admin-button admin-button-outline"
+                type="button"
+                onClick={() => galleryInput.current?.click()}
+              >
+                <ImagePlus size={16} /> Subir fotos
+              </button>
+              <input
+                ref={galleryInput}
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                className="admin-sr-only"
+                aria-label="Subir más fotos de la prenda"
+                onChange={(e) => {
+                  uploadGallery(e.target.files);
+                  e.target.value = "";
+                }}
               />
-            </label>
+              <div className="admin-gallery-url">
+                <input
+                  value={galleryUrl}
+                  onChange={(e) => setGalleryUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addGalleryUrl();
+                    }
+                  }}
+                  placeholder="O pegá el enlace de otra foto"
+                  aria-label="Enlace de otra foto"
+                />
+                <button
+                  className="admin-button admin-button-outline"
+                  type="button"
+                  onClick={addGalleryUrl}
+                >
+                  Agregar
+                </button>
+              </div>
+            </div>
             <p>
               La primera foto es la principal. Las de acá se muestran como
-              miniaturas en la ficha del producto.
+              miniaturas en la ficha, para ver la prenda de adelante, de atrás
+              y de cerca. Se achican solas al subirlas.
             </p>
           </div>
           <div className="admin-form-section">
