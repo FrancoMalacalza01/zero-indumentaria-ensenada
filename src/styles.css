@@ -860,6 +860,34 @@ svg {
   aspect-ratio: 4/5;
   object-fit: cover;
 }
+.detail-media {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.detail-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.detail-thumbs button {
+  width: 68px;
+  padding: 0;
+  line-height: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.detail-thumbs button:hover,
+.detail-thumbs button.selected {
+  border-color: var(--green);
+}
+.detail-thumbs img {
+  width: 100%;
+  aspect-ratio: 4/5;
+  object-fit: cover;
+}
 .detail-info {
   padding: 15px 0;
 }

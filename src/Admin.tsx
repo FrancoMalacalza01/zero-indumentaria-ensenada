@@ -867,6 +867,8 @@ function Empty({
   );
 }
 
+const imagePattern =
+  /^(https?:\/\/|data:image\/(jpeg|png|webp);base64,|\/)/i;
 function ProductEditor({
   product,
   onSave,
@@ -900,7 +902,14 @@ function ProductEditor({
         },
   );
   const [sizeText, setSizeText] = useState(draft.sizes.join(", "));
+  const [galleryText, setGalleryText] = useState(
+    (draft.images || []).join("\n"),
+  );
   const [error, setError] = useState("");
+  const gallery = galleryText
+    .split("\n")
+    .map((url) => url.trim())
+    .filter(Boolean);
   const sizes = [
     ...new Set(
       sizeText
@@ -958,11 +967,15 @@ function ProductEditor({
     }
     if (
       !draft.image.trim() ||
-      !/^(https?:\/\/|data:image\/(jpeg|png|webp);base64,|\/)/i.test(
-        draft.image,
-      )
+      !imagePattern.test(draft.image)
     ) {
       setError("Agregá una imagen o una URL válida que comience con https://.");
+      return;
+    }
+    if (gallery.some((url) => !imagePattern.test(url))) {
+      setError(
+        "Revisá las fotos extra: cada línea tiene que ser una URL que empiece con https://",
+      );
       return;
     }
     const stock = Object.fromEntries(
@@ -984,7 +997,7 @@ function ProductEditor({
       image: draft.image.trim(),
       sizes,
       stock,
-      images: draft.image === product?.image ? draft.images : undefined,
+      images: gallery.length ? gallery : undefined,
     });
   }
   return (
@@ -1161,6 +1174,19 @@ function ProductEditor({
                 }
               />
             </label>
+            <label className="admin-field">
+              Más fotos de la prenda (una URL por línea)
+              <textarea
+                rows={3}
+                value={galleryText}
+                onChange={(e) => setGalleryText(e.target.value)}
+                placeholder={"https://ejemplo.com/espalda.jpg\nhttps://ejemplo.com/detalle.jpg"}
+              />
+            </label>
+            <p>
+              La primera foto es la principal. Las de acá se muestran como
+              miniaturas en la ficha del producto.
+            </p>
           </div>
           <div className="admin-form-section">
             <h3>Talles y stock</h3>

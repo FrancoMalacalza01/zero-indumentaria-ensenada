@@ -4,13 +4,75 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#173c35" />
-    <meta name="robots" content="noindex,nofollow" />
+    <title>Mistral La Plata y Ensenada — Indumentaria</title>
     <meta
       name="description"
-      content="Prototipo de la tienda Mistral La Plata y Ensenada. Descubrí la colección y probá la experiencia de compra."
+      content="Tienda online de Mistral en La Plata y Ensenada. Mirá la colección, consultá talles y disponibilidad de cada sucursal y mandá tu pedido por WhatsApp para retirarlo en el local."
     />
-    <title>Mistral — La Plata & Ensenada</title>
+    <link rel="canonical" href="https://mistral-la-plata.vercel.app/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Vista previa al compartir el link por WhatsApp, Instagram o Facebook. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mistral La Plata & Ensenada" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:title" content="Mistral La Plata y Ensenada" />
+    <meta
+      property="og:description"
+      content="Mirá la colección, consultá talles y disponibilidad de cada sucursal y mandá tu pedido por WhatsApp para retirarlo en el local."
+    />
+    <meta property="og:url" content="https://mistral-la-plata.vercel.app/" />
+    <meta
+      property="og:image"
+      content="https://mistral-la-plata.vercel.app/images/lifestyle.webp"
+    />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="956" />
+    <meta property="og:image:alt" content="Colección Mistral" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!--
+      Negocio local, para que las sucursales aparezcan en búsquedas de la zona.
+      Faltan streetAddress, telephone y openingHours: se completan cuando el
+      dueño confirme los datos de cada local. No se inventan direcciones.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "ClothingStore",
+            "@id": "https://mistral-la-plata.vercel.app/#la-plata",
+            "name": "Mistral La Plata",
+            "url": "https://mistral-la-plata.vercel.app/sucursales",
+            "image": "https://mistral-la-plata.vercel.app/images/lifestyle.webp",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "La Plata",
+              "addressRegion": "Buenos Aires",
+              "addressCountry": "AR"
+            },
+            "areaServed": { "@type": "City", "name": "La Plata" },
+            "sameAs": ["https://www.instagram.com/mistral_laplata/"]
+          },
+          {
+            "@type": "ClothingStore",
+            "@id": "https://mistral-la-plata.vercel.app/#ensenada",
+            "name": "Mistral Ensenada",
+            "url": "https://mistral-la-plata.vercel.app/sucursales",
+            "image": "https://mistral-la-plata.vercel.app/images/lifestyle.webp",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Ensenada",
+              "addressRegion": "Buenos Aires",
+              "addressCountry": "AR"
+            },
+            "areaServed": { "@type": "City", "name": "Ensenada" },
+            "sameAs": ["https://www.instagram.com/mistral_laplata/"]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

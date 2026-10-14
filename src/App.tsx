@@ -12,6 +12,7 @@ import {
   Instagram,
   MapPin,
   Menu,
+  MessageCircle,
   Minus,
   Plus,
   Search,
@@ -22,10 +23,32 @@ import {
   X,
 } from "lucide-react";
 import { money, useStore } from "./Store";
-import type { Product, Order } from "./types";
+import type { Branch, Product, Order } from "./types";
 import { cartKey } from "./commerce.mjs";
 const Admin = lazy(() => import("./Admin"));
 const instagram = "https://www.instagram.com/mistral_laplata/";
+// Número de WhatsApp de cada sucursal, en formato internacional y sin el "+"
+// (por ejemplo "5492211234567"). Mientras queden vacíos, el pedido se abre en
+// WhatsApp con el mensaje escrito y la persona elige el contacto a mano.
+const whatsappNumbers: Record<Branch, string> = {
+  "La Plata": "",
+  Ensenada: "",
+};
+function whatsappOrderUrl(order: Order) {
+  const text = [
+    `Hola Mistral ${order.branch}, quiero hacer este pedido:`,
+    "",
+    ...order.items.map(
+      (i) =>
+        `• ${i.name} — Talle ${i.size} × ${i.quantity} — ${money(i.price * i.quantity)}`,
+    ),
+    "",
+    `Total: ${money(order.total)}`,
+    `Retiro en: ${order.branch}`,
+    `Pedido: ${order.id}`,
+  ].join("\n");
+  return `https://wa.me/${whatsappNumbers[order.branch]}?text=${encodeURIComponent(text)}`;
+}
 function navigate(path: string) {
   window.history.pushState({}, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
@@ -123,15 +146,17 @@ function Overlay({
 }
 function ProductImage({
   product,
+  src,
   ...props
 }: {
   product: Product;
+  src?: string;
   className?: string;
   loading?: "lazy" | "eager";
 }) {
   return (
     <img
-      src={product.image}
+      src={src || product.image}
       alt={`${product.name} — ${product.color}`}
       {...props}
       onError={(e) => {
@@ -651,10 +676,12 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
   const [size, setSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [guide, setGuide] = useState(false);
+  const [photo, setPhoto] = useState(0);
   const [error, setError] = useState("");
   const p = products.find((p) => p.id === id && p.active);
   if (!p) return <NotFound />;
   const max = size ? p.stock[branch][size] || 0 : 0;
+  const photos = [p.image, ...(p.images || [])].filter(Boolean);
   const add = () => {
     if (!size) {
       setError("Elegí un talle para continuar.");
@@ -688,11 +715,33 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
         <span>{p.name}</span>
       </div>
       <div className="detail-grid">
-        <div className="detail-photo">
-          <ProductImage product={p} />
-          <span className="product-tag">
-            {p.isNew ? "NEW IN" : "MISTRAL ESSENTIALS"}
-          </span>
+        <div className="detail-media">
+          <div className="detail-photo">
+            <ProductImage product={p} src={photos[photo] || p.image} />
+            <span className="product-tag">
+              {p.isNew ? "NEW IN" : "MISTRAL ESSENTIALS"}
+            </span>
+          </div>
+          {photos.length > 1 && (
+            <div
+              className="detail-thumbs"
+              role="group"
+              aria-label="Fotos de la prenda"
+            >
+              {photos.map((src, i) => (
+                <button
+                  key={`${src}-${i}`}
+                  type="button"
+                  className={i === photo ? "selected" : ""}
+                  aria-label={`Ver foto ${i + 1} de ${photos.length}`}
+                  aria-pressed={i === photo}
+                  onClick={() => setPhoto(i)}
+                >
+                  <ProductImage product={p} src={src} loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="detail-info">
           <span className="eyebrow dark">
@@ -1008,17 +1057,26 @@ function Checkout() {
           tu próxima aventura!
         </h1>
         <p>
-          Pedido de prueba <b>{order.id}</b>
+          Pedido <b>{order.id}</b>
         </p>
         <p>
           Retiro en {order.branch} · {money(order.total)}
         </p>
         <div className="demo-box">
-          Esta compra es simulada: no se realizó ningún cobro ni se envió una
-          reserva a la sucursal. Podés verla en el panel interno de esta demo.
+          No se realizó ningún cobro. Mandá el pedido por WhatsApp y la sucursal
+          te confirma la disponibilidad y el retiro.
         </div>
         <div className="success-actions">
-          <Link className="button button-green" to="/tienda">
+          <a
+            className="button button-green"
+            href={whatsappOrderUrl(order)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle size={18} />
+            Enviar pedido por WhatsApp
+          </a>
+          <Link className="text-link" to="/tienda">
             Seguir explorando <ArrowRight size={18} />
           </Link>
           <Link className="text-link" to="/admin">
@@ -1236,10 +1294,18 @@ export default function App() {
   const path = route.split("?")[0];
   const [cart, setCart] = useState(false);
   useEffect(() => {
+    // Nombra la ciudad en cada título: es lo que se lee en la pestaña, en el
+    // historial y en el resultado de Google.
+    const titles: Record<string, string> = {
+      "/": "Mistral La Plata y Ensenada — Indumentaria",
+      "/tienda": "Tienda — Mistral La Plata y Ensenada",
+      "/sucursales": "Sucursales en La Plata y Ensenada — Mistral",
+      "/favoritos": "Favoritos — Mistral La Plata y Ensenada",
+      "/checkout": "Tu pedido — Mistral La Plata y Ensenada",
+      "/admin": "Panel interno — Mistral",
+    };
     document.title =
-      path === "/admin"
-        ? "Panel interno — Mistral"
-        : "Mistral — La Plata & Ensenada";
+      titles[path] || "Mistral La Plata y Ensenada — Indumentaria";
   }, [path]);
   if (path === "/admin")
     return (
