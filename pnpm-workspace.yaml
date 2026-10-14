@@ -1,2 +1,7 @@
 allowBuilds:
   esbuild: true
+
+# source-map-js < 1.2.2 arrastra GHSA-68fv-2mgg-jv7q (DoS del event loop).
+# Llega como dependencia transitiva de vite > postcss, que todavia no la actualizo.
+overrides:
+  source-map-js: ">=1.2.2"
