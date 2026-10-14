@@ -275,35 +275,40 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             onClick={() => setTab("overview")}
           >
             <LayoutDashboard size={19} />
-            <span>Resumen</span>
+            <span className="admin-nav-full">Resumen</span>
+            <span className="admin-nav-short">Resumen</span>
           </button>
           <button
             className={tab === "inventory" ? "is-active" : ""}
             onClick={() => setTab("inventory")}
           >
             <Boxes size={19} />
-            <span>Productos y stock</span>
+            <span className="admin-nav-full">Productos y stock</span>
+            <span className="admin-nav-short">Productos</span>
           </button>
           <button
             className={tab === "stock" ? "is-active" : ""}
             onClick={() => setTab("stock")}
           >
             <PackagePlus size={19} />
-            <span>Cargar stock</span>
+            <span className="admin-nav-full">Cargar stock</span>
+            <span className="admin-nav-short">Cargar</span>
           </button>
           <button
             className={tab === "movements" ? "is-active" : ""}
             onClick={() => setTab("movements")}
           >
             <History size={19} />
-            <span>Movimientos</span>
+            <span className="admin-nav-full">Movimientos</span>
+            <span className="admin-nav-short">Historial</span>
           </button>
           <button
             className={tab === "orders" ? "is-active" : ""}
             onClick={() => setTab("orders")}
           >
             <ShoppingBag size={19} />
-            <span>Pedidos</span>
+            <span className="admin-nav-full">Pedidos</span>
+            <span className="admin-nav-short">Pedidos</span>
             {pendingOrders.length > 0 && <b>{pendingOrders.length}</b>}
           </button>
         </nav>

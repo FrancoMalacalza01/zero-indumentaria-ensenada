@@ -775,7 +775,9 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
         <span>{p.name}</span>
       </div>
       <div className="detail-grid">
-        <div className="detail-media">
+        <div
+          className={`detail-media ${photos.length > 1 ? "has-thumbs" : ""}`}
+        >
           <div className="detail-photo">
             <ProductImage product={p} src={photos[photo] || p.image} />
             <span className="product-tag">

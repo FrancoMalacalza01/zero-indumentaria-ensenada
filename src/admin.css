@@ -2168,3 +2168,59 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Menú del panel ---------- */
+.admin-nav-short {
+  display: none;
+}
+@media (max-width: 700px) {
+  /* Con cinco secciones ya no entraban en una fila y las últimas quedaban
+     cortadas fuera de la pantalla. Pasa a barra inferior, donde además cae
+     el pulgar cuando el encargado usa el panel desde el mostrador. */
+  .admin-sidebar {
+    padding-top: 72px;
+  }
+  .admin-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    padding: 6px 4px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 2px;
+    background: #fff;
+    border-top: 1px solid #e5eadf;
+    border-bottom: 0;
+    box-shadow: 0 -8px 20px -16px rgba(23, 60, 53, 0.55);
+  }
+  .admin-nav > button {
+    position: relative;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 2px 6px;
+    font-size: 9.5px;
+    line-height: 1.1;
+    border-radius: 10px;
+    border-bottom: 0;
+  }
+  .admin-nav > button.is-active {
+    background: #eef3ee;
+    border-bottom-color: transparent;
+  }
+  .admin-nav > button b {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    margin: 0;
+  }
+  .admin-nav-full {
+    display: none;
+  }
+  .admin-nav-short {
+    display: inline;
+  }
+  .admin-main {
+    padding-bottom: 92px;
+  }
+}

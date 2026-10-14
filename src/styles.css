@@ -2113,3 +2113,72 @@ svg {
 .marquee-item:hover span {
   color: var(--green);
 }
+
+/* ---------- Galería: miniaturas al costado, siempre a la vista ---------- */
+/* Con la foto a 4/5 las miniaturas caían abajo del pliegue y nadie se
+   enteraba de que había más fotos. En pantalla ancha van en columna. */
+.detail-media.has-thumbs {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.detail-media.has-thumbs .detail-photo {
+  grid-column: 2;
+  grid-row: 1;
+}
+.detail-media.has-thumbs .detail-thumbs {
+  grid-column: 1;
+  grid-row: 1;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.detail-media.has-thumbs .detail-thumbs button {
+  width: 100%;
+}
+@media (max-width: 860px) {
+  .detail-media.has-thumbs {
+    display: flex;
+    flex-direction: column;
+  }
+  .detail-media.has-thumbs .detail-thumbs {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .detail-media.has-thumbs .detail-thumbs button {
+    width: 64px;
+  }
+}
+
+/* ---------- Hero en celular ---------- */
+/* El degradado de escritorio es lateral y en pantalla angosta tapaba la foto
+   entera. Acá va de abajo hacia arriba, que es donde está el texto. */
+@media (max-width: 760px) {
+  .hero-shade {
+    background: linear-gradient(
+      0deg,
+      #173c35 0%,
+      #173c35e0 30%,
+      #173c3559 64%,
+      #173c3514 100%
+    );
+  }
+  .hero-image {
+    object-position: 46% 28%;
+  }
+}
+/* Y el recorrido se achica: en un encuadre angosto, desplazarlo cortaba el
+   logo que viene quemado en la foto. */
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .hero-image.is-visible {
+    animation: heroDriftSmall 24s ease-in-out infinite alternate;
+  }
+}
+@keyframes heroDriftSmall {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
