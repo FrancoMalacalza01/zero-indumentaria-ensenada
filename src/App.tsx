@@ -1172,7 +1172,7 @@ function PaymentBlock({ option }: { option: PaymentOption }) {
   );
 }
 function Checkout() {
-  const { cart, products, placeOrder } = useStore();
+  const { cart, products, placeOrder, catalogSource } = useStore();
   const [name, setName] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
@@ -1185,11 +1185,15 @@ function Checkout() {
   );
   const [delivery, setDelivery] = useState<"pickup" | "shipping">("pickup");
   const [zone, setZone] = useState(deliveryZones[0]?.name || "");
-  const submit = (e: FormEvent) => {
+  // Con servidor esto deja de ser un recorrido de prueba: el pedido entra al
+  // local y el nombre hace falta de verdad.
+  const enVivo = catalogSource === "servidor";
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    const result = placeOrder(delivery, name, method, zone);
+    setError("");
+    const result = await placeOrder(delivery, name, method, zone);
     if (result.error) {
       setError(result.error);
       setBusy(false);
@@ -1200,7 +1204,9 @@ function Checkout() {
     return (
       <main className="checkout-success section">
         <CheckCircle2 size={58} />
-        <span className="eyebrow dark">ASÍ SE VERÍA TU COMPRA</span>
+        <span className="eyebrow dark">
+          {catalogSource === "servidor" ? "PEDIDO TOMADO" : "ASÍ SE VERÍA TU COMPRA"}
+        </span>
         <h1>
           ¡Todo listo para
           <br />
@@ -1216,6 +1222,11 @@ function Checkout() {
           · {money(order.total)}
         </p>
         <div className="demo-box">
+          {catalogSource === "servidor" && (
+            <>
+              <b>Las prendas quedaron reservadas a tu nombre.</b>{" "}
+            </>
+          )}
           {chargesRealMoney ? (
             <>
               Todavía no se cobró nada. Si pagás con el link o transferís, ese
@@ -1224,8 +1235,8 @@ function Checkout() {
             </>
           ) : (
             <>
-              No se realizó ningún cobro. Mandá el pedido por WhatsApp y te
-              confirmamos la disponibilidad y la entrega.
+              No se realizó ningún cobro. Mandá el pedido por WhatsApp y
+              coordinamos la entrega.
             </>
           )}
         </div>
@@ -1282,17 +1293,28 @@ function Checkout() {
       <span className="eyebrow dark">UN PASO MÁS</span>
       <h1>Tu próxima compra.</h1>
       <div className="demo-box">
-        Estás probando el recorrido de compra. No necesitás ingresar datos
-        personales ni medios de pago.
+        {enVivo ? (
+          <>
+            Tu pedido entra al local y las prendas quedan reservadas a tu
+            nombre. El pago se coordina después: acá no se cobra nada.
+          </>
+        ) : (
+          <>
+            Estás probando el recorrido de compra. No necesitás ingresar datos
+            personales ni medios de pago.
+          </>
+        )}
       </div>
       <div className="checkout-grid">
         <form onSubmit={submit}>
-          <h2>1. Datos de la demo</h2>
+          <h2>1. {enVivo ? "Tus datos" : "Datos de la demo"}</h2>
           <label className="field">
-            Nombre de prueba (opcional)
+            {enVivo ? "Tu nombre" : "Nombre de prueba (opcional)"}
             <input
+              type="text"
               maxLength={60}
-              placeholder="Ej.: Cliente de prueba"
+              required={enVivo}
+              placeholder={enVivo ? "Nombre y apellido" : "Ej.: Cliente de prueba"}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />

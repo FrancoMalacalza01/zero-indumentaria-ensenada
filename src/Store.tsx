@@ -12,7 +12,7 @@ import type {
 import { seedProducts } from "./data";
 import { prepareOrder } from "./commerce.mjs";
 import { flattenStock, needsStockMigration } from "./migrate.mjs";
-import { fetchCatalog } from "./server";
+import { fetchCatalog, crearPedido } from "./server";
 const KEY = "mistral-local-demo-v1";
 type Data = {
   products: Product[];
@@ -96,12 +96,21 @@ interface Context extends StoreContextType {
   applyStock: (changes: StockChange[]) => Asentado;
   /** Solo asienta el historial, para cuando el stock ya quedó guardado. */
   recordMovements: (changes: StockChange[]) => Asentado;
+  /**
+   * Cierra la compra.
+   *
+   * Con servidor, la cuenta la hace la base en un solo paso: valida el stock,
+   * lo descuenta y guarda el pedido con la fila trabada, así dos personas
+   * comprando lo último no pueden comprarlo las dos. Sin servidor, la misma
+   * transacción corre acá, en el navegador, que es lo que se puede hacer en
+   * una demo.
+   */
   placeOrder: (
     delivery: "pickup" | "shipping",
     customer: string,
     payment?: PaymentMethodId,
     zone?: string,
-  ) => { error?: string; order?: Order };
+  ) => Promise<{ error?: string; order?: Order }>;
 }
 const StoreContext = createContext<Context | null>(null);
 export const money = (n: number) =>
@@ -235,7 +244,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       actualizar(() => initial());
       notify("Demo restablecida.");
     },
-    placeOrder: (delivery, customer, payment, zone) => {
+    placeOrder: async (delivery, customer, payment, zone) => {
+      // Si el catálogo vino del servidor, el pedido tiene que ir al servidor:
+      // descontar stock acá nomás dejaría la base diciendo otra cosa.
+      if (catalogSource === "servidor") {
+        const { order, error } = await crearPedido(
+          live.current.cart,
+          customer,
+          delivery,
+          zone,
+          payment,
+        );
+        if (error || !order) return { error: error || "No se pudo cerrar la compra." };
+        actualizar((prev) => ({
+          ...prev,
+          orders: [order, ...prev.orders],
+          cart: [],
+        }));
+        // El stock que vale es el del servidor, no el que teníamos nosotros.
+        fetchCatalog().then((productos) => {
+          if (productos) actualizar((prev) => ({ ...prev, products: productos }));
+        });
+        return { order };
+      }
       const d = live.current;
       const result = prepareOrder(
         d.products,

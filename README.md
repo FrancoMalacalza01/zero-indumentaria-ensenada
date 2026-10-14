@@ -41,7 +41,15 @@ reemplazan a lo que venía compilado.
 | Proyecto | `mistral-ensenada` (Supabase), región São Paulo |
 | Tablas | `products`, `stock`, `movements`, `orders`, `admins` |
 | Permisos | cualquiera **lee** lo publicado; **escribe solo quien está en `admins`** |
+| La compra | la hace la base en un solo paso (`crear_pedido`) |
+| El esquema | `db/esquema.sql` y `db/crear_pedido.sql` |
 | Se configura en | `src/server.ts`, o con `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY` |
+
+El esquema completo vive en el repo, no sólo en Supabase: `db/esquema.sql`
+(tablas y permisos) y `db/crear_pedido.sql` (la compra). Los dos se pueden
+volver a correr sin romper nada, así que sirven para levantar la base de cero
+y para revisar qué permisos hay sin entrar al panel. Los productos no están
+ahí: los carga el dueño.
 
 **Si el servidor no contesta, la tienda no se rompe**: usa el catálogo que
 trae adentro y sigue andando. Lo mismo si devuelve una lista vacía — más vale
@@ -86,12 +94,55 @@ Cómo se comporta, que es lo que importa cuando falla:
 - **Sacar un talle lo borra también del servidor.** Sin ese barrido, el talle
   quedaba en la base con stock y todo.
 
+### La compra la cierra la base
+
+Cuando alguien compra en la tienda, el navegador **no** descuenta nada: le
+pide a la base que lo haga, y la base lo hace todo junto o no hace nada
+(`crear_pedido`). En un solo paso valida, descuenta el stock, guarda el pedido
+y asienta los movimientos, con la fila del stock trabada mientras lo hace.
+
+Eso es lo que resuelve el caso que importa: **dos personas comprando la última
+prenda al mismo tiempo**. La segunda espera a que termine la primera, lee lo
+que quedó y rebota con el motivo exacto — "Quedan 0 de Buzo Alva talle M" —
+aunque su pantalla todavía dijera que había. El stock no queda en negativo y
+no se crea un pedido que el local no puede cumplir.
+
+Lo demás que hace falta aclarar:
+
+- **Los precios los pone la base.** No viajan desde el navegador. Si alguien
+  edita el pedido antes de mandarlo, cambia lo que pide, no lo que paga.
+  Probado: un pedido con `"price": 1` y el nombre cambiado se guarda con el
+  precio y el nombre reales.
+- **Si algo falla a mitad de camino, no queda nada a medias.** Un pedido de
+  tres prendas donde la tercera no alcanza deja el stock de las dos primeras
+  como estaba.
+- **Si no se pudo confirmar, el cliente se entera.** Sin conexión no se le
+  muestra una compra que no existe: se le dice que no se pudo confirmar y no
+  se descuenta nada.
+- **Un freno de mano**: la función la puede llamar cualquiera que entre a la
+  tienda, así que un script podría dejar el local en cero sin comprar nada.
+  Más de diez pedidos por minuto se rechazan. También hay topes por pedido
+  (20 unidades por talle, 50 en total, 40 renglones).
+- **El pedido guarda el nombre, el precio y la foto de cada prenda.** Dentro
+  de un mes el producto puede cambiar y el pedido tiene que seguir diciendo
+  qué se vendió y a cuánto.
+
+Dos avisos del linter de Supabase quedan abiertos **a propósito**: dicen que
+`crear_pedido` la puede ejecutar cualquiera sin estar logueado. Es exactamente
+lo que tiene que pasar — es la única forma de que un cliente compre — y es
+segura porque la función valida todo adentro, pone ella los precios y lo único
+que escribe es un pedido, sus movimientos y el descuento de stock.
+
 ### Lo que todavía no hace
 
-El pedido de la tienda sigue saliendo por WhatsApp y no se guarda en el
-servidor. Para que una compra web descuente stock sola hace falta hacerlo en
-un solo paso del lado de la base, para que dos personas comprando lo último no
-puedan comprarlo las dos. Esa es la etapa siguiente.
+El sitio no cobra. El pedido queda tomado y las prendas reservadas, pero el
+pago se coordina por WhatsApp. Para cobrar dentro del sitio hace falta un
+servidor que hable con Mercado Pago; el que hay guarda el catálogo.
+
+Si el servidor no contesta cuando alguien entra, la tienda muestra el catálogo
+que trae adentro y la compra se cierra en el navegador, como en la demo: el
+pedido llega igual por WhatsApp, pero ese descuento de stock no está en la
+base y hay que acomodarlo a mano.
 
 ## Venta del mostrador
 
@@ -240,9 +291,7 @@ es la bolsa, los favoritos, los pedidos hechos desde la tienda y todo lo que
 se edite en modo demo.
 
 Lo que el sitio **no** hace: cobrar (las formas de pago son un link y unos
-datos para transferir; el sitio no cobra ni confirma nada), mandar correos,
-reservar stock cuando alguien compra desde la web, ni descontar solo esa
-compra.
+datos para transferir; el sitio no cobra) ni mandar correos.
 
 Precios, imágenes y talles cargados hoy en el servidor vienen del catálogo
 nacional como referencia; **el stock es ficticio** hasta que el dueño cargue
@@ -269,18 +318,43 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 `pnpm build` comprueba TypeScript y genera el paquete de producción.
 
-El login y la publicación se probaron además en un navegador real, contra un
-servidor que habla el mismo protocolo que Supabase y con los headers de
-producción puestos (20 comprobaciones): contraseña mal puesta, cuenta sin
-permiso, entrada del dueño, publicar y ocultar, venta del mostrador bajando
-stock y dejando movimiento, barrido de talles viejos, sesión que sobrevive a
-recargar, cierre de sesión, un guardado rechazado por el servidor mostrando el
-cartel rojo, y ninguna llamada bloqueada por la CSP.
+El login, la publicación y la compra se probaron además **en un navegador
+real**, contra un servidor que habla el mismo protocolo que Supabase y con los
+headers de producción puestos. 36 comprobaciones en dos tandas:
+
+- *Panel* (20): contraseña mal puesta, cuenta sin permiso, entrada del dueño,
+  publicar y ocultar, venta del mostrador bajando stock y dejando movimiento,
+  barrido de talles viejos, sesión que sobrevive a recargar, cierre de sesión,
+  un guardado rechazado por el servidor mostrando el cartel rojo.
+- *Compra* (16): la compra que entra, el total calculado por el servidor, dos
+  navegadores peleando por la última prenda (el segundo rebota con el motivo
+  exacto y el stock queda en cero, no en negativo), una compra sin conexión que
+  avisa en vez de festejar y no descuenta nada, y el pedido apareciendo en el
+  panel del dueño.
+
+Ninguna llamada bloqueada por la CSP en ninguna de las dos.
+
+`./db/probar-local.sh` levanta un Postgres de juguete, arma la base con esos
+dos archivos y larga **diez compradores al mismo tiempo contra cuatro
+unidades**. Tienen que comprar cuatro y rebotar seis, con el stock en cero y
+no en negativo. Es la única forma de probar de verdad el caso de dos personas
+comprando lo último, porque hacen falta dos conexiones a la vez. Probado
+también a mano: con el primer comprador reteniendo la traba tres segundos, el
+segundo esperó exactamente esos segundos y recién entonces rebotó, leyendo lo
+que había quedado.
+
+La función de la compra se probó además **contra la base de producción**, en
+transacciones que se deshacen: compra normal, precio y nombre falsificados
+desde el navegador, renglones repetidos que se suman, pedir más de lo que hay,
+producto despublicado, producto y talle inexistentes, bolsa vacía, entrega y
+forma de pago inventadas, cantidades en cero, negativas, con coma, absurdas y
+que no son números, 41 renglones, nombre de 300 letras, el tope de 50 unidades
+y el freno de diez pedidos por minuto. En todos los rechazos se comprobó que
+el stock quedó como estaba.
 
 ## Imágenes y referencias
 
 Marca y fotografías: [Mistral Argentina](https://www.mistral.com.ar/). Contacto local: [@mistral.zero.indumentaria](https://www.instagram.com/mistral.zero.indumentaria/). La procedencia detallada está en `docs/asset-sources.json`; las fotos usadas están en `public/images`. Su uso aquí es para la presentación del prototipo; confirmar con la marca el uso en la tienda final.
 
-La siguiente etapa es el inventario transaccional: que una compra desde la web
-descuente stock en un solo paso del lado de la base. Falta además el catálogo
-real del local, los medios de pago y la logística.
+Falta el catálogo real del local, los medios de pago y la logística. Cobrar
+dentro del sitio requiere un servidor que hable con Mercado Pago.
