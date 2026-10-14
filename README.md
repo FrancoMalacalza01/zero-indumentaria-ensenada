@@ -30,6 +30,38 @@ pnpm preview
 
 Una compra descuenta el stock del talle seleccionado. El pedido aparece inmediatamente en administración. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
 
+## El servidor
+
+El catálogo que ve el cliente vive en una base de datos, no adentro del sitio.
+Al abrir la tienda se piden los productos publicados y su stock por talle, y
+reemplazan a lo que venía compilado.
+
+| | |
+|---|---|
+| Proyecto | `mistral-ensenada` (Supabase), región São Paulo |
+| Tablas | `products` y `stock` |
+| Permisos | cualquiera puede **leer** lo publicado; **nadie puede escribir** |
+| Se configura en | `src/server.ts`, o con `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY` |
+
+**Si el servidor no contesta, la tienda no se rompe**: usa el catálogo que
+trae adentro y sigue andando. Lo mismo si devuelve una lista vacía — más vale
+mostrar precios de ayer que una tienda en blanco.
+
+La clave que viaja en el sitio es pública a propósito, como en cualquier
+tienda hecha así. Lo que protege los datos son los permisos de la base, que
+hoy no dejan escribir a nadie. **Nunca poner ahí la clave de servicio.**
+
+La CSP de `vercel.json` tiene que permitir el origen del servidor
+(`connect-src ... https://*.supabase.co`). Sin eso el navegador bloquea el
+pedido y la tienda cae al catálogo interno sin decir por qué.
+
+### Lo que todavía no hace
+
+El panel **lee** del servidor pero no escribe: lo que se edita ahí sigue
+guardándose solo en ese navegador, y al recargar vuelve lo que dice el
+servidor. Para que el panel publique hace falta que el dueño entre con
+usuario y contraseña, que es la etapa siguiente.
+
 ## Venta del mostrador
 
 La pantalla **Venta del día** del panel es para descontar lo que se vende en el

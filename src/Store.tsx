@@ -12,6 +12,7 @@ import type {
 import { seedProducts } from "./data";
 import { prepareOrder } from "./commerce.mjs";
 import { flattenStock, needsStockMigration } from "./migrate.mjs";
+import { fetchCatalog } from "./server";
 const KEY = "mistral-local-demo-v1";
 type Data = {
   products: Product[];
@@ -64,6 +65,8 @@ function restore(): Data {
   return initial();
 }
 interface Context extends StoreContextType {
+  /** De dónde salió el catálogo que se está mostrando. */
+  catalogSource: "servidor" | "local";
   favorites: string[];
   movements: Movement[];
   toggleFavorite: (id: string) => void;
@@ -121,6 +124,9 @@ function applyToProducts(products: Product[], changes: StockChange[]) {
 }
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Data>(restore);
+  const [catalogSource, setCatalogSource] = useState<"servidor" | "local">(
+    "local",
+  );
   const live = useRef(data);
   live.current = data;
   const [toast, setToast] = useState("");
@@ -132,6 +138,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     timer.current = setTimeout(() => setToast(""), 4200);
   };
   useEffect(() => () => clearTimeout(timer.current), []);
+  // El catálogo manda desde el servidor. Si no contesta, queda el que ya
+  // estaba: más vale una tienda con precios de ayer que una vacía.
+  useEffect(() => {
+    let vigente = true;
+    fetchCatalog().then((productos) => {
+      if (!vigente || !productos) return;
+      setData((d) => ({ ...d, products: productos }));
+      setCatalogSource("servidor");
+    });
+    return () => {
+      vigente = false;
+    };
+  }, []);
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify(data));
@@ -142,6 +161,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [data]);
   const value: Context = {
     ...data,
+    catalogSource,
     notify,
     setProducts: (products) => setData((d) => ({ ...d, products })),
     setOrders: (orders) => setData((d) => ({ ...d, orders })),

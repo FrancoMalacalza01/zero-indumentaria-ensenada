@@ -122,6 +122,7 @@ export default function Admin({
     movements,
     applyStock,
     recordMovements,
+    catalogSource,
   } = useStore();
   const [tab, setTab] = useState<Tab>("overview");
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -373,9 +374,19 @@ export default function Admin({
           <div className="admin-local-banner">
             <CircleHelp size={16} />
             <p>
-              Demostración. La contraseña tapa esta pantalla, no los datos:
-              los cambios se guardan solo en este navegador y no se procesan
-              compras reales.
+              {catalogSource === "servidor" ? (
+                <>
+                  El catálogo que ve el cliente ya viene del servidor. Lo que
+                  edites <b>acá</b> todavía se guarda solo en este navegador y
+                  no se publica: para eso falta el acceso con usuario.
+                </>
+              ) : (
+                <>
+                  Demostración. La contraseña tapa esta pantalla, no los datos:
+                  los cambios se guardan solo en este navegador y no se
+                  procesan compras reales.
+                </>
+              )}
             </p>
           </div>
           <div className="admin-page-heading">
