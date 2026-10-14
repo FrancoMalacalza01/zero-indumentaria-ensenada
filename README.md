@@ -30,6 +30,20 @@ pnpm preview
 
 Una compra descuenta el stock de la sucursal y talle seleccionados. El pedido aparece inmediatamente en administración. Cambiar de sucursal vacía la bolsa para evitar mezclar disponibilidades. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
 
+## Paleta
+
+El azul y el rojo salen del logo oficial (`public/images/mistral-logo.png`),
+medidos sobre el archivo: `#132457` es el 89% de los píxeles opacos y `#cc0035`
+es el punto de la "i". Coinciden con la dirección visual anotada en
+`docs/asset-sources.json` ("navy, red, off-white") al relevar el sitio de la
+marca.
+
+Los tokens están en `:root`, en `src/styles.css`. El resto de la paleta se
+derivó del verde anterior conservando la luminosidad de cada color y girando
+solo el tono, así que los contrastes no empeoraron. Quedaron fuera a propósito
+los colores con significado: entrada y salida de stock, error y alerta de stock
+bajo.
+
 ## Formas de pago
 
 Se configuran en `src/payment.ts`. Lo que quede vacío o en `false` no se

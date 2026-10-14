@@ -1302,7 +1302,7 @@ function ProductEditor({
           price: 0,
           image: "",
           color: "",
-          colorHex: "#173c35",
+          colorHex: "#132457",
           sizes: ["S", "M", "L", "XL"],
           stock: { "La Plata": {}, Ensenada: {} },
           isNew: true,

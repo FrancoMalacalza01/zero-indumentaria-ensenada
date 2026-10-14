@@ -1,15 +1,19 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap");
 :root {
   font-family: "DM Sans", Arial, sans-serif;
-  color: #222e2b;
+  color: #1f2431;
   background: #fff;
   font-synthesis: none;
-  --green: #173c35;
-  --ink: #222e2b;
-  --muted: #717773;
-  --line: #e3e6e1;
-  --paper: #f5f5f1;
-  --accent: #dcdfb0;
+  /* Paleta de la marca, medida sobre el logo oficial
+     (public/images/mistral-logo.png): el azul es el 89% de los píxeles y el
+     rojo es el punto de la "i". */
+  --brand: #132457;
+  --red: #cc0035;
+  --ink: #1f2431;
+  --muted: #6b6d73;
+  --line: #e0e2e7;
+  --paper: #f0f2f6;
+  --accent: #a6b7e9;
 }
 * {
   box-sizing: border-box;
@@ -54,7 +58,7 @@ input:focus-visible,
 select:focus-visible,
 summary:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #458978;
+  outline: 2px solid #364f98;
   outline-offset: 4px;
 }
 h1,
@@ -102,7 +106,7 @@ svg {
 }
 .announcement {
   height: 33px;
-  background: var(--green);
+  background: var(--brand);
   color: #fff;
   display: flex;
   align-items: center;
@@ -185,7 +189,7 @@ svg {
   font-size: 11px;
   line-height: 18px;
   min-width: 18px;
-  background: var(--green);
+  background: var(--brand);
   color: white;
   border-radius: 50%;
 }
@@ -194,7 +198,7 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 37px;
-  border-top: 1px solid #f2f2ef;
+  border-top: 1px solid #eeeff3;
   height: 48px;
   font-size: 12px;
   font-weight: 500;
@@ -211,7 +215,7 @@ svg {
   content: "";
   bottom: 0;
   height: 2px;
-  background: var(--green);
+  background: var(--brand);
   width: 0;
   transition: width 0.2s;
 }
@@ -220,14 +224,14 @@ svg {
 }
 .nav-new {
   font-size: 8px;
-  background: #edf0e8;
+  background: var(--red);
   padding: 3px 4px;
-  color: var(--green);
+  color: #fff;
   letter-spacing: 0.5px;
 }
 .desktop-nav .nav-stores {
   margin-left: 38px;
-  color: #737971;
+  color: #6f727b;
 }
 .mobile-menu {
   display: none;
@@ -257,7 +261,7 @@ svg {
   min-height: 610px;
   height: calc(100svh - 225px);
   max-height: 770px;
-  background: var(--green);
+  background: var(--brand);
   overflow: hidden;
   color: #fff;
 }
@@ -274,10 +278,10 @@ svg {
   inset: 0;
   background: linear-gradient(
     90deg,
-    #173c35 0%,
-    #173c35 29%,
-    #173c35e6 36%,
-    #173c3573 46%,
+    #132457 0%,
+    #132457 29%,
+    #132457e6 36%,
+    #13245773 46%,
     transparent 60%
   );
 }
@@ -295,7 +299,7 @@ svg {
   line-height: 1.5;
 }
 .eyebrow.dark {
-  color: #687168;
+  color: #666973;
 }
 .hero h1 {
   font-size: clamp(3.4rem, 5.25vw, 6rem);
@@ -310,7 +314,7 @@ svg {
 .hero-content > p {
   font-size: 14px;
   line-height: 1.7;
-  color: #d9e1d8;
+  color: #d6d9e3;
   margin-bottom: 29px;
 }
 .button {
@@ -333,17 +337,17 @@ svg {
 }
 .button-white {
   background: #fff;
-  color: var(--green);
+  color: var(--brand);
 }
 .button-white:hover {
   background: var(--accent);
 }
 .button-green {
-  background: var(--green);
+  background: var(--brand);
   color: #fff;
 }
 .button-green:hover {
-  background: #245549;
+  background: #192b60;
 }
 .hero-side {
   position: absolute;
@@ -431,7 +435,7 @@ svg {
   white-space: nowrap;
 }
 .text-link:hover {
-  color: #547d65;
+  color: #4b5a86;
 }
 .category-tabs {
   display: flex;
@@ -446,13 +450,13 @@ svg {
   position: relative;
 }
 .category-tabs button.active {
-  color: var(--green);
+  color: var(--brand);
   font-weight: 600;
 }
 .category-tabs button.active:after {
   content: "";
   height: 2px;
-  background: var(--green);
+  background: var(--brand);
   position: absolute;
   bottom: 0;
   left: 0;
@@ -509,8 +513,8 @@ svg {
 }
 .favorite.selected svg,
 .detail-favorite.selected svg {
-  fill: var(--green);
-  stroke: var(--green);
+  fill: var(--brand);
+  stroke: var(--brand);
 }
 .quick-shop {
   position: absolute;
@@ -544,7 +548,7 @@ svg {
   border-radius: 50%;
   box-shadow:
     0 0 0 2px #fff,
-    0 0 0 3px #dfe2dc;
+    0 0 0 3px #dbdde3;
   margin: 0 2px;
 }
 .product-name {
@@ -580,7 +584,7 @@ svg {
   position: relative;
   height: 490px;
   overflow: hidden;
-  background: #e1e3e3;
+  background: #e1e1e3;
 }
 .collection-card img {
   width: 100%;
@@ -593,7 +597,7 @@ svg {
   content: "";
   position: absolute;
   inset: 30% 0 0;
-  background: linear-gradient(transparent, #102622aa);
+  background: linear-gradient(transparent, #0b132baa);
 }
 .collection-card:hover img {
   transform: scale(1.035);
@@ -620,14 +624,14 @@ svg {
   text-align: center;
   margin-top: 30px;
   padding: 72px 20px 82px;
-  background: #f3f4ef;
+  background: #eef0f5;
 }
 .local-section h2 {
   font-size: 3.3rem;
   margin: 22px 0;
 }
 .local-section > p {
-  color: #667066;
+  color: #646772;
   font-size: 14px;
   line-height: 1.8;
   margin-bottom: 25px;
@@ -640,11 +644,11 @@ svg {
   letter-spacing: 1.5px;
   line-height: 1.8;
   text-align: right;
-  color: #768071;
+  color: #6e7383;
 }
 .footer {
-  background: #112f29;
-  color: #e5e9df;
+  background: #0b1535;
+  color: #dde0eb;
   padding: 55px 5.5% 0;
 }
 .footer-top {
@@ -667,14 +671,14 @@ svg {
   font-size: 13px;
   line-height: 1.7;
   margin-top: 23px;
-  color: #afc0b5;
+  color: #abb1c4;
 }
 .footer h3 {
   font-size: 9px;
   font-weight: 500;
   letter-spacing: 1.5px;
   margin: 10px 0 25px;
-  color: #b7c7b6;
+  color: #b2b8cb;
 }
 .footer-top > div > a:not(.social-link) {
   font-size: 12px;
@@ -691,7 +695,7 @@ svg {
 .footer-prototype p {
   font-size: 12px;
   line-height: 1.8;
-  color: #afc0b5;
+  color: #abb1c4;
   max-width: 230px;
 }
 .footer .footer-prototype .admin-link {
@@ -709,7 +713,7 @@ svg {
   justify-content: space-between;
   padding: 22px 0;
   font-size: 8px;
-  color: #a0b2a5;
+  color: #9ca3b6;
   line-height: 1.7;
 }
 .footer-bottom > span:last-child {
@@ -804,7 +808,7 @@ svg {
 .field input,
 .field select,
 .field textarea {
-  border: 1px solid #d7ddd4;
+  border: 1px solid #d2d5df;
   border-radius: 0;
   background: #fff;
   padding: 13px 14px;
@@ -881,7 +885,7 @@ svg {
 }
 .detail-thumbs button:hover,
 .detail-thumbs button.selected {
-  border-color: var(--green);
+  border-color: var(--brand);
 }
 .detail-thumbs img {
   width: 100%;
@@ -924,7 +928,7 @@ svg {
   border-radius: 50%;
   box-shadow:
     0 0 0 3px white,
-    0 0 0 4px #b7bfb5;
+    0 0 0 4px #b3b6c1;
   margin: 4px;
 }
 .size-heading {
@@ -955,16 +959,16 @@ svg {
   font-size: 12px;
 }
 .size-options button.selected {
-  background: var(--green);
+  background: var(--brand);
   color: white;
-  border-color: var(--green);
+  border-color: var(--brand);
 }
 .size-options button:disabled {
   background: linear-gradient(
     135deg,
     transparent 49%,
-    #b7bfb5 49%,
-    #b7bfb5 51%,
+    #b3b6c1 49%,
+    #b3b6c1 51%,
     transparent 51%
   );
 }
@@ -1068,7 +1072,7 @@ svg {
 }
 .modal::backdrop,
 .drawer::backdrop {
-  background: #0c242566;
+  background: #07102a66;
   backdrop-filter: blur(3px);
 }
 .drawer {
@@ -1211,7 +1215,7 @@ svg {
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
-  background: var(--green);
+  background: var(--brand);
   color: white;
   max-width: 90vw;
   width: max-content;
@@ -1240,9 +1244,9 @@ svg {
   margin: 15px 0 25px;
 }
 .demo-box {
-  background: #f1f3e9;
-  border: 1px solid #e2e7d5;
-  color: #57624b;
+  background: #e7eaf5;
+  border: 1px solid #d1d8eb;
+  color: #464e67;
   font-size: 13px;
   line-height: 1.7;
   padding: 18px 22px;
@@ -1269,8 +1273,8 @@ svg {
   display: flex;
   align-items: center;
   gap: 17px;
-  border: 1px solid var(--green);
-  background: #f9faf6;
+  border: 1px solid var(--brand);
+  background: #f5f7fb;
 }
 .delivery-option > div {
   flex: 1;
@@ -1303,20 +1307,20 @@ svg {
     background 0.2s;
 }
 .payment-option:hover {
-  border-color: var(--green);
+  border-color: var(--brand);
 }
 .payment-option.selected {
-  border-color: var(--green);
-  background: #f9faf6;
+  border-color: var(--brand);
+  background: #f5f7fb;
 }
 .payment-option input {
   width: 17px;
   height: 17px;
-  accent-color: var(--green);
+  accent-color: var(--brand);
   flex-shrink: 0;
 }
 .payment-option > svg {
-  color: var(--green);
+  color: var(--brand);
   flex-shrink: 0;
 }
 .payment-option > div {
@@ -1351,7 +1355,7 @@ svg {
   font-size: 14px;
 }
 .payment-summary > b > svg {
-  color: var(--green);
+  color: var(--brand);
 }
 .payment-summary > p {
   font-size: 13px;
@@ -1385,9 +1389,9 @@ svg {
   min-height: 36px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--green);
+  color: var(--brand);
   background: #fff;
-  border: 1px solid var(--green);
+  border: 1px solid var(--brand);
 }
 .payment-copy:hover {
   background: var(--accent);
@@ -1395,7 +1399,7 @@ svg {
 .payment-note {
   font-size: 12px;
   line-height: 1.7;
-  color: #57624b;
+  color: #464e67;
 }
 .checkout form > .button {
   width: 100%;
@@ -1452,7 +1456,7 @@ svg {
   padding-bottom: 80px;
 }
 .checkout-success > svg {
-  color: var(--green);
+  color: var(--brand);
 }
 .checkout-success h1 {
   font-size: 3rem;
@@ -1499,7 +1503,7 @@ svg {
   top: 25px;
   font-size: 65px;
   letter-spacing: -5px;
-  color: #d6ddcf;
+  color: #ccd1e0;
 }
 .store-card h2 {
   margin-top: 25px;
@@ -1525,7 +1529,7 @@ svg {
   display: grid;
   min-height: 100vh;
   place-items: center;
-  color: var(--green);
+  color: var(--brand);
 }
 @media (min-width: 1600px) {
   .hero-content {
@@ -1554,10 +1558,10 @@ svg {
   .hero-shade {
     background: linear-gradient(
       90deg,
-      #173c35 0%,
-      #173c35 24%,
-      #173c35d9 34%,
-      #173c3555 48%,
+      #132457 0%,
+      #132457 24%,
+      #132457d9 34%,
+      #13245755 48%,
       transparent 65%
     );
   }
@@ -1663,8 +1667,8 @@ svg {
   }
   .hero-shade {
     background:
-      linear-gradient(90deg, #173c35bb, transparent 90%),
-      linear-gradient(0deg, #173c35 0%, #173c35c4 21%, #173c3520 62%, #173c350d);
+      linear-gradient(90deg, #132457bb, transparent 90%),
+      linear-gradient(0deg, #132457 0%, #132457c4 21%, #13245720 62%, #1324570d);
   }
   .hero-content {
     width: 100%;
@@ -2223,7 +2227,7 @@ svg {
   white-space: nowrap;
 }
 .marquee-item:hover span {
-  color: var(--green);
+  color: var(--brand);
 }
 
 /* ---------- Galería: miniaturas al costado, siempre a la vista ---------- */
@@ -2269,10 +2273,10 @@ svg {
   .hero-shade {
     background: linear-gradient(
       0deg,
-      #173c35 0%,
-      #173c35e0 30%,
-      #173c3559 64%,
-      #173c3514 100%
+      #132457 0%,
+      #132457e0 30%,
+      #13245759 64%,
+      #13245714 100%
     );
   }
   .hero-image {
