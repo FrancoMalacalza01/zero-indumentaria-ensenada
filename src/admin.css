@@ -997,6 +997,25 @@
   white-space: nowrap !important;
   border: 0 !important;
 }
+.admin-dialog-narrow {
+  width: min(420px, calc(100vw - 32px));
+}
+.admin-dialog-narrow .admin-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.admin-dialog-narrow .admin-field > input {
+  width: 100%;
+}
+.admin-avatar {
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.admin-avatar:hover {
+  background: #d7dce9;
+  border-color: #b9c2da;
+}
 .admin-dialog {
   width: min(700px, calc(100vw - 32px));
   max-height: calc(100dvh - 40px);

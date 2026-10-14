@@ -11,6 +11,7 @@ import type {
 } from "./types";
 import { seedProducts } from "./data";
 import { prepareOrder } from "./commerce.mjs";
+import { flattenStock, needsStockMigration } from "./migrate.mjs";
 const KEY = "mistral-local-demo-v1";
 type Data = {
   products: Product[];
@@ -39,9 +40,24 @@ function restore(): Data {
       Array.isArray(data.cart) &&
       Array.isArray(data.favorites)
     )
-      // Los movimientos se incorporaron después: una demo guardada antes no
-      // los tiene y no por eso hay que descartarla.
-      return { ...data, movements: data.movements || [] };
+    {
+      // Una demo guardada cuando había dos locales trae el stock por
+      // sucursal. Se convierte en vez de descartarla, así nadie pierde lo
+      // que cargó. La bolsa sí se vacía: sus renglones apuntaban a una
+      // sucursal que ya no existe.
+      const vieja = needsStockMigration(data.products);
+      return {
+        ...data,
+        products: data.products.map((p: Product) => ({
+          ...p,
+          stock: flattenStock(p.stock),
+        })),
+        cart: vieja ? [] : data.cart,
+        // Los movimientos se incorporaron después: una demo guardada antes
+        // no los tiene y no por eso hay que descartarla.
+        movements: data.movements || [],
+      };
+    }
   } catch {
     /* Use clean demo if storage is unavailable. */
   }

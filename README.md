@@ -69,7 +69,16 @@ la derecha) abre la tienda en otra pestaña, así el admin la mira sin perder lo
 que estaba haciendo, y **"Volver a la tienda"** (abajo a la izquierda) sale del
 panel.
 
-`/admin` pide una contraseña antes de mostrar nada. Se cambia así:
+`/admin` pide una contraseña antes de mostrar nada. La de fábrica es
+**`Leomistral01`**.
+
+**Para cambiarla, desde el panel:** el botón de la llave, arriba a la derecha.
+Pide la actual y la nueva. Esa contraseña queda guardada en el navegador donde
+la cambiaste y pisa a la de fábrica; desde ese mismo diálogo se vuelve atrás.
+En otra computadora o celular sigue valiendo la de fábrica, y borrar los datos
+del sitio también la devuelve a esa.
+
+**Para cambiar la de fábrica**, la que viene en el sitio para todos:
 
 ```sh
 node scripts/clave-admin.mjs "la nueva clave"
@@ -141,7 +150,7 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 ## Validación
 
-`pnpm test` ejecuta 19 pruebas de la transacción de compra: inventario por talle, duplicados, stock insuficiente, productos ocultos o eliminados, cantidades inválidas y conservación del estado al rechazar una operación. `pnpm build` comprueba TypeScript y genera el paquete de producción.
+`pnpm test` ejecuta 27 pruebas. Ocho cubren la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual. Las otras 19, la transacción de compra: inventario por talle, duplicados, stock insuficiente, productos ocultos o eliminados, cantidades inválidas y conservación del estado al rechazar una operación. `pnpm build` comprueba TypeScript y genera el paquete de producción.
 
 ## Imágenes y referencias
 

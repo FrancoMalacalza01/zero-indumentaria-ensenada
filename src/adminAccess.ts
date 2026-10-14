@@ -16,18 +16,60 @@
  * Etapa 2: ahí la contraseña se verifica del lado del servidor y los datos
  * dejan de estar en el navegador del visitante.
  *
- * CÓMO CAMBIARLA: `node scripts/clave-admin.mjs "la nueva clave"` imprime el
- * bloque de abajo ya armado. Dejando `hash` y `salt` vacíos, el panel vuelve
- * a abrirse sin contraseña.
+ * CÓMO CAMBIARLA: desde el panel, con el botón de arriba a la derecha. Esa
+ * contraseña queda guardada en el navegador donde la cambiaste y pisa a la de
+ * abajo; borrar los datos del sitio la devuelve a la de fábrica.
+ *
+ * Para cambiar la de fábrica, la que viene en el sitio para todos:
+ * `node scripts/clave-admin.mjs "la nueva clave"` imprime el bloque de abajo
+ * ya armado. Dejando `hash` y `salt` vacíos, el panel se abre sin contraseña.
  */
 export const adminAccess = {
-  hash: "dw8gJiQBGIOTLAgJWzs9Pkyqc4zYHIThCupRjlYW+6w=",
-  salt: "1cwN+AFcWf9ZjXk1RHjYlQ==",
+  hash: "jlczHdK+UTh/rhdW6ciQpLBOgYMwAwKxt7BPVBQ7Ykc=",
+  salt: "J77+0ig57ezXsE2ynYMZQw==",
   iterations: 310000,
 };
 
+/** Clave puesta desde el panel. Vale solo en este navegador. */
+const OVERRIDE_KEY = "mistral-admin-pass-v1";
+
+interface Credencial {
+  hash: string;
+  salt: string;
+  iterations: number;
+}
+
+function leerOverride(): Credencial | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(OVERRIDE_KEY) || "null");
+    if (
+      raw &&
+      typeof raw.hash === "string" &&
+      typeof raw.salt === "string" &&
+      Number.isInteger(raw.iterations) &&
+      raw.iterations > 0 &&
+      raw.hash &&
+      raw.salt
+    )
+      return raw as Credencial;
+  } catch {
+    /* Un guardado roto no puede dejar afuera al dueño: se usa el de fábrica. */
+  }
+  return null;
+}
+
+/** La credencial que manda: la del navegador si hay, si no la de fábrica. */
+function credencial(): Credencial {
+  return leerOverride() || adminAccess;
+}
+
 /** Si falta el hash o la sal, el panel queda abierto como antes. */
 export const adminLocked = Boolean(adminAccess.hash && adminAccess.salt);
+
+/** true si la clave de este navegador no es la que viene de fábrica. */
+export function passwordCambiada() {
+  return leerOverride() !== null;
+}
 
 function fromBase64(value: string) {
   const binary = atob(value);
@@ -50,8 +92,11 @@ export class InsecureContextError extends Error {}
  * Compara la contraseña tecleada contra el hash guardado. Las 310.000 vueltas
  * de PBKDF2 tardan a propósito: hacen cara cada prueba.
  */
-export async function checkAdminPassword(password: string) {
-  if (!adminLocked) return true;
+async function derivar(
+  password: string,
+  salt: BufferSource,
+  iterations: number,
+) {
   // crypto.subtle no existe fuera de HTTPS. Si no está, no se puede verificar
   // nada, así que la traba queda cerrada en vez de abrirse sola.
   if (!globalThis.crypto?.subtle) throw new InsecureContextError();
@@ -63,14 +108,40 @@ export async function checkAdminPassword(password: string) {
     ["deriveBits"],
   );
   const bits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: fromBase64(adminAccess.salt),
-      iterations: adminAccess.iterations,
-      hash: "SHA-256",
-    },
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
     key,
     256,
   );
-  return toBase64(new Uint8Array(bits)) === adminAccess.hash;
+  return toBase64(new Uint8Array(bits));
+}
+
+export async function checkAdminPassword(password: string) {
+  if (!adminLocked) return true;
+  const actual = credencial();
+  const hash = await derivar(
+    password,
+    fromBase64(actual.salt),
+    actual.iterations,
+  );
+  return hash === actual.hash;
+}
+
+/**
+ * Guarda una contraseña nueva para este navegador. No se guarda la
+ * contraseña: se guarda su hash, con una sal nueva al azar.
+ */
+export async function setAdminPassword(password: string) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await derivar(password, salt, adminAccess.iterations);
+  const credencialNueva: Credencial = {
+    hash,
+    salt: toBase64(salt),
+    iterations: adminAccess.iterations,
+  };
+  localStorage.setItem(OVERRIDE_KEY, JSON.stringify(credencialNueva));
+}
+
+/** Vuelve a la contraseña de fábrica en este navegador. */
+export function resetAdminPassword() {
+  localStorage.removeItem(OVERRIDE_KEY);
 }
