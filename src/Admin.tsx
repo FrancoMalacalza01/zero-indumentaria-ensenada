@@ -36,6 +36,7 @@ import type {
   Product,
   StockChange,
 } from "./types";
+import { paymentLabel } from "./payment";
 import "./admin.css";
 
 type Tab = "overview" | "inventory" | "stock" | "movements" | "orders";
@@ -843,6 +844,9 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                                   : "Envío a domicilio"}
                               </strong>
                               <span>{o.branch}</span>
+                              {o.payment && (
+                                <small>{paymentLabel(o.payment)}</small>
+                              )}
                             </div>
                           </td>
                           <td className="admin-price-cell">{money(o.total)}</td>

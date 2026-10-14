@@ -30,9 +30,34 @@ pnpm preview
 
 Una compra descuenta el stock de la sucursal y talle seleccionados. El pedido aparece inmediatamente en administración. Cambiar de sucursal vacía la bolsa para evitar mezclar disponibilidades. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
 
+## Formas de pago
+
+Se configuran en `src/payment.ts`. Lo que quede vacío o en `false` no se
+muestra, y el pedido sigue saliendo por WhatsApp como antes.
+
+| Campo | Qué hace |
+|---|---|
+| `mercadoPagoUrl` | Link de pago de Mercado Pago (Cobrar → Link de pago). Aparece el botón "Pagar con Mercado Pago". |
+| `mercadoPagoAlias` | Alias o CVU de Mercado Pago, con botón para copiarlo. |
+| `bankAlias`, `bankCbu`, `bankHolder`, `bankName` | Transferencia bancaria. Con el alias o el CBU alcanza para que la opción aparezca. |
+| `cash`, `cardInStore` | Efectivo y tarjeta al retirar. No necesitan configuración. |
+
+La forma elegida queda guardada en el pedido, se ve en el panel y viaja en el
+mensaje de WhatsApp.
+
+**Sin servidor no se puede cobrar el total exacto de la bolsa de forma
+automática.** Un link de pago lleva el monto fijo con el que se creó, así que
+sirve para una seña o un precio redondo; para cobrar el importe exacto están el
+alias (el cliente transfiere y manda el comprobante) o el cobro en el local. El
+checkout de Mercado Pago que arma el cobro solo necesita backend, porque el
+token de la cuenta no puede vivir en el navegador: es Etapa 2.
+
+Mientras los precios y el stock sean de ejemplo, conviene dejar el link y el
+alias vacíos: con uno cargado, un visitante puede pagar de verdad.
+
 ## Alcance de la demo
 
-Todos los cambios se guardan en `localStorage` (`mistral-local-demo-v1`). No hay servidor, sincronización entre dispositivos, autenticación, pagos, correos ni reservas reales. El panel es público por diseño para presentar la propuesta. No usar para gestionar stock o pedidos reales.
+Todos los cambios se guardan en `localStorage` (`mistral-local-demo-v1`). No hay servidor, sincronización entre dispositivos, autenticación, cobros procesados por el sitio, correos ni reservas reales: las formas de pago son un link y unos datos para transferir, el sitio no cobra ni confirma nada. El panel es público por diseño para presentar la propuesta. No usar para gestionar stock o pedidos reales.
 
 Precios, imágenes y talles iniciales tomados del catálogo nacional como referencia; **el stock de ambas sucursales es ficticio**. Las direcciones, los horarios, las condiciones de entrega y los medios de pago deben confirmarse con el dueño. No se inventaron direcciones locales.
 

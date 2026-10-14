@@ -1,5 +1,10 @@
 export type Branch = "La Plata" | "Ensenada";
 export type Category = "Hombre" | "Mujer" | "Accesorios";
+export type PaymentMethodId =
+  | "mercadopago"
+  | "transferencia"
+  | "efectivo"
+  | "tarjeta";
 export interface Product {
   id: string;
   name: string;
@@ -32,6 +37,11 @@ export interface Order {
   delivery: "pickup" | "shipping";
   status: "Pendiente" | "Preparando" | "Listo para retirar" | "Completado";
   customer: string;
+  /**
+   * Forma de pago elegida. Opcional: los pedidos guardados antes de que
+   * existieran las formas de pago no la tienen.
+   */
+  payment?: PaymentMethodId;
 }
 export type MovementReason =
   | "Ingreso"

@@ -4,12 +4,17 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
+  Banknote,
   Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Copy,
+  CreditCard,
+  ExternalLink,
   Heart,
   Instagram,
+  Landmark,
   MapPin,
   Menu,
   MessageCircle,
@@ -20,16 +25,24 @@ import {
   SlidersHorizontal,
   Store,
   Truck,
+  Wallet,
   X,
 } from "lucide-react";
 import { money, useStore } from "./Store";
-import type { Branch, Product, Order } from "./types";
+import type { Branch, PaymentMethodId, Product, Order } from "./types";
 import { cartKey } from "./commerce.mjs";
+import {
+  chargesRealMoney,
+  paymentLabel,
+  paymentOptions,
+  type PaymentOption,
+} from "./payment";
 const Admin = lazy(() => import("./Admin"));
 const instagram = "https://www.instagram.com/mistral_laplata/";
 // Número de WhatsApp de cada sucursal, en formato internacional y sin el "+"
 // (por ejemplo "5492211234567"). Mientras queden vacíos, el pedido se abre en
 // WhatsApp con el mensaje escrito y la persona elige el contacto a mano.
+// Las formas de pago se configuran aparte, en src/payment.ts.
 const whatsappNumbers: Record<Branch, string> = {
   "La Plata": "",
   Ensenada: "",
@@ -46,6 +59,10 @@ function whatsappOrderUrl(order: Order) {
     `Total: ${money(order.total)}`,
     `Retiro en: ${order.branch}`,
     `Pedido: ${order.id}`,
+    ...(order.payment ? [`Pago: ${paymentLabel(order.payment)}`] : []),
+    ...(paymentOptions().find((o) => o.id === order.payment)?.needsReceipt
+      ? ["Te mando el comprobante por acá."]
+      : []),
   ].join("\n");
   return `https://wa.me/${whatsappNumbers[order.branch]}?text=${encodeURIComponent(text)}`;
 }
@@ -1092,23 +1109,85 @@ function Cart({ onClose }: { onClose: () => void }) {
     </Overlay>
   );
 }
+const paymentIcons: Record<PaymentMethodId, ReactNode> = {
+  mercadopago: <Wallet size={24} />,
+  transferencia: <Landmark size={24} />,
+  efectivo: <Banknote size={24} />,
+  tarjeta: <CreditCard size={24} />,
+};
+/** Alias, CBU o titular con un botón para copiarlo de una. */
+function PaymentData({ label, value }: { label: string; value: string }) {
+  const { notify } = useStore();
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      notify(`${label} copiado.`);
+    } catch {
+      // Sin permiso de portapapeles queda a la vista para copiar a mano.
+      notify(`Copiá a mano el ${label.toLowerCase()}: ${value}`);
+    }
+  };
+  return (
+    <div className="payment-data">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <button
+        type="button"
+        className="payment-copy"
+        onClick={copy}
+        aria-label={`Copiar ${label}`}
+      >
+        <Copy size={14} />
+        Copiar
+      </button>
+    </div>
+  );
+}
+/** Cómo pagar, en la pantalla final: el link, los datos y el comprobante. */
+function PaymentBlock({ option }: { option: PaymentOption }) {
+  return (
+    <div className="payment-summary">
+      <b>
+        {paymentIcons[option.id]}
+        {option.label}
+      </b>
+      <p>{option.detail}</p>
+      {option.data.map((d) => (
+        <PaymentData key={d.label} label={d.label} value={d.value} />
+      ))}
+      {option.needsReceipt && (
+        <p className="payment-note">
+          Mandanos el comprobante por WhatsApp con el número de pedido así lo
+          preparamos.
+        </p>
+      )}
+    </div>
+  );
+}
 function Checkout() {
   const { cart, products, branch, placeOrder } = useStore();
   const [name, setName] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Si el local todavía no configuró ninguna, la lista queda vacía y el
+  // checkout se ve igual que antes.
+  const options = paymentOptions();
+  const [method, setMethod] = useState<PaymentMethodId | undefined>(
+    options[0]?.id,
+  );
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    const result = placeOrder("pickup", name);
+    const result = placeOrder("pickup", name, method);
     if (result.error) {
       setError(result.error);
       setBusy(false);
     } else setOrder(result.order!);
   };
-  if (order)
+  if (order) {
+    const chosen = options.find((o) => o.id === order.payment);
     return (
       <main className="checkout-success section">
         <CheckCircle2 size={58} />
@@ -1125,10 +1204,32 @@ function Checkout() {
           Retiro en {order.branch} · {money(order.total)}
         </p>
         <div className="demo-box">
-          No se realizó ningún cobro. Mandá el pedido por WhatsApp y la sucursal
-          te confirma la disponibilidad y el retiro.
+          {chargesRealMoney ? (
+            <>
+              Todavía no se cobró nada. Si pagás con el link o transferís, ese
+              pago es real: confirmá antes con la sucursal que el precio y la
+              disponibilidad están bien.
+            </>
+          ) : (
+            <>
+              No se realizó ningún cobro. Mandá el pedido por WhatsApp y la
+              sucursal te confirma la disponibilidad y el retiro.
+            </>
+          )}
         </div>
+        {chosen && <PaymentBlock option={chosen} />}
         <div className="success-actions">
+          {chosen?.url && (
+            <a
+              className="button button-green"
+              href={chosen.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Pagar con {chosen.label}
+              <ExternalLink size={17} />
+            </a>
+          )}
           <a
             className="button button-green"
             href={whatsappOrderUrl(order)}
@@ -1147,6 +1248,7 @@ function Checkout() {
         </div>
       </main>
     );
+  }
   if (!cart.length)
     return (
       <main className="section empty-state">
@@ -1198,7 +1300,37 @@ function Checkout() {
           <p className="reference-price">
             Los envíos a domicilio se definirán con las sucursales.
           </p>
-          <h2>3. Confirmación</h2>
+          {options.length > 0 && (
+            <>
+              <h2>3. Forma de pago</h2>
+              <div className="payment-options">
+                {options.map((o) => (
+                  <label
+                    className={`payment-option${method === o.id ? " selected" : ""}`}
+                    key={o.id}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={o.id}
+                      checked={method === o.id}
+                      onChange={() => setMethod(o.id)}
+                    />
+                    {paymentIcons[o.id]}
+                    <div>
+                      <b>{o.label}</b>
+                      <span>{o.detail}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <p className="reference-price">
+                No se piden datos de tarjeta en el sitio. Al confirmar te damos
+                el link o los datos para pagar.
+              </p>
+            </>
+          )}
+          <h2>{options.length > 0 ? 4 : 3}. Confirmación</h2>
           <p className="modal-copy">
             Al confirmar, se descuenta el stock de prueba y se crea un pedido
             visible en el panel interno de este navegador.

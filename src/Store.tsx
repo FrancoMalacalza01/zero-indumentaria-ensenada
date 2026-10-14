@@ -5,6 +5,7 @@ import type {
   CartItem,
   Movement,
   Order,
+  PaymentMethodId,
   Product,
   StockChange,
   StoreContextType,
@@ -65,6 +66,7 @@ interface Context extends StoreContextType {
   placeOrder: (
     delivery: "pickup" | "shipping",
     customer: string,
+    payment?: PaymentMethodId,
   ) => { error?: string; order?: Order };
 }
 const StoreContext = createContext<Context | null>(null);
@@ -169,7 +171,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setData(initial());
       notify("Demo restablecida.");
     },
-    placeOrder: (delivery, customer) => {
+    placeOrder: (delivery, customer, payment) => {
       const d = live.current;
       const result = prepareOrder(
         d.products,
@@ -181,7 +183,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         new Date().toISOString(),
       );
       if (result.error) return { error: result.error };
-      const order = result.order as Order;
+      // La forma de pago no entra en prepareOrder: no participa de la
+      // validación ni del descuento de stock.
+      const order = { ...(result.order as Order), payment };
       const sales = buildMovements(
         d.products,
         order.items.map((item) => ({

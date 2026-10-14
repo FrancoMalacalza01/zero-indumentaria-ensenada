@@ -1285,6 +1285,118 @@ svg {
   color: var(--muted);
   margin-top: 7px;
 }
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.payment-option {
+  padding: 17px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.payment-option:hover {
+  border-color: var(--green);
+}
+.payment-option.selected {
+  border-color: var(--green);
+  background: #f9faf6;
+}
+.payment-option input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--green);
+  flex-shrink: 0;
+}
+.payment-option > svg {
+  color: var(--green);
+  flex-shrink: 0;
+}
+.payment-option > div {
+  flex: 1;
+}
+.payment-option b {
+  display: block;
+  font-size: 13px;
+}
+.payment-option span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+.payment-summary {
+  width: 100%;
+  max-width: 440px;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.payment-summary > b {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 14px;
+}
+.payment-summary > b > svg {
+  color: var(--green);
+}
+.payment-summary > p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.payment-data {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+}
+.payment-data > span {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.payment-data > strong {
+  flex: 1;
+  font-size: 13px;
+  word-break: break-all;
+}
+.payment-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  min-height: 36px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  background: #fff;
+  border: 1px solid var(--green);
+}
+.payment-copy:hover {
+  background: var(--accent);
+}
+.payment-note {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #57624b;
+}
 .checkout form > .button {
   width: 100%;
   justify-content: space-between;
