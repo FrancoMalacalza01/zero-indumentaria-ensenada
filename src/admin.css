@@ -170,6 +170,20 @@
   font-weight: 650;
   color: #6f7791;
 }
+/* Conectado: el panel ya no es una demo y la barra lateral lo dice. */
+.admin-demo-note.is-live {
+  background: #eef3ec;
+  border-color: #cfe0cb;
+}
+.admin-demo-note.is-live > svg {
+  color: #3c6b3a;
+}
+.admin-demo-note.is-live > span {
+  color: #44704b;
+  letter-spacing: 0;
+  font-size: 9px;
+  word-break: break-all;
+}
 .admin-back-store {
   border: 0;
   background: none;
@@ -222,6 +236,12 @@
   background: #61709f;
   border-radius: 50%;
 }
+.admin-demo-badge.is-live {
+  color: #3c6b3a;
+}
+.admin-demo-badge.is-live > span {
+  background: #4e8c49;
+}
 .admin-store-link {
   background: none;
   border: 0;
@@ -269,6 +289,23 @@
   margin: 0;
   font-size: 10px;
   line-height: 1.5;
+}
+/* Guardado en el servidor. */
+.admin-local-banner.admin-banner-ok {
+  color: #3f6b3d;
+  border-color: #cfe0cb;
+  background: #eef3ec;
+}
+/* No se guardó. Tiene que saltar a la vista, no pasar por aviso. */
+.admin-local-banner.admin-banner-error {
+  color: #8a1f36;
+  border-color: #e9c3cc;
+  background: #fcf0f2;
+}
+.admin-local-banner.admin-banner-error .admin-text-button {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #8a1f36;
 }
 .admin-page-heading {
   display: flex;

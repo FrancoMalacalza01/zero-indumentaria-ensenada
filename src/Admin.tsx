@@ -10,10 +10,12 @@ import {
   ChevronDown,
   CircleHelp,
   ClipboardList,
+  CloudUpload,
   History,
   ImagePlus,
   KeyRound,
   LayoutDashboard,
+  LogOut,
   MapPin,
   Minus,
   Package,
@@ -45,6 +47,8 @@ import {
   resetAdminPassword,
   setAdminPassword,
 } from "./adminAccess";
+import { useServerPanel } from "./useServerPanel";
+import type { Session } from "./auth";
 import "./admin.css";
 
 type Tab = "overview" | "sale" | "inventory" | "stock" | "movements" | "orders";
@@ -107,11 +111,20 @@ const dateLabel = (date: string) =>
 export default function Admin({
   onExit,
   onPreview,
+  session,
+  onLogout,
 }: {
   /** Salir del panel y volver a la tienda. */
   onExit: () => void;
   /** Mirar la tienda sin salir del panel: se abre en otra pestaña. */
   onPreview: () => void;
+  /**
+   * La sesión del servidor. Con sesión el panel publica; sin ella trabaja en
+   * modo demo, en este navegador y nada más.
+   */
+  session: Session | null;
+  /** Cerrar sesión y volver al login. */
+  onLogout: () => void;
 }) {
   const {
     products,
@@ -124,6 +137,9 @@ export default function Admin({
     recordMovements,
     catalogSource,
   } = useStore();
+  // Todo lo que el panel manda al servidor sale por acá. Sin sesión, estas
+  // funciones no hacen nada y el panel se comporta como la demo de antes.
+  const panel = useServerPanel(session, onLogout);
   const [tab, setTab] = useState<Tab>("overview");
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -193,16 +209,32 @@ export default function Admin({
           reason: exists ? "Ajuste" : "Ingreso",
         });
     });
-    if (changes.length) recordMovements(changes);
+    const asentado = changes.length ? recordMovements(changes) : null;
+    // El producto se publica siempre; los movimientos solo si hubo. Y en ese
+    // orden: el stock del servidor cuelga del producto.
+    const lista = asentado?.products || products;
+    const posicion = Math.max(
+      0,
+      lista.findIndex((p) => p.id === product.id),
+    );
+    panel.publicar(product, posicion);
+    if (asentado?.movements.length) panel.publicarMovimientos(asentado.movements);
     notify(
-      exists
-        ? "Producto actualizado en la tienda"
-        : "Producto agregado a la tienda",
+      panel.conectado
+        ? exists
+          ? "Producto actualizado y publicado"
+          : "Producto agregado y publicado"
+        : exists
+          ? "Producto actualizado en la tienda"
+          : "Producto agregado a la tienda",
     );
     closeEditor();
   }
   function setOrderStatus(id: string, status: Order["status"]) {
-    setOrders(orders.map((o) => (o.id === id ? { ...o, status } : o)));
+    const siguientes = orders.map((o) => (o.id === id ? { ...o, status } : o));
+    setOrders(siguientes);
+    const cambiado = siguientes.find((o) => o.id === id);
+    if (cambiado) panel.publicarPedido(cambiado);
     notify("Estado del pedido actualizado");
   }
   function exportStock() {
@@ -326,12 +358,24 @@ export default function Admin({
           </button>
         </nav>
         <div className="admin-sidebar-bottom">
-          <div className="admin-demo-note">
-            <CircleHelp size={19} />
-            <strong>Un vistazo a tu próxima tienda</strong>
-            <p>Explorá la gestión de productos, stock y pedidos.</p>
-            <span>PROTOTIPO INTERACTIVO</span>
-          </div>
+          {panel.conectado ? (
+            <div className="admin-demo-note is-live">
+              <CloudUpload size={19} />
+              <strong>Tu tienda, en vivo</strong>
+              <p>
+                Los productos, el stock y los pedidos salen del servidor y
+                vuelven a él.
+              </p>
+              <span>{session?.email}</span>
+            </div>
+          ) : (
+            <div className="admin-demo-note">
+              <CircleHelp size={19} />
+              <strong>Un vistazo a tu próxima tienda</strong>
+              <p>Explorá la gestión de productos, stock y pedidos.</p>
+              <span>PROTOTIPO INTERACTIVO</span>
+            </div>
+          )}
           <button className="admin-back-store" onClick={onExit}>
             <ArrowLeft size={17} /> Volver a la tienda
           </button>
@@ -348,8 +392,10 @@ export default function Admin({
             </span>
           </div>
           <div className="admin-topbar-right">
-            <span className="admin-demo-badge">
-              <span /> Modo demo
+            <span
+              className={`admin-demo-badge ${panel.conectado ? "is-live" : ""}`}
+            >
+              <span /> {panel.conectado ? "Conectado" : "Modo demo"}
             </span>
             <button
               className="admin-store-link"
@@ -358,37 +404,72 @@ export default function Admin({
             >
               Ver tienda <ArrowUpRight size={15} />
             </button>
-            {adminLocked && (
+            {adminLocked && !panel.conectado && (
               <button
                 className="admin-avatar"
                 onClick={() => setPasswordOpen(true)}
-                title="Cambiar la contraseña del panel"
-                aria-label="Cambiar la contraseña del panel"
+                title="Cambiar la contraseña del modo demo"
+                aria-label="Cambiar la contraseña del modo demo"
               >
                 <KeyRound size={15} />
               </button>
             )}
+            <button
+              className="admin-avatar"
+              onClick={onLogout}
+              title={panel.conectado ? "Cerrar sesión" : "Salir del modo demo"}
+              aria-label={
+                panel.conectado ? "Cerrar sesión" : "Salir del modo demo"
+              }
+            >
+              <LogOut size={15} />
+            </button>
           </div>
         </header>
         <main className="admin-main">
-          <div className="admin-local-banner">
-            <CircleHelp size={16} />
-            <p>
-              {catalogSource === "servidor" ? (
-                <>
-                  El catálogo que ve el cliente ya viene del servidor. Lo que
-                  edites <b>acá</b> todavía se guarda solo en este navegador y
-                  no se publica: para eso falta el acceso con usuario.
-                </>
-              ) : (
-                <>
-                  Demostración. La contraseña tapa esta pantalla, no los datos:
-                  los cambios se guardan solo en este navegador y no se
-                  procesan compras reales.
-                </>
-              )}
-            </p>
-          </div>
+          {panel.conectado ? (
+            panel.estado === "error" ? (
+              <div className="admin-local-banner admin-banner-error" role="alert">
+                <TriangleAlert size={16} />
+                <p>
+                  <b>Esto no quedó guardado en el servidor.</b> {panel.error}
+                </p>
+                <button className="admin-text-button" onClick={panel.recargar}>
+                  Reintentar
+                </button>
+              </div>
+            ) : (
+              <div className="admin-local-banner admin-banner-ok">
+                <CloudUpload size={16} />
+                <p>
+                  {panel.estado === "guardando"
+                    ? "Guardando en el servidor…"
+                    : panel.estado === "cargando"
+                      ? "Trayendo los datos del servidor…"
+                      : "Conectado. Lo que cargues acá se publica en la tienda."}
+                </p>
+              </div>
+            )
+          ) : (
+            <div className="admin-local-banner">
+              <CircleHelp size={16} />
+              <p>
+                {catalogSource === "servidor" ? (
+                  <>
+                    <b>Modo demo.</b> El catálogo que ve el cliente viene del
+                    servidor, pero lo que edites acá se guarda solo en este
+                    navegador y no se publica. Para publicar hay que entrar con
+                    usuario.
+                  </>
+                ) : (
+                  <>
+                    <b>Modo demo.</b> Los cambios se guardan solo en este
+                    navegador, no se publican y no se procesan compras reales.
+                  </>
+                )}
+              </p>
+            </div>
+          )}
           <div className="admin-page-heading">
             <div>
               <span className="admin-eyebrow">ENSENADA</span>
@@ -693,13 +774,20 @@ export default function Admin({
                           <button
                             className={`admin-publish-status ${p.active ? "is-published" : ""}`}
                             onClick={() => {
-                              setProducts(
-                                products.map((product) =>
-                                  product.id === p.id
-                                    ? { ...product, active: !product.active }
-                                    : product,
-                                ),
+                              const siguientes = products.map((product) =>
+                                product.id === p.id
+                                  ? { ...product, active: !product.active }
+                                  : product,
                               );
+                              setProducts(siguientes);
+                              const cambiado = siguientes.find(
+                                (x) => x.id === p.id,
+                              );
+                              if (cambiado)
+                                panel.publicar(
+                                  cambiado,
+                                  siguientes.indexOf(cambiado),
+                                );
                               notify(
                                 p.active
                                   ? "Producto ocultado de la tienda"
@@ -765,7 +853,8 @@ export default function Admin({
             <SaleRegister
               products={activeProducts}
               onSell={(changes, label) => {
-                applyStock(changes);
+                const { products: siguientes, movements } = applyStock(changes);
+                panel.publicarStock(siguientes, movements);
                 notify(label);
               }}
             />
@@ -775,7 +864,8 @@ export default function Admin({
             <StockLoader
               products={activeProducts}
               onApply={(changes, label) => {
-                applyStock(changes);
+                const { products: siguientes, movements } = applyStock(changes);
+                panel.publicarStock(siguientes, movements);
                 notify(label);
               }}
             />
@@ -789,7 +879,11 @@ export default function Admin({
                   <h2>
                     Pedidos de la tienda <span>{orders.length}</span>
                   </h2>
-                  <p>Compras simuladas, guardadas en este navegador.</p>
+                  <p>
+                    {panel.conectado
+                      ? "Pedidos guardados en el servidor."
+                      : "Compras simuladas, guardadas en este navegador."}
+                  </p>
                 </div>
               </div>
               <div className="admin-filters">

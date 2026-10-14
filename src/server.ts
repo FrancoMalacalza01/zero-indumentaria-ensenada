@@ -6,15 +6,16 @@ import type { Product } from "./types";
  *
  * Las credenciales de abajo son **públicas a propósito**: viajan en el sitio,
  * como en cualquier tienda hecha así. Lo que protege los datos no es la clave
- * sino los permisos de la base, que hoy dejan leer solo lo publicado y no
- * dejan escribir nada a nadie. Nunca poner acá la clave de servicio.
+ * sino los permisos de la base: con esta clave se lee solo lo publicado, y
+ * para escribir hay que estar logueado Y estar en la tabla `admins`.
+ * Nunca poner acá la clave de servicio.
  *
  * Se pueden pisar sin tocar el código con las variables VITE_SUPABASE_URL y
  * VITE_SUPABASE_KEY, que es lo que conviene para rotarlas.
  */
-const URL_SERVIDOR =
+export const URL_SERVIDOR =
   import.meta.env.VITE_SUPABASE_URL || "https://wveldpcacjgupzrxolgn.supabase.co";
-const CLAVE_PUBLICA =
+export const CLAVE_PUBLICA =
   import.meta.env.VITE_SUPABASE_KEY ||
   "sb_publishable_P2S-V2Tq2T0yxO-KpfQFJQ_60kSF7Hi";
 

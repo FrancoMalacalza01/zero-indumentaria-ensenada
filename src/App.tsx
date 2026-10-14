@@ -1568,12 +1568,16 @@ export default function App() {
     return (
       <Suspense fallback={<div className="loading">Cargando panel…</div>}>
         <AdminGate onExit={() => navigate("/")}>
-          <Admin
-            onExit={() => navigate("/")}
-            onPreview={() =>
-              window.open("/", "_blank", "noopener,noreferrer")
-            }
-          />
+          {({ session, salir }) => (
+            <Admin
+              session={session}
+              onLogout={salir}
+              onExit={() => navigate("/")}
+              onPreview={() =>
+                window.open("/", "_blank", "noopener,noreferrer")
+              }
+            />
+          )}
         </AdminGate>
       </Suspense>
     );

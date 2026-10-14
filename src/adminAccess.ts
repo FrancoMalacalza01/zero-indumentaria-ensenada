@@ -1,6 +1,11 @@
 /**
  * Traba del panel interno (`/admin`).
  *
+ * OJO: esto NO es la forma principal de entrar. Es el modo demo, la salida
+ * de emergencia para cuando no se puede llegar al servidor. El acceso de
+ * verdad vive en `auth.ts`: usuario y contraseña verificados afuera, y
+ * permisos de base que deciden qué se puede escribir.
+ *
  * QUÉ ES Y QUÉ NO ES. Esto evita que alguien entre al panel de casualidad o
  * curioseando: sin la contraseña, la pantalla no se abre. No es control de
  * acceso de verdad, y conviene tenerlo claro:
@@ -12,9 +17,9 @@
  * - Los datos de la demo viven en el `localStorage` del navegador y se leen
  *   sin contraseña. Esto tapa la pantalla, no los datos.
  *
- * El acceso de verdad, con usuario, contraseña y roles en un servidor, es
- * Etapa 2: ahí la contraseña se verifica del lado del servidor y los datos
- * dejan de estar en el navegador del visitante.
+ * Con el acceso de verdad (`auth.ts`) nada de esto aplica: la contraseña no
+ * viaja ni como hash, se verifica en el servidor, y los datos del panel
+ * dejan de estar en el navegador.
  *
  * CÓMO CAMBIARLA: desde el panel, con el botón de arriba a la derecha. Esa
  * contraseña queda guardada en el navegador donde la cambiaste y pisa a la de

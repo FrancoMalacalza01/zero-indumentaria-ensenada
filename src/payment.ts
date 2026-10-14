@@ -5,9 +5,10 @@ import type { PaymentMethodId } from "./types";
  * pedido sigue saliendo por WhatsApp y el pago se arregla en la conversación,
  * como hasta ahora.
  *
- * Sin servidor propio no se puede cobrar el total exacto de la bolsa de forma
- * automática: para eso Mercado Pago tiene que hablar con un backend nuestro,
- * que es Etapa 2. Lo que sí funciona hoy, sin backend:
+ * Cobrar el total exacto de la bolsa de forma automática es otra cosa: para
+ * eso Mercado Pago tiene que hablar con un servidor nuestro, porque el token
+ * de la cuenta no puede vivir en el navegador. El servidor que ya hay guarda
+ * el catálogo, no cobra. Lo que sí funciona hoy:
  *
  * - `mercadoPagoUrl`: el link de pago que genera Mercado Pago (Cobrar → Link
  *   de pago). Lleva el monto con el que lo creaste, así que sirve para una
@@ -32,7 +33,7 @@ export const payment = {
    *
    * Un cobro de verdad dentro del sitio, con el QR que se arma solo por cada
    * pedido, necesita darse de alta como comercio en Banco Provincia y que un
-   * servidor nuestro hable con el banco. Eso es Etapa 2.
+   * servidor nuestro hable con el banco. Eso no está hecho.
    */
   cuentaDniAlias: "",
   cuentaDniQr: "",

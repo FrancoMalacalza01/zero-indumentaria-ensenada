@@ -64,16 +64,38 @@ function restore(): Data {
   }
   return initial();
 }
+/** Lo que quedó después de tocar el stock. */
+export interface Asentado {
+  movements: Movement[];
+  products: Product[];
+}
 interface Context extends StoreContextType {
   /** De dónde salió el catálogo que se está mostrando. */
   catalogSource: "servidor" | "local";
   favorites: string[];
   movements: Movement[];
   toggleFavorite: (id: string) => void;
-  /** Aplica cambios de stock y los deja asentados en el historial. */
-  applyStock: (changes: StockChange[]) => void;
+  /**
+   * Pisa productos, pedidos e historial con lo que vino del servidor.
+   *
+   * Es un solo cambio a propósito: con tres por separado el panel quedaba un
+   * instante con los productos nuevos y los pedidos viejos.
+   */
+  cargarDesdeServidor: (datos: {
+    products: Product[];
+    orders: Order[];
+    movements: Movement[];
+  }) => void;
+  /**
+   * Aplica cambios de stock y los deja asentados en el historial.
+   *
+   * Devuelve los movimientos que creó y los productos como quedaron, para
+   * que el panel pueda publicar exactamente eso en el servidor en vez de
+   * tener que adivinarlo de nuevo.
+   */
+  applyStock: (changes: StockChange[]) => Asentado;
   /** Solo asienta el historial, para cuando el stock ya quedó guardado. */
-  recordMovements: (changes: StockChange[]) => void;
+  recordMovements: (changes: StockChange[]) => Asentado;
   placeOrder: (
     delivery: "pickup" | "shipping",
     customer: string,
@@ -127,8 +149,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [catalogSource, setCatalogSource] = useState<"servidor" | "local">(
     "local",
   );
+  // Espejo del estado al día, para poder leerlo en el mismo tick en que se
+  // escribe. Sin esto, dos cambios seguidos (guardar un producto y asentar su
+  // movimiento, por ejemplo) se pisan: el segundo parte del estado viejo.
   const live = useRef(data);
   live.current = data;
+  /**
+   * Único camino para cambiar el estado. Calcula sobre el espejo, lo
+   * actualiza y recién después avisa a React. Así el que llama puede seguir
+   * trabajando con lo que quedó, sin esperar un render.
+   */
+  const actualizar = (cambio: (d: Data) => Data) => {
+    const next = cambio(live.current);
+    live.current = next;
+    setData(next);
+    return next;
+  };
   const [toast, setToast] = useState("");
   const [storageError, setStorageError] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -144,7 +180,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let vigente = true;
     fetchCatalog().then((productos) => {
       if (!vigente || !productos) return;
-      setData((d) => ({ ...d, products: productos }));
+      actualizar((d) => ({ ...d, products: productos }));
       setCatalogSource("servidor");
     });
     return () => {
@@ -163,29 +199,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     ...data,
     catalogSource,
     notify,
-    setProducts: (products) => setData((d) => ({ ...d, products })),
-    setOrders: (orders) => setData((d) => ({ ...d, orders })),
-    setCart: (cart) => setData((d) => ({ ...d, cart })),
-    recordMovements: (changes) =>
-      setData((d) => ({
-        ...d,
-        movements: [...buildMovements(d.products, changes), ...d.movements],
-      })),
-    applyStock: (changes) =>
-      setData((d) => ({
-        ...d,
-        products: applyToProducts(d.products, changes),
-        movements: [...buildMovements(d.products, changes), ...d.movements],
-      })),
+    setProducts: (products) => actualizar((d) => ({ ...d, products })),
+    setOrders: (orders) => actualizar((d) => ({ ...d, orders })),
+    setCart: (cart) => actualizar((d) => ({ ...d, cart })),
+    recordMovements: (changes) => {
+      let movements: Movement[] = [];
+      const next = actualizar((d) => {
+        movements = buildMovements(d.products, changes);
+        return { ...d, movements: [...movements, ...d.movements] };
+      });
+      return { movements, products: next.products };
+    },
+    applyStock: (changes) => {
+      let movements: Movement[] = [];
+      const next = actualizar((d) => {
+        movements = buildMovements(d.products, changes);
+        return {
+          ...d,
+          products: applyToProducts(d.products, changes),
+          movements: [...movements, ...d.movements],
+        };
+      });
+      return { movements, products: next.products };
+    },
+    cargarDesdeServidor: ({ products, orders, movements }) =>
+      actualizar((d) => ({ ...d, products, orders, movements })),
     toggleFavorite: (id) =>
-      setData((d) => ({
+      actualizar((d) => ({
         ...d,
         favorites: d.favorites.includes(id)
           ? d.favorites.filter((x) => x !== id)
           : [...d.favorites, id],
       })),
     resetDemo: () => {
-      setData(initial());
+      actualizar(() => initial());
       notify("Demo restablecida.");
     },
     placeOrder: (delivery, customer, payment, zone) => {
@@ -217,15 +264,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })),
         order.date,
       );
-      const next = {
-        ...d,
+      actualizar((prev) => ({
+        ...prev,
         products: result.products as Product[],
-        orders: [order, ...d.orders],
+        orders: [order, ...prev.orders],
         cart: [],
-        movements: [...sales, ...d.movements],
-      };
-      live.current = next;
-      setData(next);
+        movements: [...sales, ...prev.movements],
+      }));
       return { order };
     },
   };

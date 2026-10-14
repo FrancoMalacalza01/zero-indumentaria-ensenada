@@ -1565,6 +1565,33 @@ svg {
 .admin-gate .button:disabled {
   opacity: 0.6;
 }
+/* La salida de emergencia cuando no hay servidor: visible, pero segunda. */
+.admin-gate-demo {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.admin-gate-demo:hover {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+.admin-gate-checking {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.admin-gate-checking > svg {
+  color: var(--brand);
+}
 @media (min-width: 1600px) {
   .hero-content {
     padding-top: 90px;
