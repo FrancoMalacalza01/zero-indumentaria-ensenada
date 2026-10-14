@@ -26,7 +26,7 @@ pnpm preview
 - `/favoritos`: productos guardados.
 - `/checkout`: compra de demostración con retiro en la sucursal seleccionada.
 - `/sucursales`: La Plata y Ensenada, con contacto por Instagram.
-- `/admin`: resumen, alta/edición de productos, imagen, precios, stock por talle y sucursal, publicación, exportación CSV y estados de pedidos.
+- `/admin`: pide contraseña (ver abajo). Resumen, alta/edición de productos, imagen, precios, stock por talle y sucursal, publicación, exportación CSV y estados de pedidos.
 
 Una compra descuenta el stock de la sucursal y talle seleccionados. El pedido aparece inmediatamente en administración. Cambiar de sucursal vacía la bolsa para evitar mezclar disponibilidades. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
 
@@ -43,6 +43,37 @@ derivó del verde anterior conservando la luminosidad de cada color y girando
 solo el tono, así que los contrastes no empeoraron. Quedaron fuera a propósito
 los colores con significado: entrada y salida de stock, error y alerta de stock
 bajo.
+## Contraseña del panel
+
+`/admin` pide una contraseña antes de mostrar nada. Se cambia así:
+
+```sh
+node scripts/clave-admin.mjs "la nueva clave"
+```
+
+El script imprime un bloque con el hash y la sal; se pega en
+`src/adminAccess.ts`, reemplazando el que está. Sin argumento inventa una
+contraseña y la muestra. Dejando `hash` y `salt` vacíos, el panel vuelve a
+abrirse sin contraseña.
+
+La contraseña no se guarda en ningún lado: lo que viaja al navegador es un
+hash PBKDF2-SHA256 con 310.000 vueltas, y del hash no se vuelve a la
+contraseña. Queda desbloqueado mientras dure la pestaña; al cerrarla, la pide
+de nuevo.
+
+**Qué es y qué no es.** Esto evita que alguien entre de casualidad o
+curioseando. No es control de acceso de verdad, por dos motivos que conviene
+decir antes de que los descubra el cliente:
+
+- El hash viaja en el sitio, como todo el código. No se puede volver de ahí a
+  la contraseña, pero sí probar contraseñas contra él sin límite y sin que nos
+  enteremos. La traba vale lo que valga la contraseña: una corta o adivinable
+  no sirve.
+- Los datos de la demo están en el `localStorage` del navegador y se leen sin
+  contraseña. Esto tapa la pantalla, no los datos.
+
+El acceso de verdad, con usuario, contraseña y roles verificados en un
+servidor, es Etapa 2.
 
 ## Formas de pago
 
@@ -71,7 +102,7 @@ alias vacíos: con uno cargado, un visitante puede pagar de verdad.
 
 ## Alcance de la demo
 
-Todos los cambios se guardan en `localStorage` (`mistral-local-demo-v1`). No hay servidor, sincronización entre dispositivos, autenticación, cobros procesados por el sitio, correos ni reservas reales: las formas de pago son un link y unos datos para transferir, el sitio no cobra ni confirma nada. El panel es público por diseño para presentar la propuesta. No usar para gestionar stock o pedidos reales.
+Todos los cambios se guardan en `localStorage` (`mistral-local-demo-v1`). No hay servidor, sincronización entre dispositivos, autenticación, cobros procesados por el sitio, correos ni reservas reales: las formas de pago son un link y unos datos para transferir, el sitio no cobra ni confirma nada. No usar para gestionar stock o pedidos reales.
 
 Precios, imágenes y talles iniciales tomados del catálogo nacional como referencia; **el stock de ambas sucursales es ficticio**. Las direcciones, los horarios, las condiciones de entrega y los medios de pago deben confirmarse con el dueño. No se inventaron direcciones locales.
 

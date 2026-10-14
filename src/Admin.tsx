@@ -351,8 +351,9 @@ export default function Admin({ onExit }: { onExit: () => void }) {
           <div className="admin-local-banner">
             <CircleHelp size={16} />
             <p>
-              Demostración sin autenticación. Los cambios se guardan solo en
-              este navegador; no se procesan compras reales.
+              Demostración. La contraseña tapa esta pantalla, no los datos:
+              los cambios se guardan solo en este navegador y no se procesan
+              compras reales.
             </p>
           </div>
           <div className="admin-page-heading">

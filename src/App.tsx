@@ -38,6 +38,7 @@ import {
   type PaymentOption,
 } from "./payment";
 const Admin = lazy(() => import("./Admin"));
+const AdminGate = lazy(() => import("./AdminGate"));
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
 // Número de WhatsApp de cada sucursal, en formato internacional y sin el "+"
 // (por ejemplo "5492211234567"). Mientras queden vacíos, el pedido se abre en
@@ -1504,7 +1505,9 @@ export default function App() {
   if (path === "/admin")
     return (
       <Suspense fallback={<div className="loading">Cargando panel…</div>}>
-        <Admin onExit={() => navigate("/")} />
+        <AdminGate onExit={() => navigate("/")}>
+          <Admin onExit={() => navigate("/")} />
+        </AdminGate>
       </Suspense>
     );
   return (

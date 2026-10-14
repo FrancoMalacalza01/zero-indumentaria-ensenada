@@ -1531,6 +1531,46 @@ svg {
   place-items: center;
   color: var(--brand);
 }
+.admin-gate {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 40px 16px;
+  background: var(--paper);
+}
+.admin-gate form {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 38px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  align-items: flex-start;
+}
+/* Solo el candado: la flecha del botón tiene que seguir siendo blanca. */
+.admin-gate form > svg {
+  color: var(--brand);
+}
+.admin-gate h1 {
+  font-size: 1.6rem;
+}
+.admin-gate p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.admin-gate .field {
+  width: 100%;
+}
+.admin-gate .button {
+  width: 100%;
+  justify-content: space-between;
+}
+.admin-gate .button:disabled {
+  opacity: 0.6;
+}
 @media (min-width: 1600px) {
   .hero-content {
     padding-top: 90px;
