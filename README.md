@@ -30,6 +30,22 @@ pnpm preview
 
 Una compra descuenta el stock del talle seleccionado. El pedido aparece inmediatamente en administración. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
 
+## Venta del mostrador
+
+La pantalla **Venta del día** del panel es para descontar lo que se vende en el
+local, que es la mayor parte. Se busca la prenda, se toca el talle y cada toque
+suma una unidad al ticket; abajo de cada talle dice cuántas quedan, y el que no
+tiene stock no se puede tocar. Una misma venta puede llevar varias prendas y
+varios talles.
+
+Al confirmar baja del stock y quedan los movimientos asentados con motivo
+**Venta** y un número (`V-…`) que es el mismo para todo lo que se llevó la
+misma persona, así en Movimientos se ve qué salió junto.
+
+No se toca plata: el módulo es para saber qué queda, no para registrar
+ingresos. Los motivos manuales de `Cargar stock` siguen siendo Ingreso,
+Devolución, Rotura y Ajuste; las ventas no se cargan ahí.
+
 ## Paleta
 
 El azul y el rojo salen del logo oficial (`public/images/mistral-logo.png`),
