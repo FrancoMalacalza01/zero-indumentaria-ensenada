@@ -40,9 +40,9 @@ Para reiniciar la demo, borrar los datos de este sitio en el navegador. No ingre
 
 ## Publicación en Vercel
 
-Importar `Serran0Juan/Mistral-la-plata`, usar la raíz del repositorio, preset **Vite**, comando `pnpm build` y salida `dist`. `vercel.json` ya configura el frontend y las rutas de la aplicación. No requiere variables de entorno.
+El proyecto es [`mistral-la-plata`](https://vercel.com/frannn-m/mistral-la-plata), conectado a `FrancoMalacalza01/Mistral-la-plata`. Producción: https://mistral-la-plata-lime.vercel.app/ (sale de `main`). Para rearmarlo: importar `FrancoMalacalza01/Mistral-la-plata`, usar la raíz del repositorio, preset **Vite**, comando `pnpm build` y salida `dist`. `vercel.json` ya configura el frontend y las rutas de la aplicación. No requiere variables de entorno.
 
-El HTML tiene `noindex,nofollow` para mantener el prototipo fuera de los buscadores. Esto no constituye control de acceso.
+El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `public/robots.txt` pide no indexar `/admin`, lo que no constituye control de acceso. Para volver a esconderlo de los buscadores, agregar `<meta name="robots" content="noindex,nofollow" />` en `index.html`. Conviene hacerlo mientras el catálogo sea de ejemplo y no esté confirmado el uso del nombre y las fotos de Mistral.
 
 ## Validación
 
