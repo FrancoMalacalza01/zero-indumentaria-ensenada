@@ -90,7 +90,15 @@ const dateLabel = (date: string) =>
     month: "short",
   });
 
-export default function Admin({ onExit }: { onExit: () => void }) {
+export default function Admin({
+  onExit,
+  onPreview,
+}: {
+  /** Salir del panel y volver a la tienda. */
+  onExit: () => void;
+  /** Mirar la tienda sin salir del panel: se abre en otra pestaña. */
+  onPreview: () => void;
+}) {
   const {
     products,
     setProducts,
@@ -319,7 +327,11 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             <span className="admin-demo-badge">
               <span /> Modo demo
             </span>
-            <button className="admin-store-link" onClick={onExit}>
+            <button
+              className="admin-store-link"
+              onClick={onPreview}
+              title="Abre la tienda en otra pestaña"
+            >
               Ver tienda <ArrowUpRight size={15} />
             </button>
             <span className="admin-avatar" aria-label="Administración Mistral">

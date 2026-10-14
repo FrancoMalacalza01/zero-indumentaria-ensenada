@@ -1254,9 +1254,6 @@ function Checkout() {
           <Link className="text-link" to="/tienda">
             Seguir explorando <ArrowRight size={18} />
           </Link>
-          <Link className="text-link" to="/admin">
-            Ver pedido en el panel
-          </Link>
         </div>
       </main>
     );
@@ -1526,15 +1523,6 @@ function Footer() {
           </a>
           <Link to="/favoritos">Mis favoritos</Link>
         </div>
-        <div className="footer-prototype">
-          <h3>CONOCÉ EL PROTOTIPO</h3>
-          <p>
-            Probá el catálogo, una compra y la gestión del stock.
-          </p>
-          <Link className="admin-link" to="/admin">
-            Panel interno · Demo <ArrowRight size={16} />
-          </Link>
-        </div>
       </div>
       <div className="footer-bottom">
         <span>© {new Date().getFullYear()} Mistral Ensenada</span>
@@ -1580,7 +1568,12 @@ export default function App() {
     return (
       <Suspense fallback={<div className="loading">Cargando panel…</div>}>
         <AdminGate onExit={() => navigate("/")}>
-          <Admin onExit={() => navigate("/")} />
+          <Admin
+            onExit={() => navigate("/")}
+            onPreview={() =>
+              window.open("/", "_blank", "noopener,noreferrer")
+            }
+          />
         </AdminGate>
       </Suspense>
     );

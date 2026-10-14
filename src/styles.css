@@ -653,7 +653,7 @@ svg {
 }
 .footer-top {
   display: grid;
-  grid-template-columns: 1.4fr 0.8fr 1fr 1.3fr;
+  grid-template-columns: 1.4fr 0.8fr 1fr;
   gap: 40px;
   padding-bottom: 48px;
 }
@@ -691,20 +691,6 @@ svg {
   gap: 9px;
   font-size: 11px;
   margin-top: 19px;
-}
-.footer-prototype p {
-  font-size: 12px;
-  line-height: 1.8;
-  color: #abb1c4;
-  max-width: 230px;
-}
-.footer .footer-prototype .admin-link {
-  display: inline-flex;
-  gap: 15px;
-  align-items: center;
-  border-bottom: 1px solid #ffffff55;
-  padding-bottom: 7px;
-  margin-top: 20px;
 }
 .footer-bottom {
   border-top: 1px solid #ffffff20;
@@ -1620,17 +1606,6 @@ svg {
     gap: 30px;
     grid-template-columns: 1.2fr 0.8fr 1fr;
   }
-  .footer-prototype {
-    grid-column: 1/-1;
-    padding-top: 10px;
-    border-top: 1px solid #ffffff20;
-  }
-  .footer-prototype p {
-    max-width: none;
-  }
-  .footer-prototype h3 {
-    margin-bottom: 12px;
-  }
   .detail-grid {
     gap: 5%;
   }
@@ -1921,12 +1896,6 @@ svg {
   .footer-top > div > a:not(.social-link) {
     font-size: 11px;
     margin-bottom: 12px;
-  }
-  .footer-prototype {
-    padding-top: 23px;
-  }
-  .footer-prototype p {
-    font-size: 11px;
   }
   .footer-bottom {
     display: flex;

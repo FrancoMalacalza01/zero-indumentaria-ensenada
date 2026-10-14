@@ -26,7 +26,7 @@ pnpm preview
 - `/favoritos`: productos guardados.
 - `/checkout`: compra de demostración, con retiro en el local o envío a La Plata, Berisso o Ensenada.
 - `/sucursales`: el local de Ensenada, con contacto por Instagram.
-- `/admin`: pide contraseña (ver abajo). Resumen, alta/edición de productos, imagen, precios, stock por talle, publicación, exportación CSV y estados de pedidos.
+- `/admin`: no está enlazado desde la tienda; se entra escribiendo la dirección. Pide contraseña (ver abajo). Resumen, alta/edición de productos, imagen, precios, stock por talle, publicación, exportación CSV y estados de pedidos.
 
 Una compra descuenta el stock del talle seleccionado. El pedido aparece inmediatamente en administración. Si un producto se oculta o se reduce su stock desde administración, se vuelve a validar la bolsa antes de confirmar.
 
@@ -59,6 +59,15 @@ los datos estructurados de `index.html`, que es lo que lee Google, junto con
 las tres ciudades como zona de cobertura.
 
 ## Contraseña del panel
+
+La tienda y el panel están separados: **ninguna página pública enlaza a
+`/admin`**. Un cliente que recorre el sitio no se entera de que existe. Se
+entra escribiendo la dirección a mano.
+
+En el sentido inverso sí hay paso: desde el panel, **"Ver tienda"** (arriba a
+la derecha) abre la tienda en otra pestaña, así el admin la mira sin perder lo
+que estaba haciendo, y **"Volver a la tienda"** (abajo a la izquierda) sale del
+panel.
 
 `/admin` pide una contraseña antes de mostrar nada. Se cambia así:
 
