@@ -89,6 +89,6 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 ## Imágenes y referencias
 
-Marca y fotografías: [Mistral Argentina](https://www.mistral.com.ar/). Contacto local: [@mistral_laplata](https://www.instagram.com/mistral_laplata/). La procedencia detallada está en `docs/asset-sources.json`; las fotos usadas están en `public/images`. Su uso aquí es para la presentación del prototipo; confirmar con la marca el uso en la tienda final.
+Marca y fotografías: [Mistral Argentina](https://www.mistral.com.ar/). Contacto local: [@mistral.zero.indumentaria](https://www.instagram.com/mistral.zero.indumentaria/). La procedencia detallada está en `docs/asset-sources.json`; las fotos usadas están en `public/images`. Su uso aquí es para la presentación del prototipo; confirmar con la marca el uso en la tienda final.
 
 La siguiente etapa requiere backend, autenticación y roles, inventario transaccional, catálogo real de las sucursales, medios de pago y logística.

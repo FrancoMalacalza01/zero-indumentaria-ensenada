@@ -38,7 +38,7 @@ import {
   type PaymentOption,
 } from "./payment";
 const Admin = lazy(() => import("./Admin"));
-const instagram = "https://www.instagram.com/mistral_laplata/";
+const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
 // Número de WhatsApp de cada sucursal, en formato internacional y sin el "+"
 // (por ejemplo "5492211234567"). Mientras queden vacíos, el pedido se abre en
 // WhatsApp con el mensaje escrito y la persona elige el contacto a mano.
@@ -1433,7 +1433,7 @@ function Footer() {
             rel="noreferrer"
           >
             <Instagram size={18} />
-            @mistral_laplata
+            @mistral.zero.indumentaria
           </a>
         </div>
         <div>
