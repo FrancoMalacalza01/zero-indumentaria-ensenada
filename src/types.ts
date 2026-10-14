@@ -33,6 +33,33 @@ export interface Order {
   status: "Pendiente" | "Preparando" | "Listo para retirar" | "Completado";
   customer: string;
 }
+export type MovementReason =
+  | "Ingreso"
+  | "Venta"
+  | "Ajuste"
+  | "Rotura"
+  | "Devolución";
+/** Cada cambio de stock queda registrado: nada se edita sin dejar rastro. */
+export interface Movement {
+  id: string;
+  date: string;
+  productId: string;
+  productName: string;
+  size: string;
+  branch: Branch;
+  /** Positivo suma al stock, negativo lo descuenta. */
+  delta: number;
+  reason: MovementReason;
+  orderId?: string;
+}
+export interface StockChange {
+  productId: string;
+  size: string;
+  branch: Branch;
+  delta: number;
+  reason: MovementReason;
+  orderId?: string;
+}
 export interface StoreContextType {
   products: Product[];
   setProducts: (products: Product[]) => void;

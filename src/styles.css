@@ -2029,3 +2029,87 @@ svg {
     padding-top: 225px;
   }
 }
+
+/* ---------- Hero con movimiento ---------- */
+.hero-image {
+  opacity: 0;
+  transition: opacity 1.1s ease;
+}
+.hero-image.is-visible {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-image.is-visible {
+    animation: heroDrift 22s ease-in-out infinite alternate;
+  }
+}
+@keyframes heroDrift {
+  from {
+    transform: scale(1);
+    object-position: 52% center;
+  }
+  to {
+    transform: scale(1.07);
+    object-position: 58% center;
+  }
+}
+
+/* ---------- Tira de prendas ---------- */
+.marquee {
+  overflow: hidden;
+  padding: 26px 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.marquee-track {
+  display: flex;
+  gap: 18px;
+  width: max-content;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .marquee-track {
+    animation: marqueeSlide 46s linear infinite;
+  }
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    overflow-x: auto;
+  }
+}
+@keyframes marqueeSlide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-50% - 9px));
+  }
+}
+.marquee-item {
+  width: 148px;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: var(--ink);
+}
+.marquee-item img {
+  width: 100%;
+  aspect-ratio: 4/5;
+  object-fit: cover;
+  background: #fff;
+}
+.marquee-item span {
+  display: block;
+  margin-top: 7px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.marquee-item:hover span {
+  color: var(--green);
+}

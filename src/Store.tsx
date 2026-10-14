@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 import type {
   Branch,
   CartItem,
+  Movement,
   Order,
   Product,
+  StockChange,
   StoreContextType,
 } from "./types";
 import { seedProducts } from "./data";
@@ -16,6 +18,7 @@ type Data = {
   cart: CartItem[];
   branch: Branch;
   favorites: string[];
+  movements: Movement[];
 };
 const initial = (): Data => ({
   products: structuredClone(seedProducts),
@@ -23,6 +26,7 @@ const initial = (): Data => ({
   cart: [],
   branch: "La Plata",
   favorites: [],
+  movements: [],
 });
 function restore(): Data {
   try {
@@ -42,7 +46,9 @@ function restore(): Data {
       Array.isArray(data.favorites) &&
       ["La Plata", "Ensenada"].includes(data.branch)
     )
-      return data;
+      // Los movimientos se incorporaron después: una demo guardada antes no
+      // los tiene y no por eso hay que descartarla.
+      return { ...data, movements: data.movements || [] };
   } catch {
     /* Use clean demo if storage is unavailable. */
   }
@@ -50,7 +56,12 @@ function restore(): Data {
 }
 interface Context extends StoreContextType {
   favorites: string[];
+  movements: Movement[];
   toggleFavorite: (id: string) => void;
+  /** Aplica cambios de stock y los deja asentados en el historial. */
+  applyStock: (changes: StockChange[]) => void;
+  /** Solo asienta el historial, para cuando el stock ya quedó guardado. */
+  recordMovements: (changes: StockChange[]) => void;
   placeOrder: (
     delivery: "pickup" | "shipping",
     customer: string,
@@ -63,6 +74,41 @@ export const money = (n: number) =>
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(n);
+let movementSeq = 0;
+function buildMovements(
+  products: Product[],
+  changes: StockChange[],
+  date = new Date().toISOString(),
+): Movement[] {
+  return changes
+    .filter((change) => change.delta !== 0)
+    .map((change) => ({
+      id: `mov-${Date.now().toString(36)}-${movementSeq++}`,
+      date,
+      productId: change.productId,
+      productName:
+        products.find((p) => p.id === change.productId)?.name ||
+        "Producto eliminado",
+      size: change.size,
+      branch: change.branch,
+      delta: change.delta,
+      reason: change.reason,
+      orderId: change.orderId,
+    }));
+}
+function applyToProducts(products: Product[], changes: StockChange[]) {
+  return products.map((product) => {
+    const mine = changes.filter((c) => c.productId === product.id);
+    if (!mine.length) return product;
+    const stock = structuredClone(product.stock);
+    mine.forEach((change) => {
+      const current = stock[change.branch]?.[change.size] || 0;
+      // El stock nunca queda en negativo, por más que el ajuste lo pida.
+      stock[change.branch][change.size] = Math.max(0, current + change.delta);
+    });
+    return { ...product, stock };
+  });
+}
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Data>(restore);
   const live = useRef(data);
@@ -101,6 +147,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         cart: branch === d.branch ? d.cart : [],
       }));
     },
+    recordMovements: (changes) =>
+      setData((d) => ({
+        ...d,
+        movements: [...buildMovements(d.products, changes), ...d.movements],
+      })),
+    applyStock: (changes) =>
+      setData((d) => ({
+        ...d,
+        products: applyToProducts(d.products, changes),
+        movements: [...buildMovements(d.products, changes), ...d.movements],
+      })),
     toggleFavorite: (id) =>
       setData((d) => ({
         ...d,
@@ -125,11 +182,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       );
       if (result.error) return { error: result.error };
       const order = result.order as Order;
+      const sales = buildMovements(
+        d.products,
+        order.items.map((item) => ({
+          productId: item.productId,
+          size: item.size,
+          branch: order.branch,
+          delta: -item.quantity,
+          reason: "Venta" as const,
+          orderId: order.id,
+        })),
+        order.date,
+      );
       const next = {
         ...d,
         products: result.products as Product[],
         orders: [order, ...d.orders],
         cart: [],
+        movements: [...sales, ...d.movements],
       };
       live.current = next;
       setData(next);

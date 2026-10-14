@@ -10,10 +10,13 @@ import {
   ChevronDown,
   CircleHelp,
   ClipboardList,
+  History,
   ImagePlus,
   LayoutDashboard,
   MapPin,
+  Minus,
   Package,
+  PackagePlus,
   Plus,
   Search,
   ShoppingBag,
@@ -24,10 +27,48 @@ import {
   X,
 } from "lucide-react";
 import { useStore } from "./Store";
-import type { Branch, Category, Order, Product } from "./types";
+import type {
+  Branch,
+  Category,
+  Movement,
+  MovementReason,
+  Order,
+  Product,
+  StockChange,
+} from "./types";
 import "./admin.css";
 
-type Tab = "overview" | "inventory" | "orders";
+type Tab = "overview" | "inventory" | "stock" | "movements" | "orders";
+const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
+  {
+    overview: {
+      crumb: "Resumen",
+      title: "Tu negocio, en un solo lugar.",
+      lead: "Una mirada rápida a lo que pasa en tus sucursales.",
+    },
+    inventory: {
+      crumb: "Productos y stock",
+      title: "Productos y stock",
+      lead: "Administrá el catálogo y las unidades disponibles en cada sucursal.",
+    },
+    stock: {
+      crumb: "Cargar stock",
+      title: "Cargar stock",
+      lead: "Anotá lo que entra o sale y el sistema actualiza la tienda al instante.",
+    },
+    movements: {
+      crumb: "Movimientos",
+      title: "Movimientos de stock",
+      lead: "Cada venta, ingreso y ajuste, con fecha y motivo.",
+    },
+    orders: {
+      crumb: "Pedidos",
+      title: "Pedidos",
+      lead: "Seguí cada compra y organizá la preparación de tus pedidos.",
+    },
+  };
+const addReasons: MovementReason[] = ["Ingreso", "Devolución"];
+const removeReasons: MovementReason[] = ["Rotura", "Ajuste"];
 const branches: Branch[] = ["La Plata", "Ensenada"];
 const categories: Category[] = ["Hombre", "Mujer", "Accesorios"];
 const money = (value: number) =>
@@ -59,7 +100,16 @@ const dateLabel = (date: string) =>
   });
 
 export default function Admin({ onExit }: { onExit: () => void }) {
-  const { products, setProducts, orders, setOrders, notify } = useStore();
+  const {
+    products,
+    setProducts,
+    orders,
+    setOrders,
+    notify,
+    movements,
+    applyStock,
+    recordMovements,
+  } = useStore();
   const [tab, setTab] = useState<Tab>("overview");
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<Branch | "Todas">("Todas");
@@ -106,12 +156,35 @@ export default function Admin({ onExit }: { onExit: () => void }) {
     requestAnimationFrame(() => formTrigger.current?.focus());
   }
   function saveProduct(product: Product) {
-    const exists = products.some((p) => p.id === product.id);
+    const previous = products.find((p) => p.id === product.id);
+    const exists = !!previous;
     setProducts(
       exists
         ? products.map((p) => (p.id === product.id ? product : p))
         : [...products, product],
     );
+    // Editar las cantidades a mano también deja rastro: así el historial
+    // explica cualquier diferencia entre lo que hay y lo que figura.
+    const changes: StockChange[] = [];
+    branches.forEach((b) => {
+      const sizes = new Set([
+        ...Object.keys(previous?.stock[b] || {}),
+        ...Object.keys(product.stock[b] || {}),
+      ]);
+      sizes.forEach((size) => {
+        const delta =
+          (product.stock[b]?.[size] || 0) - (previous?.stock[b]?.[size] || 0);
+        if (delta)
+          changes.push({
+            productId: product.id,
+            size,
+            branch: b,
+            delta,
+            reason: exists ? "Ajuste" : "Ingreso",
+          });
+      });
+    });
+    if (changes.length) recordMovements(changes);
     notify(
       exists
         ? "Producto actualizado en la tienda"
@@ -212,6 +285,20 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             <span>Productos y stock</span>
           </button>
           <button
+            className={tab === "stock" ? "is-active" : ""}
+            onClick={() => setTab("stock")}
+          >
+            <PackagePlus size={19} />
+            <span>Cargar stock</span>
+          </button>
+          <button
+            className={tab === "movements" ? "is-active" : ""}
+            onClick={() => setTab("movements")}
+          >
+            <History size={19} />
+            <span>Movimientos</span>
+          </button>
+          <button
             className={tab === "orders" ? "is-active" : ""}
             onClick={() => setTab("orders")}
           >
@@ -239,11 +326,7 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             <span className="admin-mobile-brand">mistral</span>
             <span className="admin-breadcrumb">
               Administración <span>/</span>{" "}
-              {tab === "overview"
-                ? "Resumen"
-                : tab === "inventory"
-                  ? "Productos y stock"
-                  : "Pedidos"}
+{pageTitles[tab].crumb}
             </span>
           </div>
           <div className="admin-topbar-right">
@@ -270,21 +353,13 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             <div>
               <span className="admin-eyebrow">LA PLATA & ENSENADA</span>
               <h1>
-                {tab === "overview"
-                  ? "Tu negocio, en un solo lugar."
-                  : tab === "inventory"
-                    ? "Productos y stock"
-                    : "Pedidos"}
+{pageTitles[tab].title}
               </h1>
               <p>
-                {tab === "overview"
-                  ? "Una mirada rápida a lo que pasa en tus sucursales."
-                  : tab === "inventory"
-                    ? "Administrá el catálogo y las unidades disponibles en cada sucursal."
-                    : "Seguí cada compra y organizá la preparación de tus pedidos."}
+{pageTitles[tab].lead}
               </p>
             </div>
-            {tab !== "orders" && (
+            {(tab === "overview" || tab === "inventory") && (
               <button
                 className="admin-button admin-button-primary"
                 onClick={() => openEditor("new")}
@@ -317,6 +392,16 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                   label="Pedidos activos"
                   value={String(pendingOrders.length)}
                   foot="Pedidos de demostración"
+                />
+                <Metric
+                  icon={<History size={20} />}
+                  label="Unidades vendidas"
+                  value={String(
+                    movements
+                      .filter((m) => m.reason === "Venta")
+                      .reduce((sum, m) => sum - m.delta, 0),
+                  )}
+                  foot="Descontadas del stock automáticamente"
                 />
                 <Metric
                   icon={<TrendingUp size={20} />}
@@ -661,6 +746,17 @@ export default function Admin({ onExit }: { onExit: () => void }) {
             </section>
           )}
 
+          {tab === "stock" && (
+            <StockLoader
+              products={activeProducts}
+              onApply={(changes, label) => {
+                applyStock(changes);
+                notify(label);
+              }}
+            />
+          )}
+          {tab === "movements" && <MovementsView movements={movements} />}
+
           {tab === "orders" && (
             <section className="admin-card admin-inventory-card">
               <div className="admin-inventory-heading">
@@ -814,6 +910,310 @@ export default function Admin({ onExit }: { onExit: () => void }) {
   );
 }
 
+/** Carga de stock pensada para el mostrador: elegís sucursal, buscás la prenda,
+ *  escribís cuánto entró o salió y confirmás todo junto. */
+function StockLoader({
+  products,
+  onApply,
+}: {
+  products: Product[];
+  onApply: (changes: StockChange[], label: string) => void;
+}) {
+  const [branch, setBranch] = useState<Branch>("La Plata");
+  const [direction, setDirection] = useState<"add" | "remove">("add");
+  const [reason, setReason] = useState<MovementReason>("Ingreso");
+  const [query, setQuery] = useState("");
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const reasons = direction === "add" ? addReasons : removeReasons;
+  const matches = products.filter((p) =>
+    `${p.name} ${p.type} ${p.color}`
+      .toLowerCase()
+      .includes(query.trim().toLowerCase()),
+  );
+  const changes: StockChange[] = [];
+  Object.entries(draft).forEach(([key, value]) => {
+    const amount = Math.floor(Number(value));
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const [productId, size] = key.split("|");
+    changes.push({
+      productId,
+      size,
+      branch,
+      delta: direction === "add" ? amount : -amount,
+      reason,
+    });
+  });
+  const units = changes.reduce((sum, c) => sum + Math.abs(c.delta), 0);
+  function setDirectionAndReason(next: "add" | "remove") {
+    setDirection(next);
+    setReason(next === "add" ? addReasons[0] : removeReasons[0]);
+  }
+  function confirm() {
+    if (!changes.length) return;
+    onApply(
+      changes,
+      `${direction === "add" ? "Sumaste" : "Descontaste"} ${units} ${
+        units === 1 ? "unidad" : "unidades"
+      } en ${branch}`,
+    );
+    setDraft({});
+  }
+  return (
+    <section className="admin-card admin-stock">
+      <div className="admin-inventory-heading">
+        <div>
+          <h2>¿Qué movimiento querés registrar?</h2>
+          <p>
+            Lo que cargues acá cambia el stock de la tienda y queda asentado en
+            Movimientos.
+          </p>
+        </div>
+      </div>
+      <div className="admin-stock-setup">
+        <div className="admin-stock-group" role="group" aria-label="Sucursal">
+          {branches.map((b) => (
+            <button
+              key={b}
+              className={branch === b ? "is-active" : ""}
+              aria-pressed={branch === b}
+              onClick={() => setBranch(b)}
+            >
+              <MapPin size={15} /> {b}
+            </button>
+          ))}
+        </div>
+        <div className="admin-stock-group" role="group" aria-label="Tipo">
+          <button
+            className={direction === "add" ? "is-active" : ""}
+            aria-pressed={direction === "add"}
+            onClick={() => setDirectionAndReason("add")}
+          >
+            <Plus size={15} /> Sumar unidades
+          </button>
+          <button
+            className={direction === "remove" ? "is-active" : ""}
+            aria-pressed={direction === "remove"}
+            onClick={() => setDirectionAndReason("remove")}
+          >
+            <Minus size={15} /> Descontar unidades
+          </button>
+        </div>
+        <label className="admin-filter-select">
+          <ClipboardList size={16} />
+          <select
+            aria-label="Motivo del movimiento"
+            value={reason}
+            onChange={(e) => setReason(e.target.value as MovementReason)}
+          >
+            {reasons.map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label className="admin-search admin-stock-search">
+        <Search size={18} />
+        <input
+          aria-label="Buscar la prenda"
+          placeholder="Buscá la prenda por nombre, tipo o color…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+      {matches.length === 0 ? (
+        <Empty
+          icon={<Package size={26} />}
+          title="No encontramos esa prenda"
+          text="Probá con otro nombre o revisá que esté publicada."
+        />
+      ) : (
+        <ul className="admin-stock-list">
+          {matches.slice(0, 12).map((p) => (
+            <li key={p.id}>
+              <div className="admin-stock-product">
+                <img src={p.image} alt="" />
+                <div>
+                  <b>{p.name}</b>
+                  <span>
+                    {p.type} · {p.color}
+                  </span>
+                </div>
+              </div>
+              <div className="admin-stock-sizes">
+                {p.sizes.map((size) => {
+                  const key = `${p.id}|${size}`;
+                  const current = p.stock[branch]?.[size] || 0;
+                  const typed = Math.floor(Number(draft[key]));
+                  const valid = Number.isFinite(typed) && typed > 0;
+                  const next = valid
+                    ? Math.max(
+                        0,
+                        direction === "add" ? current + typed : current - typed,
+                      )
+                    : current;
+                  return (
+                    <label key={size} className="admin-stock-size">
+                      <span className="admin-stock-size-name">{size}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        placeholder="0"
+                        aria-label={`${direction === "add" ? "Sumar a" : "Descontar de"} ${p.name}, talle ${size}`}
+                        value={draft[key] || ""}
+                        onChange={(e) =>
+                          setDraft({ ...draft, [key]: e.target.value })
+                        }
+                      />
+                      <span
+                        className={`admin-stock-preview ${valid ? "is-changed" : ""}`}
+                      >
+                        {valid ? `${current} → ${next}` : `hay ${current}`}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="admin-stock-bar">
+        <p>
+          {changes.length
+            ? `${units} ${units === 1 ? "unidad" : "unidades"} en ${changes.length} ${
+                changes.length === 1 ? "talle" : "talles"
+              } · ${reason} en ${branch}`
+            : "Escribí las cantidades y confirmá cuando esté listo."}
+        </p>
+        <div>
+          <button
+            className="admin-button admin-button-outline"
+            onClick={() => setDraft({})}
+            disabled={!changes.length}
+          >
+            Limpiar
+          </button>
+          <button
+            className="admin-button admin-button-primary"
+            onClick={confirm}
+            disabled={!changes.length}
+          >
+            <Check size={17} /> Registrar movimiento
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+/** Historial completo: de dónde salió y a dónde fue cada unidad. */
+function MovementsView({ movements }: { movements: Movement[] }) {
+  const [branchFilter, setBranchFilter] = useState<Branch | "Todas">("Todas");
+  const [reasonFilter, setReasonFilter] = useState<MovementReason | "Todos">(
+    "Todos",
+  );
+  const visible = movements.filter(
+    (m) =>
+      (branchFilter === "Todas" || m.branch === branchFilter) &&
+      (reasonFilter === "Todos" || m.reason === reasonFilter),
+  );
+  return (
+    <section className="admin-card">
+      <div className="admin-inventory-heading">
+        <div>
+          <h2>
+            Historial <span>{movements.length}</span>
+          </h2>
+          <p>
+            Las ventas se asientan solas; los ingresos y ajustes, cuando los
+            cargás.
+          </p>
+        </div>
+      </div>
+      <div className="admin-filters">
+        <label className="admin-filter-select">
+          <MapPin size={16} />
+          <select
+            aria-label="Filtrar por sucursal"
+            value={branchFilter}
+            onChange={(e) =>
+              setBranchFilter(e.target.value as Branch | "Todas")
+            }
+          >
+            <option value="Todas">Todas las sucursales</option>
+            {branches.map((b) => (
+              <option key={b}>{b}</option>
+            ))}
+          </select>
+        </label>
+        <label className="admin-filter-select">
+          <SlidersHorizontal size={16} />
+          <select
+            aria-label="Filtrar por motivo"
+            value={reasonFilter}
+            onChange={(e) =>
+              setReasonFilter(e.target.value as MovementReason | "Todos")
+            }
+          >
+            <option value="Todos">Todos los motivos</option>
+            {["Venta", ...addReasons, ...removeReasons].map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {visible.length === 0 ? (
+        <Empty
+          icon={<History size={26} />}
+          title="Todavía no hay movimientos"
+          text="Registrá un ingreso o hacé una venta de prueba y van a aparecer acá."
+        />
+      ) : (
+        <div
+          className="admin-table-wrap"
+          role="region"
+          aria-label="Movimientos de stock"
+          tabIndex={0}
+        >
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>FECHA</th>
+                <th>PRODUCTO</th>
+                <th>TALLE</th>
+                <th>SUCURSAL</th>
+                <th>MOTIVO</th>
+                <th>CANTIDAD</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.slice(0, 200).map((m) => (
+                <tr key={m.id}>
+                  <td>{dateLabel(m.date)}</td>
+                  <td>
+                    <b>{m.productName}</b>
+                    {m.orderId && (
+                      <span className="admin-movement-order">{m.orderId}</span>
+                    )}
+                  </td>
+                  <td>{m.size}</td>
+                  <td>{m.branch}</td>
+                  <td>{m.reason}</td>
+                  <td
+                    className={`admin-movement-delta ${m.delta > 0 ? "is-in" : "is-out"}`}
+                  >
+                    {m.delta > 0 ? `+${m.delta}` : m.delta}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
 function Metric({
   icon,
   label,

@@ -58,15 +58,19 @@ function Link({
   to,
   children,
   className = "",
+  ...rest
 }: {
   to: string;
   children: ReactNode;
   className?: string;
+  tabIndex?: number;
+  "aria-hidden"?: boolean;
 }) {
   return (
     <a
       className={className}
       href={to}
+      {...rest}
       onClick={(e) => {
         if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
           e.preventDefault();
@@ -347,6 +351,66 @@ function Header({ onCart }: { onCart: () => void }) {
     </>
   );
 }
+// Fotos de campaña del hero. Con una sola hace un acercamiento lento; en
+// cuanto se sumen más, se encadenan solas con un fundido.
+const heroImages = [
+  {
+    src: "/images/lifestyle.webp",
+    alt: "Campaña Mistral: un momento compartido, a tu manera",
+  },
+];
+function HeroSlides() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (heroImages.length < 2) return;
+    const id = setInterval(
+      () => setIndex((i) => (i + 1) % heroImages.length),
+      6500,
+    );
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <>
+      {heroImages.map((image, i) => (
+        <img
+          key={image.src}
+          className={`hero-image ${i === index ? "is-visible" : ""}`}
+          src={image.src}
+          alt={i === index ? image.alt : ""}
+          aria-hidden={i !== index}
+          fetchPriority={i === 0 ? "high" : undefined}
+        />
+      ))}
+    </>
+  );
+}
+/** Tira de prendas que se desplaza sola. Se frena al pasar el mouse o al
+ *  llegar con el teclado, y con "reducir movimiento" queda quieta. */
+function ProductMarquee({ products }: { products: Product[] }) {
+  if (products.length < 3) return null;
+  const loop = [...products, ...products];
+  return (
+    <section className="marquee" aria-label="Prendas de la colección">
+      <div className="marquee-track">
+        {loop.map((p, i) => {
+          const clone = i >= products.length;
+          return (
+            <Link
+              key={`${p.id}-${i}`}
+              to={`/producto/${p.id}`}
+              className="marquee-item"
+              aria-hidden={clone}
+              tabIndex={clone ? -1 : undefined}
+            >
+              <ProductImage product={p} loading="lazy" />
+              <span>{p.name}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 function ArrowUpRightSmall() {
   return <ArrowRight size={13} style={{ transform: "rotate(-40deg)" }} />;
 }
@@ -375,12 +439,7 @@ function Home() {
   return (
     <>
       <section className="hero">
-        <img
-          className="hero-image"
-          src="/images/lifestyle.webp"
-          alt="Campaña Mistral: un momento compartido, a tu manera"
-          fetchPriority="high"
-        />
+        <HeroSlides />
         <div className="hero-shade" />
         <div className="hero-content">
           <span className="eyebrow">MISTRAL · EVERYDAY ADVENTURES</span>
@@ -426,6 +485,7 @@ function Home() {
           <small>Cerca tuyo, como siempre</small>
         </span>
       </div>
+      <ProductMarquee products={selected.slice(0, 10)} />
       <section className="section new-section" id="novedades">
         <div className="section-heading">
           <div>
