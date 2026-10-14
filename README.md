@@ -43,6 +43,21 @@ derivó del verde anterior conservando la luminosidad de cada color y girando
 solo el tono, así que los contrastes no empeoraron. Quedaron fuera a propósito
 los colores con significado: entrada y salida de stock, error y alerta de stock
 bajo.
+## Envíos
+
+Las zonas están en `src/delivery.ts`. Hoy: La Plata, Berisso y Ensenada.
+Agregar o sacar una de esa lista alcanza — aparece sola en el checkout y viaja
+en el pedido de WhatsApp. Si la lista queda vacía, el checkout vuelve a ser
+solo retiro.
+
+El costo va sin precio a propósito: mientras `cost` no esté definido, el sitio
+dice que se coordina por WhatsApp en vez de inventar un número. Poniendo
+`cost: 0` dice "Sin costo", y con un número lo muestra.
+
+El local está en La Merced 327, Ensenada (CP 1925). La dirección también va en
+los datos estructurados de `index.html`, que es lo que lee Google, junto con
+las tres ciudades como zona de cobertura.
+
 ## Contraseña del panel
 
 `/admin` pide una contraseña antes de mostrar nada. Se cambia así:
@@ -85,6 +100,7 @@ muestra, y el pedido sigue saliendo por WhatsApp como antes.
 | `mercadoPagoUrl` | Link de pago de Mercado Pago (Cobrar → Link de pago). Aparece el botón "Pagar con Mercado Pago". |
 | `mercadoPagoAlias` | Alias o CVU de Mercado Pago, con botón para copiarlo. |
 | `bankAlias`, `bankCbu`, `bankHolder`, `bankName` | Transferencia bancaria. Con el alias o el CBU alcanza para que la opción aparezca. |
+| `cuentaDniAlias`, `cuentaDniQr` | Cuenta DNI (Banco Provincia): el alias donde recibís, y opcionalmente la URL de la imagen de tu QR de comercio. |
 | `cash`, `cardInStore` | Efectivo y tarjeta al retirar. No necesitan configuración. |
 
 La forma elegida queda guardada en el pedido, se ve en el panel y viaja en el

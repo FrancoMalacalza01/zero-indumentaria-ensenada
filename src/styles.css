@@ -1396,6 +1396,14 @@ svg {
 .payment-copy:hover {
   background: var(--accent);
 }
+.payment-qr {
+  width: 100%;
+  max-width: 220px;
+  align-self: center;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 8px;
+}
 .payment-note {
   font-size: 12px;
   line-height: 1.7;

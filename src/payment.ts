@@ -25,6 +25,17 @@ export const payment = {
   mercadoPagoUrl: "",
   /** Alias o CVU de Mercado Pago, para que transfieran el importe exacto. */
   mercadoPagoAlias: "",
+  /**
+   * Cuenta DNI (Banco Provincia). Poné el alias o CVU donde recibís el pago;
+   * el cliente transfiere desde la app. `cuentaDniQr` es opcional: la URL de
+   * la imagen de tu QR de comercio, si lo tenés, para que lo escaneen.
+   *
+   * Un cobro de verdad dentro del sitio, con el QR que se arma solo por cada
+   * pedido, necesita darse de alta como comercio en Banco Provincia y que un
+   * servidor nuestro hable con el banco. Eso es Etapa 2.
+   */
+  cuentaDniAlias: "",
+  cuentaDniQr: "",
   /** Transferencia bancaria. Con alias o CBU alcanza para mostrarla. */
   bankName: "",
   bankHolder: "",
@@ -45,12 +56,15 @@ export interface PaymentOption {
   data: { label: string; value: string }[];
   /** Link externo para pagar, si esta forma lo tiene. */
   url?: string;
+  /** Imagen para mostrar, como el QR de Cuenta DNI. */
+  image?: string;
   /** El pago se hace antes de retirar, así que conviene pedir comprobante. */
   needsReceipt: boolean;
 }
 
 const labels: Record<PaymentMethodId, string> = {
   mercadopago: "Mercado Pago",
+  cuentadni: "Cuenta DNI",
   transferencia: "Transferencia bancaria",
   efectivo: "Efectivo al retirar",
   tarjeta: "Tarjeta en el local",
@@ -75,6 +89,19 @@ export function paymentOptions(): PaymentOption[] {
         ? [{ label: "Alias", value: payment.mercadoPagoAlias }]
         : [],
       url: payment.mercadoPagoUrl || undefined,
+      needsReceipt: true,
+    });
+  if (payment.cuentaDniAlias || payment.cuentaDniQr)
+    options.push({
+      id: "cuentadni",
+      label: labels.cuentadni,
+      detail: payment.cuentaDniQr
+        ? "Escaneás el QR desde Cuenta DNI, o transferís al alias."
+        : "Transferís desde Cuenta DNI al alias y nos mandás el comprobante.",
+      data: payment.cuentaDniAlias
+        ? [{ label: "Alias", value: payment.cuentaDniAlias }]
+        : [],
+      image: payment.cuentaDniQr || undefined,
       needsReceipt: true,
     });
   if (payment.bankAlias || payment.bankCbu)
@@ -122,6 +149,8 @@ export function paymentOptions(): PaymentOption[] {
 export const chargesRealMoney = Boolean(
   payment.mercadoPagoUrl ||
     payment.mercadoPagoAlias ||
+    payment.cuentaDniAlias ||
+    payment.cuentaDniQr ||
     payment.bankAlias ||
     payment.bankCbu,
 );

@@ -2,6 +2,7 @@ export type Branch = "La Plata" | "Ensenada";
 export type Category = "Hombre" | "Mujer" | "Accesorios";
 export type PaymentMethodId =
   | "mercadopago"
+  | "cuentadni"
   | "transferencia"
   | "efectivo"
   | "tarjeta";
@@ -42,6 +43,8 @@ export interface Order {
    * existieran las formas de pago no la tienen.
    */
   payment?: PaymentMethodId;
+  /** Zona de envío, cuando el pedido no es para retirar. */
+  zone?: string;
 }
 export type MovementReason =
   | "Ingreso"

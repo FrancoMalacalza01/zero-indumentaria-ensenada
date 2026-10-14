@@ -67,6 +67,7 @@ interface Context extends StoreContextType {
     delivery: "pickup" | "shipping",
     customer: string,
     payment?: PaymentMethodId,
+    zone?: string,
   ) => { error?: string; order?: Order };
 }
 const StoreContext = createContext<Context | null>(null);
@@ -171,7 +172,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setData(initial());
       notify("Demo restablecida.");
     },
-    placeOrder: (delivery, customer, payment) => {
+    placeOrder: (delivery, customer, payment, zone) => {
       const d = live.current;
       const result = prepareOrder(
         d.products,
@@ -183,9 +184,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         new Date().toISOString(),
       );
       if (result.error) return { error: result.error };
-      // La forma de pago no entra en prepareOrder: no participa de la
-      // validación ni del descuento de stock.
-      const order = { ...(result.order as Order), payment };
+      // Ni la forma de pago ni la zona de envío entran en prepareOrder: no
+      // participan de la validación ni del descuento de stock.
+      const order = {
+        ...(result.order as Order),
+        payment,
+        zone: delivery === "shipping" ? zone : undefined,
+      };
       const sales = buildMovements(
         d.products,
         order.items.map((item) => ({

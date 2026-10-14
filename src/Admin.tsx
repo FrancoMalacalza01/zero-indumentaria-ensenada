@@ -844,7 +844,11 @@ export default function Admin({ onExit }: { onExit: () => void }) {
                                   ? "Retiro en sucursal"
                                   : "Envío a domicilio"}
                               </strong>
-                              <span>{o.branch}</span>
+                              <span>
+                                {o.delivery === "shipping"
+                                  ? o.zone || o.branch
+                                  : o.branch}
+                              </span>
                               {o.payment && (
                                 <small>{paymentLabel(o.payment)}</small>
                               )}

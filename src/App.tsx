@@ -23,6 +23,7 @@ import {
   Search,
   ShoppingBag,
   SlidersHorizontal,
+  Smartphone,
   Store,
   Truck,
   Wallet,
@@ -37,13 +38,29 @@ import {
   paymentOptions,
   type PaymentOption,
 } from "./payment";
+import {
+  deliveryAvailable,
+  deliveryZones,
+  zoneByName,
+  zoneCostLabel,
+} from "./delivery";
 const Admin = lazy(() => import("./Admin"));
 const AdminGate = lazy(() => import("./AdminGate"));
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
 // Número de WhatsApp de cada sucursal, en formato internacional y sin el "+"
 // (por ejemplo "5492211234567"). Mientras queden vacíos, el pedido se abre en
 // WhatsApp con el mensaje escrito y la persona elige el contacto a mano.
-// Las formas de pago se configuran aparte, en src/payment.ts.
+// Las formas de pago se configuran aparte, en src/payment.ts, y las zonas de
+// envío en src/delivery.ts.
+// Dirección del local. Los horarios quedan sin completar a propósito: no se
+// inventan, se ponen cuando el dueño los confirme.
+const localAddress = {
+  street: "La Merced 327",
+  city: "Ensenada",
+  region: "Buenos Aires",
+  postalCode: "1925",
+  hours: "",
+};
 const whatsappNumbers: Record<Branch, string> = {
   "La Plata": "",
   Ensenada: "",
@@ -58,7 +75,9 @@ function whatsappOrderUrl(order: Order) {
     ),
     "",
     `Total: ${money(order.total)}`,
-    `Retiro en: ${order.branch}`,
+    order.delivery === "shipping"
+      ? `Envío a: ${order.zone}`
+      : `Retiro en: ${order.branch}`,
     `Pedido: ${order.id}`,
     ...(order.payment ? [`Pago: ${paymentLabel(order.payment)}`] : []),
     ...(paymentOptions().find((o) => o.id === order.payment)?.needsReceipt
@@ -1112,6 +1131,7 @@ function Cart({ onClose }: { onClose: () => void }) {
 }
 const paymentIcons: Record<PaymentMethodId, ReactNode> = {
   mercadopago: <Wallet size={24} />,
+  cuentadni: <Smartphone size={24} />,
   transferencia: <Landmark size={24} />,
   efectivo: <Banknote size={24} />,
   tarjeta: <CreditCard size={24} />,
@@ -1153,6 +1173,13 @@ function PaymentBlock({ option }: { option: PaymentOption }) {
         {option.label}
       </b>
       <p>{option.detail}</p>
+      {option.image && (
+        <img
+          className="payment-qr"
+          src={option.image}
+          alt={`Código QR para pagar con ${option.label}`}
+        />
+      )}
       {option.data.map((d) => (
         <PaymentData key={d.label} label={d.label} value={d.value} />
       ))}
@@ -1177,11 +1204,13 @@ function Checkout() {
   const [method, setMethod] = useState<PaymentMethodId | undefined>(
     options[0]?.id,
   );
+  const [delivery, setDelivery] = useState<"pickup" | "shipping">("pickup");
+  const [zone, setZone] = useState(deliveryZones[0]?.name || "");
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    const result = placeOrder("pickup", name, method);
+    const result = placeOrder(delivery, name, method, zone);
     if (result.error) {
       setError(result.error);
       setBusy(false);
@@ -1202,7 +1231,10 @@ function Checkout() {
           Pedido <b>{order.id}</b>
         </p>
         <p>
-          Retiro en {order.branch} · {money(order.total)}
+          {order.delivery === "shipping"
+            ? `Envío a ${order.zone}`
+            : `Retiro en ${order.branch}`}{" "}
+          · {money(order.total)}
         </p>
         <div className="demo-box">
           {chargesRealMoney ? (
@@ -1290,17 +1322,78 @@ function Checkout() {
             />
           </label>
           <h2>2. Forma de entrega</h2>
-          <div className="delivery-option">
-            <Store size={24} />
-            <div>
-              <b>Retiro en {branch}</b>
-              <span>Sin costo · disponibilidad simulada</span>
-            </div>
-            <Check size={20} />
-          </div>
-          <p className="reference-price">
-            Los envíos a domicilio se definirán con las sucursales.
-          </p>
+          {deliveryAvailable ? (
+            <>
+              <div className="payment-options">
+                <label
+                  className={`payment-option${delivery === "pickup" ? " selected" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="delivery"
+                    checked={delivery === "pickup"}
+                    onChange={() => setDelivery("pickup")}
+                  />
+                  <Store size={24} />
+                  <div>
+                    <b>Retiro en {branch}</b>
+                    <span>Sin costo. Te avisamos cuando esté listo.</span>
+                  </div>
+                </label>
+                <label
+                  className={`payment-option${delivery === "shipping" ? " selected" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="delivery"
+                    checked={delivery === "shipping"}
+                    onChange={() => setDelivery("shipping")}
+                  />
+                  <Truck size={24} />
+                  <div>
+                    <b>Envío a domicilio</b>
+                    <span>
+                      {deliveryZones.map((z) => z.name).join(", ")}.
+                    </span>
+                  </div>
+                </label>
+              </div>
+              {delivery === "shipping" && (
+                <label className="field">
+                  ¿A qué ciudad lo mandamos?
+                  <select
+                    value={zone}
+                    onChange={(e) => setZone(e.target.value)}
+                  >
+                    {deliveryZones.map((z) => (
+                      <option key={z.id}>{z.name}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <p className="reference-price">
+                {delivery === "shipping"
+                  ? `${zoneCostLabel(zoneByName(zone) || deliveryZones[0])}. Te pedimos la dirección al confirmar el pedido.`
+                  : "También hacemos envíos a " +
+                    deliveryZones.map((z) => z.name).join(", ") +
+                    "."}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="delivery-option">
+                <Store size={24} />
+                <div>
+                  <b>Retiro en {branch}</b>
+                  <span>Sin costo · disponibilidad simulada</span>
+                </div>
+                <Check size={20} />
+              </div>
+              <p className="reference-price">
+                Los envíos a domicilio se definirán con las sucursales.
+              </p>
+            </>
+          )}
           {options.length > 0 && (
             <>
               <h2>3. Forma de pago</h2>
@@ -1381,9 +1474,9 @@ function Stores() {
         Encontrá tu Mistral.
       </h1>
       <p>
-        Estamos en La Plata y Ensenada.
+        Estamos en {localAddress.city}.
         <br />
-        Conocé la colección y elegí lo que va con vos.
+        Y hacemos envíos a {deliveryZones.map((z) => z.name).join(", ")}.
       </p>
       <div className="store-grid">
         {["La Plata", "Ensenada"].map((b, i) => (
@@ -1391,9 +1484,15 @@ function Stores() {
             <span className="store-number">0{i + 1}</span>
             <MapPin size={30} />
             <h2>{b}</h2>
-            <p>Buenos Aires, Argentina</p>
+            <p>
+              {b === localAddress.city
+                ? `${localAddress.street} · ${localAddress.city}, ${localAddress.region}`
+                : "Buenos Aires, Argentina"}
+            </p>
             <p className="store-detail">
-              Consultá dirección, horarios y disponibilidad por Instagram.
+              {b === localAddress.city
+                ? "Consultá horarios y disponibilidad por Instagram."
+                : "Consultá dirección, horarios y disponibilidad por Instagram."}
             </p>
             <a
               href={instagram}
@@ -1410,8 +1509,7 @@ function Stores() {
         ))}
       </div>
       <p className="store-footnote">
-        Las direcciones y los horarios se incorporarán al confirmar los datos de
-        cada local.
+        Los horarios se incorporarán al confirmarlos con el local.
       </p>
     </main>
   );
