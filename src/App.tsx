@@ -30,39 +30,31 @@ import {
   X,
 } from "lucide-react";
 import { money, useStore } from "./Store";
-import type { PaymentMethodId, Product, Order } from "./types";
+import type { PaymentMethodId, Product, Order, Settings } from "./types";
 import { cartKey } from "./commerce.mjs";
 import {
   chargesRealMoney,
+  conDescuento,
   paymentLabel,
   paymentOptions,
   type PaymentOption,
 } from "./payment";
 import {
+  costoEnvio,
   deliveryAvailable,
   deliveryZones,
+  faltaParaEnvioGratis,
   zoneByName,
-  zoneCostLabel,
 } from "./delivery";
 const Admin = lazy(() => import("./Admin"));
 const AdminGate = lazy(() => import("./AdminGate"));
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
-// WhatsApp del local, en formato internacional y sin el "+" (por ejemplo
-// "5492211234567"). Mientras quede vacío, el pedido se abre en WhatsApp con el
+// El WhatsApp, la dirección, las formas de pago, las zonas de envío y la
+// política de devoluciones se cargan desde el panel y viven en la base. Acá
+// sólo se leen. Mientras el WhatsApp esté vacío, el pedido se abre con el
 // mensaje escrito y la persona elige el contacto a mano.
-// Las formas de pago se configuran aparte, en src/payment.ts, y las zonas de
-// envío en src/delivery.ts.
-// Dirección del local. Los horarios quedan sin completar a propósito: no se
-// inventan, se ponen cuando el dueño los confirme.
-const localAddress = {
-  street: "La Merced 327",
-  city: "Ensenada",
-  region: "Buenos Aires",
-  postalCode: "1925",
-  hours: "",
-};
-const whatsappNumber = "";
-function whatsappOrderUrl(order: Order) {
+function whatsappOrderUrl(order: Order, settings: Settings) {
+  const envio = order.envio || 0;
   const text = [
     `Hola Mistral, quiero hacer este pedido:`,
     "",
@@ -71,17 +63,19 @@ function whatsappOrderUrl(order: Order) {
         `• ${i.name} — Talle ${i.size} × ${i.quantity} — ${money(i.price * i.quantity)}`,
     ),
     "",
+    ...(envio ? [`Envío: ${money(envio)}`] : []),
     `Total: ${money(order.total)}`,
     order.delivery === "shipping"
       ? `Envío a: ${order.zone}`
-      : `Retiro en: ${localAddress.street}, ${localAddress.city}`,
+      : `Retiro en: ${settings.direccion.calle}, ${settings.direccion.ciudad}`,
     `Pedido: ${order.id}`,
     ...(order.payment ? [`Pago: ${paymentLabel(order.payment)}`] : []),
-    ...(paymentOptions().find((o) => o.id === order.payment)?.needsReceipt
+    ...(paymentOptions(settings).find((o) => o.id === order.payment)
+      ?.needsReceipt
       ? ["Te mando el comprobante por acá."]
       : []),
   ].join("\n");
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`;
 }
 function navigate(path: string) {
   window.history.pushState({}, "", path);
@@ -249,7 +243,7 @@ function ProductCard({ product: p }: { product: Product }) {
   );
 }
 function Header({ onCart }: { onCart: () => void }) {
-  const { cart, favorites } = useStore();
+  const { cart, favorites, settings } = useStore();
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
   const [query, setQuery] = useState("");
@@ -278,7 +272,7 @@ function Header({ onCart }: { onCart: () => void }) {
           </button>
           <Link className="branch-picker" to="/sucursales">
             <MapPin size={16} />
-            {localAddress.city}
+            {settings.direccion.ciudad}
           </Link>
           <Link className="brand-link" to="/">
             <Brand />
@@ -969,7 +963,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
   );
 }
 function Cart({ onClose }: { onClose: () => void }) {
-  const { cart, setCart, products } = useStore();
+  const { cart, setCart, products, settings } = useStore();
   const entries = cart.map((i) => ({
     item: i,
     product: products.find((p) => p.id === i.productId),
@@ -1008,7 +1002,7 @@ function Cart({ onClose }: { onClose: () => void }) {
         <>
           <p className="cart-branch">
             <MapPin size={16} />
-            Retirás en {localAddress.city} o te lo enviamos
+            Retirás en {settings.direccion.ciudad} o te lo enviamos
           </p>
           <div className="cart-items">
             {entries.map(({ item, product }) => (
@@ -1113,6 +1107,8 @@ const paymentIcons: Record<PaymentMethodId, ReactNode> = {
   cuentadni: <Smartphone size={24} />,
   transferencia: <Landmark size={24} />,
   efectivo: <Banknote size={24} />,
+  debito: <CreditCard size={24} />,
+  credito: <CreditCard size={24} />,
   tarjeta: <CreditCard size={24} />,
 };
 /** Alias, CBU o titular con un botón para copiarlo de una. */
@@ -1172,19 +1168,20 @@ function PaymentBlock({ option }: { option: PaymentOption }) {
   );
 }
 function Checkout() {
-  const { cart, products, placeOrder, catalogSource } = useStore();
+  const { cart, products, placeOrder, catalogSource, settings } = useStore();
   const [name, setName] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   // Si el local todavía no configuró ninguna, la lista queda vacía y el
   // checkout se ve igual que antes.
-  const options = paymentOptions();
+  const options = paymentOptions(settings);
+  const zonas = deliveryZones(settings);
   const [method, setMethod] = useState<PaymentMethodId | undefined>(
     options[0]?.id,
   );
   const [delivery, setDelivery] = useState<"pickup" | "shipping">("pickup");
-  const [zone, setZone] = useState(deliveryZones[0]?.name || "");
+  const [zone, setZone] = useState(zonas[0]?.nombre || "");
   // Con servidor esto deja de ser un recorrido de prueba: el pedido entra al
   // local y el nombre hace falta de verdad.
   const enVivo = catalogSource === "servidor";
@@ -1218,8 +1215,9 @@ function Checkout() {
         <p>
           {order.delivery === "shipping"
             ? `Envío a ${order.zone}`
-            : `Retiro en ${localAddress.city}`}{" "}
+            : `Retiro en ${settings.direccion.ciudad}`}{" "}
           · {money(order.total)}
+          {order.envio ? ` (incluye ${money(order.envio)} de envío)` : ""}
         </p>
         <div className="demo-box">
           {catalogSource === "servidor" && (
@@ -1227,7 +1225,7 @@ function Checkout() {
               <b>Las prendas quedaron reservadas a tu nombre.</b>{" "}
             </>
           )}
-          {chargesRealMoney ? (
+          {chargesRealMoney(settings) ? (
             <>
               Todavía no se cobró nada. Si pagás con el link o transferís, ese
               pago es real: confirmá antes con el local que el precio y la
@@ -1255,7 +1253,7 @@ function Checkout() {
           )}
           <a
             className="button button-green"
-            href={whatsappOrderUrl(order)}
+            href={whatsappOrderUrl(order, settings)}
             target="_blank"
             rel="noreferrer"
           >
@@ -1284,6 +1282,14 @@ function Checkout() {
       s + (products.find((p) => p.id === i.productId)?.price || 0) * i.quantity,
     0,
   );
+  const zonaElegida = zoneByName(settings, zone);
+  // La misma cuenta que hace la base al cobrar. `null` es "todavía no está
+  // definido": la zona existe pero no tiene costo cargado.
+  const envio = delivery === "shipping" ? costoEnvio(settings, zone, total) : 0;
+  const falta =
+    delivery === "shipping" && envio !== 0
+      ? faltaParaEnvioGratis(settings, total)
+      : 0;
   return (
     <main className="checkout section">
       <Link className="text-link" to="/tienda">
@@ -1320,7 +1326,7 @@ function Checkout() {
             />
           </label>
           <h2>2. Forma de entrega</h2>
-          {deliveryAvailable ? (
+          {deliveryAvailable(settings) ? (
             <>
               <div className="payment-options">
                 <label
@@ -1350,9 +1356,7 @@ function Checkout() {
                   <Truck size={24} />
                   <div>
                     <b>Envío a domicilio</b>
-                    <span>
-                      {deliveryZones.map((z) => z.name).join(", ")}.
-                    </span>
+                    <span>{zonas.map((z) => z.nombre).join(", ")}.</span>
                   </div>
                 </label>
               </div>
@@ -1363,19 +1367,35 @@ function Checkout() {
                     value={zone}
                     onChange={(e) => setZone(e.target.value)}
                   >
-                    {deliveryZones.map((z) => (
-                      <option key={z.id}>{z.name}</option>
+                    {zonas.map((z) => (
+                      <option key={z.id}>{z.nombre}</option>
                     ))}
                   </select>
                 </label>
               )}
               <p className="reference-price">
-                {delivery === "shipping"
-                  ? `${zoneCostLabel(zoneByName(zone) || deliveryZones[0])}. Te pedimos la dirección al confirmar el pedido.`
-                  : "También hacemos envíos a " +
-                    deliveryZones.map((z) => z.name).join(", ") +
-                    "."}
+                {delivery === "shipping" ? (
+                  <>
+                    {envio === 0
+                      ? "Envío sin cargo"
+                      : envio === null
+                        ? "Costo a coordinar por WhatsApp"
+                        : `Envío ${money(envio)}`}
+                    . Te pedimos la dirección al confirmar el pedido.
+                    {zonaElegida?.nota ? ` ${zonaElegida.nota}` : ""}
+                  </>
+                ) : (
+                  <>
+                    También hacemos envíos a{" "}
+                    {zonas.map((z) => z.nombre).join(", ")}.
+                  </>
+                )}
               </p>
+              {falta > 0 && (
+                <p className="reference-price">
+                  Te faltan {money(falta)} para que el envío vaya sin cargo.
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -1410,22 +1430,51 @@ function Checkout() {
                     />
                     {paymentIcons[o.id]}
                     <div>
-                      <b>{o.label}</b>
-                      <span>{o.detail}</span>
+                      <b>
+                        {o.label}
+                        {o.descuento ? (
+                          <span className="pago-descuento">
+                            {o.descuento}% OFF
+                          </span>
+                        ) : null}
+                      </b>
+                      <span>
+                        {o.detail}
+                        {o.descuento
+                          ? ` Pagando así, ${money(conDescuento(total, o.descuento))}.`
+                          : ""}
+                      </span>
                     </div>
                   </label>
                 ))}
               </div>
               <p className="reference-price">
-                No se piden datos de tarjeta en el sitio. Al confirmar te damos
-                el link o los datos para pagar.
+                No se piden datos de tarjeta en el sitio: el sitio no cobra. Al
+                confirmar te damos el link o los datos para pagar, y lo que se
+                paga en el local se paga al retirar.
+                {settings.pago.descuentoContado > 0 &&
+                  " El descuento por pago en efectivo o transferencia lo aplica el local al cobrar."}
               </p>
             </>
           )}
           <h2>{options.length > 0 ? 4 : 3}. Confirmación</h2>
           <p className="modal-copy">
-            Al confirmar, se descuenta el stock de prueba y se crea un pedido
-            visible en el panel interno de este navegador.
+            {enVivo ? (
+              <>
+                Al confirmar, las prendas quedan reservadas a tu nombre y el
+                local recibe el pedido. Tenés{" "}
+                {settings.devoluciones.dias} días para arrepentirte:{" "}
+                <Link className="text-link" to="/devoluciones">
+                  cambios y devoluciones
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Al confirmar, se descuenta el stock de prueba y se crea un
+                pedido visible en el panel interno de este navegador.
+              </>
+            )}
           </p>
           {error && (
             <p className="form-error" role="alert">
@@ -1433,7 +1482,12 @@ function Checkout() {
             </p>
           )}
           <button className="button button-green" type="submit" disabled={busy}>
-            Confirmar compra de prueba <ArrowRight size={18} />
+            {enVivo
+              ? busy
+                ? "Confirmando…"
+                : "Confirmar pedido"
+              : "Confirmar compra de prueba"}{" "}
+            <ArrowRight size={18} />
           </button>
         </form>
         <aside className="order-summary">
@@ -1453,16 +1507,34 @@ function Checkout() {
               </div>
             );
           })}
+          {delivery === "shipping" && (
+            <div className="summary-line">
+              <span>Envío a {zone}</span>
+              <strong>
+                {envio === null
+                  ? "a coordinar"
+                  : envio === 0
+                    ? "sin cargo"
+                    : money(envio)}
+              </strong>
+            </div>
+          )}
           <div className="order-total">
-            <span>Total de prueba</span>
-            <strong>{money(total)}</strong>
+            <span>{enVivo ? "Total" : "Total de prueba"}</span>
+            <strong>{money(total + (envio || 0))}</strong>
           </div>
+          <Link className="text-link" to="/devoluciones">
+            Cambios y devoluciones <ArrowRight size={15} />
+          </Link>
         </aside>
       </div>
     </main>
   );
 }
 function Stores() {
+  const { settings } = useStore();
+  const d = settings.direccion;
+  const zonas = deliveryZones(settings);
   return (
     <main className="section stores-page">
       <span className="eyebrow dark">EL MISMO ESPÍRITU. TU CIUDAD.</span>
@@ -1472,40 +1544,204 @@ function Stores() {
         Encontrá tu Mistral.
       </h1>
       <p>
-        Estamos en {localAddress.city}.
+        Estamos en {d.ciudad}.
         <br />
-        Y hacemos envíos a {deliveryZones.map((z) => z.name).join(", ")}.
+        Y hacemos envíos a {zonas.map((z) => z.nombre).join(", ")}.
       </p>
       <div className="store-grid store-grid-single">
-        {[localAddress].map((local) => (
-          <article className="store-card" key={local.city}>
-            <MapPin size={30} />
-            <h2>{local.city}</h2>
-            <p>
-              {local.street} · {local.city}, {local.region} (CP{" "}
-              {local.postalCode})
-            </p>
-            <p className="store-detail">
-              Consultá horarios y disponibilidad por Instagram. Hacemos envíos a{" "}
-              {deliveryZones.map((z) => z.name).join(", ")}.
-            </p>
-            <a
-              href={instagram}
-              target="_blank"
-              rel="noreferrer"
-              className="button button-green"
-            >
-              Consultar por Instagram <Instagram size={17} />
-            </a>
-            <Link className="text-link" to="/tienda">
-              Explorar la colección <ArrowRight size={16} />
-            </Link>
-          </article>
-        ))}
+        <article className="store-card">
+          <MapPin size={30} />
+          <h2>{d.ciudad}</h2>
+          <p>
+            {d.calle} · {d.ciudad}, {d.provincia} (CP {d.cp})
+          </p>
+          <p className="store-detail">
+            {d.horarios ? (
+              <>{d.horarios}. </>
+            ) : (
+              <>Consultá horarios y disponibilidad por Instagram. </>
+            )}
+            Hacemos envíos a {zonas.map((z) => z.nombre).join(", ")}.
+          </p>
+          <a
+            href={instagram}
+            target="_blank"
+            rel="noreferrer"
+            className="button button-green"
+          >
+            Consultar por Instagram <Instagram size={17} />
+          </a>
+          <Link className="text-link" to="/tienda">
+            Explorar la colección <ArrowRight size={16} />
+          </Link>
+        </article>
       </div>
-      <p className="store-footnote">
-        Los horarios se incorporarán al confirmarlos con el local.
-      </p>
+      {!d.horarios && (
+        <p className="store-footnote">
+          Los horarios se incorporarán al confirmarlos con el local.
+        </p>
+      )}
+    </main>
+  );
+}
+/**
+ * Cambios y devoluciones.
+ *
+ * Están separadas en tres cosas distintas porque legalmente no son lo mismo,
+ * y mezclarlas es como se termina en Defensa del Consumidor:
+ *
+ * 1. ARREPENTIMIENTO. Diez días corridos, sin motivo, y **el envío de vuelta
+ *    lo paga el local**. Lo dice la Ley 24.240 art. 34 y no se puede
+ *    renunciar ni poner condiciones. Si el local quisiera cobrarlo, sería
+ *    una cláusula nula.
+ * 2. PRENDA FALLADA. Garantía legal, seis meses para productos nuevos
+ *    (art. 11). También la paga el local.
+ * 3. CAMBIO POR TALLE O COLOR. Esto NO lo obliga ninguna ley: es una
+ *    cortesía del local, y acá sí puede poner las condiciones que quiera,
+ *    incluido quién paga el envío. Es el único lugar donde entra el umbral
+ *    configurable.
+ *
+ * Los números (días, monto del cambio sin cargo, dirección) salen de la
+ * configuración del panel.
+ */
+function Returns() {
+  const { settings } = useStore();
+  const dev = settings.devoluciones;
+  const d = settings.direccion;
+  const donde = dev.direccion || `${d.calle}, ${d.ciudad}`;
+  const [pedido, setPedido] = useState("");
+  const [quien, setQuien] = useState("");
+  const texto = [
+    "Hola Mistral, quiero ejercer el derecho de arrepentimiento.",
+    "",
+    quien ? `Nombre: ${quien}` : "",
+    pedido ? `Pedido: ${pedido}` : "",
+    "",
+    `Dentro de los ${dev.dias} días de recibir la compra.`,
+  ]
+    .filter((l) => l !== "")
+    .join("\n");
+  return (
+    <main className="section legal-page">
+      <span className="eyebrow dark">CAMBIOS Y DEVOLUCIONES</span>
+      <h1>
+        Si no era,
+        <br />
+        lo resolvemos.
+      </h1>
+
+      <section className="legal-block legal-destacado">
+        <h2>Arrepentimiento: {dev.dias} días, sin explicaciones</h2>
+        <p>
+          Tenés <b>{dev.dias} días corridos</b> desde que recibís la compra
+          para arrepentirte, sin dar ningún motivo. Te devolvemos el total de
+          lo que pagaste.
+        </p>
+        <p>
+          <b>El costo de devolverla lo pagamos nosotros.</b> No hay monto
+          mínimo ni condiciones: es un derecho tuyo por la Ley 24.240 de
+          Defensa del Consumidor, y no se puede renunciar.
+        </p>
+        <h3>Botón de arrepentimiento</h3>
+        <p className="legal-nota">
+          Completá los datos y se abre el mensaje listo para enviar. Te
+          respondemos con un código de seguimiento dentro de las 24 horas.
+        </p>
+        <div className="legal-form">
+          <label className="field">
+            Tu nombre
+            <input
+              type="text"
+              maxLength={60}
+              value={quien}
+              onChange={(e) => setQuien(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            Número de pedido
+            <input
+              type="text"
+              maxLength={20}
+              placeholder="M-00001"
+              value={pedido}
+              onChange={(e) => setPedido(e.target.value)}
+            />
+          </label>
+        </div>
+        <a
+          className="button button-green"
+          href={`https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(texto)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <MessageCircle size={18} />
+          Quiero arrepentirme de mi compra
+        </a>
+      </section>
+
+      <section className="legal-block">
+        <h2>Si la prenda vino fallada</h2>
+        <p>
+          La cambiamos o te devolvemos la plata, y el envío corre por nuestra
+          cuenta. La garantía legal es de <b>seis meses</b> para prendas
+          nuevas. Mandanos una foto por WhatsApp y lo arreglamos sin vueltas.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>Cambio por talle o color</h2>
+        <p>
+          Dentro de los <b>{dev.dias} días</b>, con la prenda sin usar y con
+          su etiqueta. Esto es una cortesía nuestra, no una obligación legal,
+          así que tiene una condición:
+        </p>
+        <ul>
+          <li>
+            Compras de <b>{money(dev.cambioGratisDesde)} o más</b>: el envío
+            del cambio lo pagamos nosotros.
+          </li>
+          <li>
+            Compras menores a {money(dev.cambioGratisDesde)}: el envío del
+            cambio lo paga quien compra, según la tarifa de Correo Argentino
+            que corresponda al peso y al código postal.
+          </li>
+        </ul>
+        <p className="legal-nota">
+          Esto vale sólo para el cambio por gusto o por talle. Si te
+          arrepentiste de la compra o la prenda vino fallada, el envío lo
+          pagamos nosotros siempre, sin importar el monto.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>Cómo devolver o cambiar</h2>
+        <ol>
+          <li>Escribinos por WhatsApp o Instagram con el número de pedido.</li>
+          <li>Te confirmamos cómo enviarla o cuándo pasar por el local.</li>
+          <li>
+            Si pasás por el local: <b>{donde}</b>.
+          </li>
+          <li>
+            Si es por correo: te damos la dirección y, cuando el envío corre
+            por nuestra cuenta, la forma de despacharlo sin que pongas plata.
+          </li>
+        </ol>
+        {dev.notas && <p className="legal-nota">{dev.notas}</p>}
+      </section>
+
+      <div className="legal-acciones">
+        <a
+          className="button button-green"
+          href={`https://wa.me/${settings.whatsapp}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <MessageCircle size={18} /> Escribinos por WhatsApp
+        </a>
+        <Link className="text-link" to="/tienda">
+          Volver a la tienda <ArrowRight size={16} />
+        </Link>
+      </div>
     </main>
   );
 }
@@ -1540,6 +1776,7 @@ function Footer() {
         <div>
           <h3>CERCA TUYO</h3>
           <Link to="/sucursales">Nuestras tiendas</Link>
+          <Link to="/devoluciones">Cambios y devoluciones</Link>
           <a href={instagram} target="_blank" rel="noreferrer">
             Contacto por Instagram
           </a>
@@ -1620,6 +1857,8 @@ export default function App() {
           <ProductDetail id={path.split("/")[2]} onCart={() => setCart(true)} />
         ) : path === "/checkout" ? (
           <Checkout />
+        ) : path === "/devoluciones" ? (
+          <Returns />
         ) : path === "/sucursales" ? (
           <Stores />
         ) : (

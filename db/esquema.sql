@@ -104,7 +104,10 @@ create table if not exists public.orders (
   fecha      timestamptz not null default now(),
   customer   text not null default '',
   items      jsonb not null default '[]'::jsonb,
+  -- `total` es lo que paga el cliente, con envío incluido; `envio` dice
+  -- cuánto de eso es el envío, para no tener que recalcularlo después.
   total      integer not null default 0 check (total >= 0),
+  envio      integer not null default 0 check (envio >= 0),
   delivery   text not null default 'pickup',
   zone       text,
   payment    text,
@@ -112,13 +115,33 @@ create table if not exists public.orders (
   created_at timestamptz not null default now(),
   constraint orders_delivery_check check (delivery in ('pickup', 'shipping')),
   constraint orders_status_check check (
-    status in ('Pendiente', 'Preparando', 'Listo para retirar', 'Completado')
+    status in ('Pendiente', 'Preparando', 'Listo para retirar', 'Completado',
+               -- Un pedido devuelto es un estado, no un pedido borrado: el
+               -- historial tiene que poder explicar por qué volvió el stock.
+               'Devuelto')
   )
 );
 create index if not exists orders_fecha_idx on public.orders (fecha desc);
 
 -- Los números de pedido los da la base, no el navegador.
 create sequence if not exists public.pedidos_web_seq;
+
+-- ---------------------------------------------------------------------------
+-- Configuración del local
+-- ---------------------------------------------------------------------------
+-- Lo que el dueño carga desde el panel y antes vivía en el código: whatsapp,
+-- dirección, formas de pago, zonas de envío y política de devoluciones.
+-- Una sola fila: es configuración del local, no una lista de cosas.
+--
+-- OJO: se lee pública, porque la tienda necesita mostrar los alias y las
+-- zonas. No guardar acá nada que no pueda ver un cliente.
+create table if not exists public.settings (
+  id         text primary key default 'local' check (id = 'local'),
+  datos      jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+insert into public.settings (id, datos) values ('local', '{}'::jsonb)
+  on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- Permisos
@@ -128,6 +151,7 @@ alter table public.stock     enable row level security;
 alter table public.admins    enable row level security;
 alter table public.movements enable row level security;
 alter table public.orders    enable row level security;
+alter table public.settings  enable row level security;
 
 -- Leer el catálogo publicado: cualquiera, sin cuenta. Es una tienda.
 drop policy if exists catalogo_publico on public.products;
@@ -183,6 +207,17 @@ drop policy if exists pedidos_admin on public.orders;
 create policy pedidos_admin on public.orders
   for all to authenticated using (private.es_admin()) with check (private.es_admin());
 
+-- La configuración la lee cualquiera (son los alias y las zonas que el
+-- cliente necesita ver) y la escribe sólo un admin.
+drop policy if exists settings_publico on public.settings;
+create policy settings_publico on public.settings
+  for select to anon, authenticated using (true);
+drop policy if exists settings_admin_edicion on public.settings;
+create policy settings_admin_edicion on public.settings
+  for update to authenticated using (private.es_admin()) with check (private.es_admin());
+
+comment on table public.settings is
+  'Configuración del local. Se lee pública a propósito: la tienda muestra los alias y las zonas. No guardar secretos acá.';
 comment on table public.admins is
   'Quiénes pueden escribir. Estar logueado no alcanza: hay que estar en esta tabla.';
 comment on function private.es_admin() is

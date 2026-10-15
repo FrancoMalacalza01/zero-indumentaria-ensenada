@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type {
   CartItem,
+  Settings,
   Movement,
   Order,
   PaymentMethodId,
@@ -13,6 +14,8 @@ import { seedProducts } from "./data";
 import { prepareOrder } from "./commerce.mjs";
 import { flattenStock, needsStockMigration } from "./migrate.mjs";
 import { fetchCatalog, crearPedido } from "./server";
+import { fetchSettings, porDefecto } from "./settings";
+import { costoEnvio } from "./settingsMap.mjs";
 const KEY = "mistral-local-demo-v1";
 type Data = {
   products: Product[];
@@ -72,6 +75,14 @@ export interface Asentado {
 interface Context extends StoreContextType {
   /** De dónde salió el catálogo que se está mostrando. */
   catalogSource: "servidor" | "local";
+  /**
+   * La configuración del local: whatsapp, dirección, formas de pago, zonas de
+   * envío y devoluciones. Sale del servidor; mientras no llegue, la de
+   * fábrica, para que la tienda nunca quede sin zonas ni sin dirección.
+   */
+  settings: Settings;
+  /** Pisa la configuración en pantalla, después de guardarla en el servidor. */
+  setSettings: (settings: Settings) => void;
   favorites: string[];
   movements: Movement[];
   toggleFavorite: (id: string) => void;
@@ -158,6 +169,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [catalogSource, setCatalogSource] = useState<"servidor" | "local">(
     "local",
   );
+  const [settings, setSettings] = useState<Settings>(porDefecto);
   // Espejo del estado al día, para poder leerlo en el mismo tick en que se
   // escribe. Sin esto, dos cambios seguidos (guardar un producto y asentar su
   // movimiento, por ejemplo) se pisan: el segundo parte del estado viejo.
@@ -185,6 +197,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => () => clearTimeout(timer.current), []);
   // El catálogo manda desde el servidor. Si no contesta, queda el que ya
   // estaba: más vale una tienda con precios de ayer que una vacía.
+  // La configuración va aparte del catálogo: son dos pedidos distintos y uno
+  // no tiene por qué esperar al otro.
+  useEffect(() => {
+    let vigente = true;
+    fetchSettings().then((cfg) => {
+      if (vigente && cfg) setSettings(cfg);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, []);
   useEffect(() => {
     let vigente = true;
     fetchCatalog().then((productos) => {
@@ -207,6 +230,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value: Context = {
     ...data,
     catalogSource,
+    settings,
+    setSettings,
     notify,
     setProducts: (products) => actualizar((d) => ({ ...d, products })),
     setOrders: (orders) => actualizar((d) => ({ ...d, orders })),
@@ -279,8 +304,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (result.error) return { error: result.error };
       // Ni la forma de pago ni la zona de envío entran en prepareOrder: no
       // participan de la validación ni del descuento de stock.
-      const order = {
-        ...(result.order as Order),
+      const base = result.order as Order;
+      // El envío se calcula con la misma cuenta que usa el servidor, para que
+      // el total de la demo diga lo mismo que diría el total de verdad.
+      const envio =
+        delivery === "shipping"
+          ? costoEnvio(settings, zone, base.total) || 0
+          : 0;
+      const order: Order = {
+        ...base,
+        subtotal: base.total,
+        envio,
+        total: base.total + envio,
         payment,
         zone: delivery === "shipping" ? zone : undefined,
       };

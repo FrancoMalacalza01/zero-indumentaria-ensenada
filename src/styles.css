@@ -2342,3 +2342,99 @@ svg {
     transform: scale(1.05);
   }
 }
+
+/* --- Descuento por forma de pago ----------------------------------------
+   Va como descuento por contado y no como recargo por tarjeta porque
+   cobrar más por pagar con tarjeta está prohibido (Ley 25.065, art. 37). */
+.pago-descuento {
+  margin-left: 8px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.4px;
+  color: #fff;
+  background: var(--brand-red, #cc0035);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+/* --- Renglón del envío en el resumen ----------------------------------- */
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 13px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.summary-line strong {
+  color: var(--ink, inherit);
+  font-weight: 600;
+}
+
+/* --- Páginas de texto legal (devoluciones) ----------------------------- */
+.legal-page {
+  max-width: 760px;
+}
+.legal-block {
+  margin-top: 38px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.legal-block h2 {
+  font-size: 1.35rem;
+  margin-bottom: 14px;
+}
+.legal-block h3 {
+  font-size: 1rem;
+  margin: 26px 0 10px;
+}
+.legal-block p,
+.legal-block li {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+.legal-block ul,
+.legal-block ol {
+  margin: 14px 0 0 20px;
+  display: grid;
+  gap: 9px;
+}
+.legal-block b {
+  color: var(--ink, inherit);
+}
+/* El arrepentimiento va primero y se ve primero: es el derecho que la ley
+   obliga a informar, no una letra chica. */
+.legal-destacado {
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--brand);
+  padding: 30px 28px;
+  background: #fff;
+}
+.legal-nota {
+  font-size: 13px !important;
+  font-style: italic;
+}
+.legal-form {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0;
+}
+.legal-destacado .button {
+  width: 100%;
+  justify-content: center;
+}
+.legal-acciones {
+  margin-top: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+@media (min-width: 700px) {
+  .legal-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}

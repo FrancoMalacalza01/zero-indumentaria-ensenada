@@ -1,52 +1,23 @@
-import type { PaymentMethodId } from "./types";
+import type { PaymentMethodId, Settings } from "./types";
 
 /**
- * Formas de pago del local. Lo que quede vacío o en `false` no se muestra: el
- * pedido sigue saliendo por WhatsApp y el pago se arregla en la conversación,
- * como hasta ahora.
+ * Las formas de pago que el local tiene prendidas.
  *
- * Cobrar el total exacto de la bolsa de forma automática es otra cosa: para
- * eso Mercado Pago tiene que hablar con un servidor nuestro, porque el token
- * de la cuenta no puede vivir en el navegador. El servidor que ya hay guarda
- * el catálogo, no cobra. Lo que sí funciona hoy:
+ * Se configuran desde el panel, no acá: lo que había en este archivo ahora
+ * vive en la base (`settings`). Lo que quede vacío o apagado no se muestra.
  *
- * - `mercadoPagoUrl`: el link de pago que genera Mercado Pago (Cobrar → Link
- *   de pago). Lleva el monto con el que lo creaste, así que sirve para una
- *   seña fija o un precio redondo, no para el total de una bolsa cualquiera.
- * - `mercadoPagoAlias` y los datos del banco: el cliente transfiere el importe
- *   exacto y manda el comprobante por WhatsApp. Sirve para cualquier monto.
- * - `cash` y `cardInStore`: se cobra al retirar y no hay nada que configurar.
+ * QUÉ PUEDE Y QUÉ NO PUEDE HACER EL SITIO. El sitio **no cobra**. Muestra el
+ * link, el alias o el QR y el pago se arregla aparte; el posnet del local es
+ * del local. Cobrar adentro del sitio, con el monto exacto de la bolsa,
+ * necesita un servidor que hable con Mercado Pago, porque el token de la
+ * cuenta no puede vivir en el navegador.
  *
- * CUIDADO: en cuanto pongas un link o un alias de verdad, un visitante puede
- * pagar de verdad, y hoy los precios y el stock son de ejemplo. Completalos
- * recién cuando el catálogo sea el real.
+ * POR QUÉ HAY DESCUENTO POR CONTADO Y NO RECARGO POR TARJETA. Cobrar más por
+ * pagar con tarjeta está prohibido (Ley 25.065, art. 37, y las resoluciones
+ * de Defensa del Consumidor que lo recuerdan). Una promo por pagar en
+ * efectivo o por transferencia es la forma en que se hace. El sitio muestra
+ * el precio de lista y avisa el descuento; el local lo aplica al cobrar.
  */
-export const payment = {
-  /** Link de pago de Mercado Pago, completo y con https://. Monto fijo. */
-  mercadoPagoUrl: "",
-  /** Alias o CVU de Mercado Pago, para que transfieran el importe exacto. */
-  mercadoPagoAlias: "",
-  /**
-   * Cuenta DNI (Banco Provincia). Poné el alias o CVU donde recibís el pago;
-   * el cliente transfiere desde la app. `cuentaDniQr` es opcional: la URL de
-   * la imagen de tu QR de comercio, si lo tenés, para que lo escaneen.
-   *
-   * Un cobro de verdad dentro del sitio, con el QR que se arma solo por cada
-   * pedido, necesita darse de alta como comercio en Banco Provincia y que un
-   * servidor nuestro hable con el banco. Eso no está hecho.
-   */
-  cuentaDniAlias: "",
-  cuentaDniQr: "",
-  /** Transferencia bancaria. Con alias o CBU alcanza para mostrarla. */
-  bankName: "",
-  bankHolder: "",
-  bankAlias: "",
-  bankCbu: "",
-  /** Efectivo al retirar el pedido en el local. */
-  cash: true,
-  /** Tarjeta por el posnet del local, al retirar. */
-  cardInStore: true,
-};
 
 export interface PaymentOption {
   id: PaymentMethodId;
@@ -61,13 +32,19 @@ export interface PaymentOption {
   image?: string;
   /** El pago se hace antes de retirar, así que conviene pedir comprobante. */
   needsReceipt: boolean;
+  /** Por ciento de descuento que tiene esta forma, si tiene alguno. */
+  descuento?: number;
+  /** Se paga en el local, no antes. */
+  enElLocal?: boolean;
 }
 
 const labels: Record<PaymentMethodId, string> = {
   mercadopago: "Mercado Pago",
   cuentadni: "Cuenta DNI",
   transferencia: "Transferencia bancaria",
-  efectivo: "Efectivo al retirar",
+  efectivo: "Efectivo",
+  debito: "Tarjeta de débito",
+  credito: "Tarjeta de crédito",
   tarjeta: "Tarjeta en el local",
 };
 
@@ -76,82 +53,124 @@ export function paymentLabel(id?: PaymentMethodId) {
   return id ? labels[id] : "";
 }
 
+/** Cómo se cuentan las cuotas, en una línea. */
+export function cuotasLabel(pago: Settings["pago"]) {
+  const { cuotasSinInteres: sin, cuotasMaximas: max } = pago;
+  if (sin > 1 && max > sin)
+    return `${sin} cuotas sin interés, o hasta ${max} con el interés del banco`;
+  if (sin > 1) return `${sin} cuotas sin interés`;
+  if (max > 1) return `hasta ${max} cuotas con el interés del banco`;
+  return "en un pago";
+}
+
 /** Solo las formas de pago que el local tiene configuradas. */
-export function paymentOptions(): PaymentOption[] {
+export function paymentOptions(settings: Settings): PaymentOption[] {
+  const p = settings.pago;
+  const desc = p.descuentoContado > 0 ? p.descuentoContado : undefined;
   const options: PaymentOption[] = [];
-  if (payment.mercadoPagoUrl || payment.mercadoPagoAlias)
+
+  if (p.mercadoPagoUrl || p.mercadoPagoAlias)
     options.push({
       id: "mercadopago",
       label: labels.mercadopago,
-      detail: payment.mercadoPagoUrl
+      detail: p.mercadoPagoUrl
         ? "Pagás con el link de Mercado Pago: tarjeta, dinero en cuenta o efectivo."
         : "Transferís a nuestra cuenta de Mercado Pago y nos mandás el comprobante.",
-      data: payment.mercadoPagoAlias
-        ? [{ label: "Alias", value: payment.mercadoPagoAlias }]
+      data: p.mercadoPagoAlias
+        ? [{ label: "Alias", value: p.mercadoPagoAlias }]
         : [],
-      url: payment.mercadoPagoUrl || undefined,
+      url: p.mercadoPagoUrl || undefined,
       needsReceipt: true,
     });
-  if (payment.cuentaDniAlias || payment.cuentaDniQr)
+
+  if (p.cuentaDniAlias || p.cuentaDniQr)
     options.push({
       id: "cuentadni",
       label: labels.cuentadni,
-      detail: payment.cuentaDniQr
+      detail: p.cuentaDniQr
         ? "Escaneás el QR desde Cuenta DNI, o transferís al alias."
         : "Transferís desde Cuenta DNI al alias y nos mandás el comprobante.",
-      data: payment.cuentaDniAlias
-        ? [{ label: "Alias", value: payment.cuentaDniAlias }]
+      data: p.cuentaDniAlias
+        ? [{ label: "Alias", value: p.cuentaDniAlias }]
         : [],
-      image: payment.cuentaDniQr || undefined,
+      image: p.cuentaDniQr || undefined,
       needsReceipt: true,
+      descuento: desc,
     });
-  if (payment.bankAlias || payment.bankCbu)
+
+  if (p.banco.alias || p.banco.cbu)
     options.push({
       id: "transferencia",
       label: labels.transferencia,
       detail: "Transferís el importe exacto y nos mandás el comprobante.",
       data: [
-        ...(payment.bankAlias
-          ? [{ label: "Alias", value: payment.bankAlias }]
+        ...(p.banco.alias ? [{ label: "Alias", value: p.banco.alias }] : []),
+        ...(p.banco.cbu ? [{ label: "CBU", value: p.banco.cbu }] : []),
+        ...(p.banco.titular
+          ? [{ label: "Titular", value: p.banco.titular }]
           : []),
-        ...(payment.bankCbu ? [{ label: "CBU", value: payment.bankCbu }] : []),
-        ...(payment.bankHolder
-          ? [{ label: "Titular", value: payment.bankHolder }]
-          : []),
-        ...(payment.bankName
-          ? [{ label: "Banco", value: payment.bankName }]
-          : []),
+        ...(p.banco.nombre ? [{ label: "Banco", value: p.banco.nombre }] : []),
       ],
       needsReceipt: true,
+      descuento: desc,
     });
-  if (payment.cash)
+
+  if (p.efectivo)
     options.push({
       id: "efectivo",
       label: labels.efectivo,
-      detail: "Pagás en efectivo cuando pasás a buscar el pedido.",
+      detail: "Pagás al retirar el pedido en el local.",
       data: [],
       needsReceipt: false,
+      descuento: desc,
+      enElLocal: true,
     });
-  if (payment.cardInStore)
+
+  if (p.debito)
     options.push({
-      id: "tarjeta",
-      label: labels.tarjeta,
-      detail: "Pagás con tarjeta en el local, al retirar.",
+      id: "debito",
+      label: labels.debito,
+      // Importante que el cliente sepa que es un pago, no cuotas: el débito
+      // no tiene cuotas y el precio es el de lista.
+      detail: "Por el posnet del local, al retirar. En un pago.",
       data: [],
       needsReceipt: false,
+      enElLocal: true,
     });
+
+  if (p.credito)
+    options.push({
+      id: "credito",
+      label: labels.credito,
+      detail: `Por el posnet del local, al retirar. ${cuotasLabel(p)}.`,
+      data: [],
+      needsReceipt: false,
+      enElLocal: true,
+    });
+
   return options;
 }
 
 /**
- * Si hay un link o una cuenta de verdad cargados, el pago deja de ser una
- * demostración y el aviso de la pantalla final tiene que decirlo.
+ * true si alguna forma de pago mueve dinero de verdad.
+ *
+ * Sirve para avisar en la demo: con un link o un alias cargado, un visitante
+ * puede pagar en serio aunque los precios todavía sean de ejemplo.
  */
-export const chargesRealMoney = Boolean(
-  payment.mercadoPagoUrl ||
-    payment.mercadoPagoAlias ||
-    payment.cuentaDniAlias ||
-    payment.cuentaDniQr ||
-    payment.bankAlias ||
-    payment.bankCbu,
-);
+export function chargesRealMoney(settings: Settings) {
+  const p = settings.pago;
+  return Boolean(
+    p.mercadoPagoUrl ||
+      p.mercadoPagoAlias ||
+      p.cuentaDniAlias ||
+      p.cuentaDniQr ||
+      p.banco.alias ||
+      p.banco.cbu,
+  );
+}
+
+/** El precio con el descuento por contado aplicado. */
+export function conDescuento(monto: number, descuento?: number) {
+  if (!descuento) return monto;
+  return Math.round(monto * (1 - descuento / 100));
+}

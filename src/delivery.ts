@@ -1,37 +1,38 @@
 /**
- * Zonas a las que el local hace envíos. Agregar o sacar una acá alcanza:
- * aparece sola en el checkout y viaja en el pedido de WhatsApp.
+ * Las zonas a las que el local hace envíos.
  *
- * El costo queda sin precio a propósito. Mientras no esté definido, el
- * checkout dice que se coordina por WhatsApp en vez de inventar un número.
- * Para fijarlo, poner `cost` en pesos.
+ * Se cargan desde el panel, no acá: antes esta lista vivía en el código y
+ * agregar un pueblo era tocar un archivo y volver a publicar el sitio.
+ *
+ * El costo y la cuenta del envío gratis viven en `settingsMap.mjs`, que se
+ * puede probar sin navegador, y la función `crear_pedido` de la base hace la
+ * misma cuenta: la del servidor es la que manda, porque es la que cobra.
  */
-export interface DeliveryZone {
-  id: string;
-  name: string;
-  /** Costo del envío en pesos. Sin definir, se coordina por WhatsApp. */
-  cost?: number;
-  /** Aclaración corta, si la zona tiene alguna condición. */
-  note?: string;
+import type { Settings, ZonaEnvio } from "./types";
+
+export {
+  costoEnvio,
+  llegaAlEnvioGratis,
+  faltaParaEnvioGratis,
+} from "./settingsMap.mjs";
+
+export function deliveryZones(settings: Settings): ZonaEnvio[] {
+  return settings.envio.zonas;
 }
 
-export const deliveryZones: DeliveryZone[] = [
-  { id: "la-plata", name: "La Plata" },
-  { id: "berisso", name: "Berisso" },
-  { id: "ensenada", name: "Ensenada" },
-];
+export function deliveryAvailable(settings: Settings) {
+  return settings.envio.zonas.length > 0;
+}
 
-export const deliveryAvailable = deliveryZones.length > 0;
-
-export function zoneByName(name?: string) {
-  return deliveryZones.find((z) => z.name === name);
+export function zoneByName(settings: Settings, nombre?: string) {
+  return settings.envio.zonas.find((z) => z.nombre === nombre);
 }
 
 /** Cómo se le cuenta el costo al cliente. */
-export function zoneCostLabel(zone: DeliveryZone) {
-  return zone.cost === undefined
+export function zoneCostLabel(zona: ZonaEnvio) {
+  return zona.costo === undefined
     ? "Costo a coordinar por WhatsApp"
-    : zone.cost === 0
+    : zona.costo === 0
       ? "Sin costo"
-      : `Envío $${zone.cost.toLocaleString("es-AR")}`;
+      : `Envío $${zona.costo.toLocaleString("es-AR")}`;
 }

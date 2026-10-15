@@ -39,7 +39,7 @@ reemplazan a lo que venía compilado.
 | | |
 |---|---|
 | Proyecto | `mistral-ensenada` (Supabase), región São Paulo |
-| Tablas | `products`, `stock`, `movements`, `orders`, `admins` |
+| Tablas | `products`, `stock`, `movements`, `orders`, `admins`, `settings` |
 | Permisos | cualquiera **lee** lo publicado; **escribe solo quien está en `admins`** |
 | La compra | la hace la base en un solo paso (`crear_pedido`) |
 | El esquema | `db/esquema.sql` y `db/crear_pedido.sql` |
@@ -173,20 +173,45 @@ derivó del verde anterior conservando la luminosidad de cada color y girando
 solo el tono, así que los contrastes no empeoraron. Quedaron fuera a propósito
 los colores con significado: entrada y salida de stock, error y alerta de stock
 bajo.
+## Configuración del local
+
+Esto antes vivía en el código y había que tocar archivos y volver a publicar
+el sitio para cambiar un alias. Ahora se carga **desde el panel**, en
+*Configuración*, y vive en el servidor: el WhatsApp, la dirección y los
+horarios, las formas de pago, las zonas de envío y la política de
+devoluciones.
+
+Si el servidor no contesta, la tienda usa los valores de fábrica. Una
+configuración a medias no puede dejar la tienda sin zonas ni sin dirección:
+lo que no se entiende se reemplaza por el valor de fábrica, prenda por prenda.
+
+**Nada de secretos acá.** La tabla `settings` se lee pública, porque la tienda
+tiene que mostrar los alias y las zonas. Es lo mismo que le darías a un cliente
+por WhatsApp.
+
 ## Envíos
 
-Las zonas están en `src/delivery.ts`. Hoy: La Plata, Berisso y Ensenada.
-Agregar o sacar una de esa lista alcanza — aparece sola en el checkout y viaja
-en el pedido de WhatsApp. Si la lista queda vacía, el checkout vuelve a ser
-solo retiro.
+Zonas de fábrica: **Ensenada, Berisso, La Plata y el resto de la Provincia de
+Buenos Aires**. Se agregan y se sacan desde el panel; cada una tiene nombre,
+costo y si va por reparto propio o por Correo Argentino.
 
-El costo va sin precio a propósito: mientras `cost` no esté definido, el sitio
-dice que se coordina por WhatsApp en vez de inventar un número. Poniendo
-`cost: 0` dice "Sin costo", y con un número lo muestra.
+- **Una zona sin costo cargado no sale gratis.** El checkout dice "a coordinar
+  por WhatsApp", que es mejor que inventarle un número al cliente. Con `0`
+  dice "sin cargo" y con un número lo cobra.
+- **Envío sin cargo desde un monto.** De fábrica, $99.999. Se mira contra las
+  prendas, sin el envío: si no, el propio envío ayudaría a alcanzar el umbral.
+  Con `0`, el envío gratis no existe.
+- **El costo lo pone la base.** La cuenta la hace `crear_pedido` al cobrar y
+  queda guardada en el pedido, en su propia columna: `total` es lo que paga el
+  cliente y `envio` dice cuánto de eso es el envío. El navegador hace la misma
+  cuenta sólo para mostrarla, y si la zona no está entre las configuradas el
+  servidor rechaza el pedido.
+- **Correo Argentino cotiza por peso y código postal**, así que no hay un
+  precio fijo que poner en el código: conviene cotizar en el sitio del Correo y
+  cargar un promedio, o dejarlo vacío y cobrarlo al coordinar.
 
-El local está en La Merced 327, Ensenada (CP 1925). La dirección también va en
-los datos estructurados de `index.html`, que es lo que lee Google, junto con
-las tres ciudades como zona de cobertura.
+El local está en La Merced 327, Ensenada (CP 1925). Esa dirección también va
+en los datos estructurados de `index.html`, que es lo que lee Google.
 
 ## Entrar al panel
 
@@ -258,19 +283,34 @@ leer y escribir.
 
 ## Formas de pago
 
-Se configuran en `src/payment.ts`. Lo que quede vacío o en `false` no se
-muestra, y el pedido sigue saliendo por WhatsApp como antes.
+Se prenden y se apagan desde el panel. Lo que quede vacío no se muestra, y el
+pedido sigue saliendo por WhatsApp. La forma elegida queda guardada en el
+pedido, se ve en el panel y viaja en el mensaje.
 
-| Campo | Qué hace |
-|---|---|
-| `mercadoPagoUrl` | Link de pago de Mercado Pago (Cobrar → Link de pago). Aparece el botón "Pagar con Mercado Pago". |
-| `mercadoPagoAlias` | Alias o CVU de Mercado Pago, con botón para copiarlo. |
-| `bankAlias`, `bankCbu`, `bankHolder`, `bankName` | Transferencia bancaria. Con el alias o el CBU alcanza para que la opción aparezca. |
-| `cuentaDniAlias`, `cuentaDniQr` | Cuenta DNI (Banco Provincia): el alias donde recibís, y opcionalmente la URL de la imagen de tu QR de comercio. |
-| `cash`, `cardInStore` | Efectivo y tarjeta al retirar. No necesitan configuración. |
+Están separadas porque **no cuestan lo mismo ni funcionan igual**, y el panel
+lo dice al lado de cada campo:
 
-La forma elegida queda guardada en el pedido, se ve en el panel y viaja en el
-mensaje de WhatsApp.
+| Forma | Cómo funciona | Qué le cuesta al local |
+|---|---|---|
+| **Mercado Pago** | Link de pago (monto fijo) o alias para transferir. | Comisión por venta, y el plazo de acreditación que elijas: cuanto antes querés la plata, más caro sale. El número exacto está en *Tu negocio → Costos* de tu cuenta; cambia, así que no está escrito acá. |
+| **Cuenta DNI** | Alias para transferir, o **el QR cargado desde el panel**. | Una transferencia entre cuentas no tiene comisión. El QR de comercio, el que acredita directo, se pide en Banco Provincia dándose de alta como comercio. |
+| **Transferencia bancaria** | Alias o CBU. | Sin comisión: lo más barato. Lo más trabajoso de controlar, porque hay que cruzar comprobantes. |
+| **Efectivo** | Al retirar en el local. | Nada. |
+| **Débito** | Posnet del local, en un pago. | Comisión y plazo del que te dio la terminal. |
+| **Crédito** | Posnet del local, con las cuotas que configures. | Comisión, más el costo de financiar. **Las cuotas sin interés las banca el local**: si ofrecés tres, el banco descuenta el costo y cobrás menos. Las cuotas "con interés del banco" no cuestan nada extra al local, pero el cliente paga más. |
+
+**Por qué hay descuento por contado y no recargo por tarjeta.** Cobrar más por
+pagar con tarjeta está prohibido: la Ley 25.065 de tarjetas de crédito, en su
+artículo 37, obliga al comercio a no hacer diferencias de precio entre
+operaciones al contado y con tarjeta, y Defensa del Consumidor labra actas por
+eso. La promo por pago en efectivo o transferencia es la forma en que se hace
+la misma diferencia. Por eso el campo del panel es un **descuento por
+contado**: el sitio muestra el precio de lista, avisa el descuento, y el local
+lo aplica al cobrar. Antes de fijar porcentajes conviene pasarlo por el
+contador.
+
+**Toda venta necesita factura o ticket**, cobres como cobres. El medio de pago
+no cambia eso.
 
 **Sin servidor no se puede cobrar el total exacto de la bolsa de forma
 automática.** Un link de pago lleva el monto fijo con el que se creó, así que
@@ -282,6 +322,54 @@ El servidor que ya hay guarda el catálogo; no cobra.
 
 Mientras los precios y el stock sean de ejemplo, conviene dejar el link y el
 alias vacíos: con uno cargado, un visitante puede pagar de verdad.
+
+## Cambios y devoluciones
+
+La tienda publica la política en **`/devoluciones`**, enlazada desde el pie y
+desde el checkout. Los números (días, monto, dirección) se cargan desde el
+panel.
+
+Están separadas en tres cosas, porque legalmente **no son lo mismo**, y
+mezclarlas es como se termina en Defensa del Consumidor:
+
+| | Plazo | Quién paga el envío de vuelta |
+|---|---|---|
+| **Arrepentimiento** (sin motivo) | 10 días corridos, mínimo legal | **El local, siempre.** No se puede poner monto mínimo ni condiciones. |
+| **Prenda fallada** (garantía legal) | 6 meses para prendas nuevas | **El local, siempre.** |
+| **Cambio por talle o color** | El que el local decida | El cliente, salvo que la compra pase el monto configurado (de fábrica, $99.999). |
+
+El derecho de arrepentimiento está en el artículo 34 de la Ley 24.240 de
+Defensa del Consumidor: diez días corridos, y los gastos de devolución a
+cargo del vendedor. No se puede renunciar ni condicionar, así que **no hay un
+campo en el panel para cambiarlo**: el único umbral configurable es el del
+cambio por gusto, que sí es una cortesía del local. El Código Civil y
+Comercial lo acompaña en su artículo 1112, y la garantía legal de seis meses
+está en el artículo 11 de la misma ley.
+
+La Resolución 424/2020 de la Secretaría de Comercio Interior exige que las
+ventas por internet tengan un **botón de arrepentimiento** a la vista, y que
+el comercio conteste con un código de identificación dentro de las 24 horas.
+El sitio lo tiene arriba de todo en `/devoluciones`: se completa el nombre y
+el número de pedido y se abre el mensaje listo para enviar. **Contestar con el
+código dentro de las 24 horas es parte de la obligación y lo tiene que hacer
+una persona**, no el sitio.
+
+Esto es un resumen hecho sobre las normas citadas, no asesoramiento legal:
+antes de publicarlo como política definitiva conviene que lo lea un abogado o
+el contador del local.
+
+### Registrar una devolución
+
+En el panel, pestaña *Devoluciones*: se busca el pedido, se marca cuántas
+unidades vuelven y el stock se acomoda. Lo importante es la distinción que
+hace:
+
+- **Vuelve en buen estado** → vuelve al stock, con un movimiento "Devolución".
+- **Vuelve fallada** → deja dos movimientos: entra como "Devolución" y sale
+  como "Rotura". El stock no se mueve en limpio y el historial cuenta las dos
+  cosas que pasaron de verdad, en vez de una sola a medias.
+
+Si vuelve todo el pedido, queda marcado como **Devuelto**.
 
 ## Alcance de la demo
 
@@ -307,20 +395,21 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 ## Validación
 
-`pnpm test` ejecuta 57 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 74 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
 | `commerce.test.mjs` | la transacción de compra: inventario por talle, duplicados, stock insuficiente, productos ocultos o eliminados, cantidades inválidas y conservación del estado al rechazar una operación | 19 |
 | `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, y que un talle con coma no parta el filtro de borrado | 20 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
+| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío y el umbral del envío gratis, y los topes que no se pueden bajar (los 10 días de la ley) | 17 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
 `pnpm build` comprueba TypeScript y genera el paquete de producción.
 
 El login, la publicación y la compra se probaron además **en un navegador
 real**, contra un servidor que habla el mismo protocolo que Supabase y con los
-headers de producción puestos. 36 comprobaciones en dos tandas:
+headers de producción puestos. 58 comprobaciones en tres tandas:
 
 - *Panel* (20): contraseña mal puesta, cuenta sin permiso, entrada del dueño,
   publicar y ocultar, venta del mostrador bajando stock y dejando movimiento,
@@ -356,5 +445,28 @@ el stock quedó como estaba.
 
 Marca y fotografías: [Mistral Argentina](https://www.mistral.com.ar/). Contacto local: [@mistral.zero.indumentaria](https://www.instagram.com/mistral.zero.indumentaria/). La procedencia detallada está en `docs/asset-sources.json`; las fotos usadas están en `public/images`. Su uso aquí es para la presentación del prototipo; confirmar con la marca el uso en la tienda final.
 
-Falta el catálogo real del local, los medios de pago y la logística. Cobrar
-dentro del sitio requiere un servidor que hable con Mercado Pago.
+Falta el catálogo real del local y los datos que sólo el dueño puede dar:
+el WhatsApp, los alias de pago, el QR de Cuenta DNI, los horarios y los costos
+de envío por zona. Todo eso se carga desde el panel. Cobrar dentro del sitio
+requiere un servidor que hable con Mercado Pago.
+
+### Normas citadas
+
+Las reglas de devoluciones y de formas de pago que el sitio publica salen de
+estas normas. Son la base del resumen de arriba; para una política definitiva
+conviene que las lea un abogado.
+
+- Ley 24.240 de Defensa del Consumidor, art. 34 (revocación, diez días
+  corridos, gastos de devolución a cargo del vendedor) y art. 11 (garantía
+  legal, seis meses para bienes nuevos).
+- Código Civil y Comercial, art. 1112 (cómo se notifica la revocación).
+- Resolución 424/2020 de la Secretaría de Comercio Interior (botón de
+  arrepentimiento y código de identificación dentro de las 24 horas) —
+  [resumen](https://ligadelconsorcista.org/consumidores-boton-de-arrepentimiento-reolucion-424-2020).
+- Ley 25.065 de Tarjetas de Crédito, art. 37 inc. c (no hacer diferencias de
+  precio entre operaciones al contado y con tarjeta) —
+  [nota](https://www.cronista.com/informacion-gral/cambian-las-compras-en-el-supermercado-la-ley-n-25065-que-prohibe-la-avivada-mas-comun-cuando-pagas/),
+  y [actas de Defensa del Consumidor por cobrar recargos](https://consumidorsalta.gob.ar/defensa-del-consumidor-infracciono-a-dos-comercios-por-cobrar-recargos-indebidos-en-pagos-con-tarjeta-de-credito/).
+- Tarifas de Correo Argentino: dependen del peso, las medidas y el código
+  postal, así que no hay un número fijo para poner en el código. Se cotizan en
+  el sitio del Correo ([encomienda clásica](https://www.correoargentino.com.ar/servicios/paqueteria/encomienda-correo-clasica)).

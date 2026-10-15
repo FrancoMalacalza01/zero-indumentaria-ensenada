@@ -4,6 +4,9 @@ export type PaymentMethodId =
   | "cuentadni"
   | "transferencia"
   | "efectivo"
+  | "debito"
+  | "credito"
+  /** Pedidos de antes de que débito y crédito fueran opciones separadas. */
   | "tarjeta";
 export interface Product {
   id: string;
@@ -34,7 +37,13 @@ export interface Order {
   items: (CartItem & { name: string; price: number; image: string })[];
   total: number;
   delivery: "pickup" | "shipping";
-  status: "Pendiente" | "Preparando" | "Listo para retirar" | "Completado";
+  status:
+    | "Pendiente"
+    | "Preparando"
+    | "Listo para retirar"
+    | "Completado"
+    /** Volvió la mercadería. El stock se repone y queda el movimiento. */
+    | "Devuelto";
   customer: string;
   /**
    * Forma de pago elegida. Opcional: los pedidos guardados antes de que
@@ -43,6 +52,64 @@ export interface Order {
   payment?: PaymentMethodId;
   /** Zona de envío, cuando el pedido no es para retirar. */
   zone?: string;
+  /**
+   * Cuánto de `total` es el envío. `total` es lo que paga el cliente, con el
+   * envío incluido; así el pedido no hay que recalcularlo después.
+   */
+  envio?: number;
+  /** Las prendas solas, sin el envío. */
+  subtotal?: number;
+}
+export interface ZonaEnvio {
+  id: string;
+  nombre: string;
+  /** Local es reparto propio; correo es Correo Argentino. */
+  tipo: "local" | "correo";
+  /** Sin definir, el checkout dice que se coordina por WhatsApp. */
+  costo?: number;
+  nota?: string;
+}
+/**
+ * La configuración del local, cargada desde el panel.
+ *
+ * Antes esto vivía en el código y había que tocar archivos para cambiar un
+ * alias. Ahora vive en la base: la lee la tienda y la escribe el dueño.
+ */
+export interface Settings {
+  whatsapp: string;
+  direccion: {
+    calle: string;
+    ciudad: string;
+    provincia: string;
+    cp: string;
+    horarios: string;
+  };
+  pago: {
+    mercadoPagoUrl: string;
+    mercadoPagoAlias: string;
+    cuentaDniAlias: string;
+    /** URL o la imagen del QR cargada desde el panel. */
+    cuentaDniQr: string;
+    banco: { nombre: string; titular: string; alias: string; cbu: string };
+    efectivo: boolean;
+    debito: boolean;
+    credito: boolean;
+    cuotasSinInteres: number;
+    cuotasMaximas: number;
+    /** Por ciento de descuento pagando en efectivo o por transferencia. */
+    descuentoContado: number;
+  };
+  envio: {
+    zonas: ZonaEnvio[];
+    /** Monto de prendas desde el que el envío va sin cargo. 0 = nunca. */
+    envioGratisDesde: number;
+  };
+  devoluciones: {
+    dias: number;
+    cambioGratisDesde: number;
+    direccion: string;
+    notas: string;
+  };
 }
 export type MovementReason =
   | "Ingreso"

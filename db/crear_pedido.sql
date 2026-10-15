@@ -43,6 +43,11 @@ declare
   l          record;
   v_p        record;
   v_hay      int;
+  v_cfg      jsonb;
+  v_zonas    jsonb;
+  v_envio    int := 0;
+  v_gratis   int;
+  v_costo    text;
 begin
   -- Lo que se puede rechazar sin tocar nada, se rechaza antes de tocar nada.
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
@@ -58,11 +63,25 @@ begin
     return jsonb_build_object('error', 'Falta la zona de envío.');
   end if;
   if p_pago is not null and p_pago not in
-     ('mercadopago', 'cuentadni', 'transferencia', 'efectivo', 'tarjeta') then
+     -- 'tarjeta' queda por los pedidos viejos, de cuando debito y credito
+     -- eran una sola opcion.
+     ('mercadopago', 'cuentadni', 'transferencia', 'efectivo',
+      'debito', 'credito', 'tarjeta') then
     return jsonb_build_object('error', 'La forma de pago no es válida.');
   end if;
   v_cliente := left(v_cliente, 80);
   v_zona := left(v_zona, 60);
+
+  -- La configuracion del local: zonas de envio y desde cuanto sale gratis.
+  select datos into v_cfg from public.settings where id = 'local';
+  v_zonas := coalesce(v_cfg->'envio'->'zonas', '[]'::jsonb);
+  -- Si el local tiene zonas cargadas, la zona del pedido tiene que ser una de
+  -- ellas. Si todavia no cargo ninguna, se acepta lo que venga, como antes.
+  if p_entrega = 'shipping' and jsonb_array_length(v_zonas) > 0
+     and not exists (select 1 from jsonb_array_elements(v_zonas) z
+                      where z->>'nombre' = v_zona) then
+    return jsonb_build_object('error', 'No hacemos envíos a esa zona.');
+  end if;
 
   select count(distinct (x->>'productId', x->>'size')) into v_lineas
     from jsonb_array_elements(p_items) x;
@@ -169,10 +188,33 @@ begin
         message = 'Es un pedido muy grande para la web; escribinos y lo armamos.';
     end if;
 
+    -- El envio, recien ahora que se sabe el subtotal. Una zona sin costo
+    -- cargado vale cero: el checkout dice que se coordina por WhatsApp, y es
+    -- mejor eso que inventarle un numero al cliente.
+    if p_entrega = 'shipping' then
+      select z->>'costo' into v_costo
+        from jsonb_array_elements(v_zonas) z
+       where z->>'nombre' = v_zona
+       limit 1;
+      if v_costo ~ '^[0-9]+$' then
+        v_envio := v_costo::int;
+      end if;
+      v_gratis := case
+        when (v_cfg->'envio'->>'envioGratisDesde') ~ '^[0-9]+$'
+          then (v_cfg->'envio'->>'envioGratisDesde')::int
+        else null
+      end;
+      -- El umbral se mira contra las prendas, no contra el total con envio:
+      -- si no, el propio envio ayudaria a alcanzarlo.
+      if v_gratis is not null and v_gratis > 0 and v_total >= v_gratis then
+        v_envio := 0;
+      end if;
+    end if;
+
     v_id := 'M-' || lpad(nextval('public.pedidos_web_seq')::text, 5, '0');
 
-    insert into public.orders (id, fecha, customer, items, total, delivery, zone, payment, status)
-    values (v_id, v_fecha, v_cliente, v_items, v_total, p_entrega,
+    insert into public.orders (id, fecha, customer, items, total, envio, delivery, zone, payment, status)
+    values (v_id, v_fecha, v_cliente, v_items, v_total + v_envio, v_envio, p_entrega,
             case when p_entrega = 'shipping' then v_zona end,
             p_pago, 'Pendiente');
 
@@ -203,7 +245,10 @@ begin
     'id',       v_id,
     'date',     to_char(v_fecha at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
     'items',    v_items,
-    'total',    v_total,
+    -- `subtotal` son las prendas; `total` es lo que paga, con envio.
+    'subtotal', v_total,
+    'envio',    v_envio,
+    'total',    v_total + v_envio,
     'delivery', p_entrega,
     'status',   'Pendiente',
     'customer', v_cliente,

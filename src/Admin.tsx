@@ -23,11 +23,13 @@ import {
   Plus,
   Search,
   Receipt,
+  Settings,
   ShoppingBag,
   SlidersHorizontal,
   Store,
   TrendingUp,
   TriangleAlert,
+  Undo2,
   X,
 } from "lucide-react";
 import { useStore } from "./Store";
@@ -48,10 +50,22 @@ import {
   setAdminPassword,
 } from "./adminAccess";
 import { useServerPanel } from "./useServerPanel";
+import { prepararImagen as prepareImage } from "./imagen";
+import AdminConfig from "./AdminConfig";
+import AdminReturns from "./AdminReturns";
+import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
 import "./admin.css";
 
-type Tab = "overview" | "sale" | "inventory" | "stock" | "movements" | "orders";
+type Tab =
+  | "overview"
+  | "sale"
+  | "inventory"
+  | "stock"
+  | "movements"
+  | "orders"
+  | "returns"
+  | "config";
 const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
   {
     overview: {
@@ -83,6 +97,16 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
       crumb: "Pedidos",
       title: "Pedidos",
       lead: "Seguí cada compra y organizá la preparación de tus pedidos.",
+    },
+    returns: {
+      crumb: "Devoluciones",
+      title: "Devoluciones",
+      lead: "Lo que vuelve, vuelve al stock. Lo que vuelve fallado, no.",
+    },
+    config: {
+      crumb: "Configuración",
+      title: "Configuración del local",
+      lead: "Contacto, formas de pago, envíos y devoluciones.",
     },
   };
 const addReasons: MovementReason[] = ["Ingreso", "Devolución"];
@@ -136,6 +160,8 @@ export default function Admin({
     applyStock,
     recordMovements,
     catalogSource,
+    settings,
+    setSettings,
   } = useStore();
   // Todo lo que el panel manda al servidor sale por acá. Sin sesión, estas
   // funciones no hacen nada y el panel se comporta como la demo de antes.
@@ -355,6 +381,22 @@ export default function Admin({
             <span className="admin-nav-full">Pedidos</span>
             <span className="admin-nav-short">Pedidos</span>
             {pendingOrders.length > 0 && <b>{pendingOrders.length}</b>}
+          </button>
+          <button
+            className={tab === "returns" ? "is-active" : ""}
+            onClick={() => setTab("returns")}
+          >
+            <Undo2 size={19} />
+            <span className="admin-nav-full">Devoluciones</span>
+            <span className="admin-nav-short">Devolver</span>
+          </button>
+          <button
+            className={tab === "config" ? "is-active" : ""}
+            onClick={() => setTab("config")}
+          >
+            <Settings size={19} />
+            <span className="admin-nav-full">Configuración</span>
+            <span className="admin-nav-short">Config</span>
           </button>
         </nav>
         <div className="admin-sidebar-bottom">
@@ -871,6 +913,33 @@ export default function Admin({
             />
           )}
           {tab === "movements" && <MovementsView movements={movements} />}
+
+          {tab === "returns" && (
+            <AdminReturns
+              orders={orders}
+              onReturn={(changes, _orderId, resumen) => {
+                const { products: siguientes, movements: movs } =
+                  applyStock(changes);
+                panel.publicarStock(siguientes, movs);
+                notify(resumen);
+              }}
+              onOrderStatus={setOrderStatus}
+            />
+          )}
+
+          {tab === "config" && (
+            <AdminConfig
+              settings={settings}
+              conectado={panel.conectado}
+              notify={notify}
+              onSave={async (nuevos) => {
+                if (!session) throw new Error("Hay que entrar con usuario.");
+                await guardarSettings(session, nuevos);
+                // Se pisa en pantalla recién cuando el servidor lo aceptó.
+                setSettings(nuevos);
+              }}
+            />
+          )}
 
           {tab === "orders" && (
             <section className="admin-card admin-inventory-card">
@@ -1707,7 +1776,6 @@ function PasswordDialog({
 const imagePattern =
   /^(https?:\/\/|data:image\/(jpeg|png|webp);base64,|\/)/i;
 /** Lado máximo al que se achican las fotos subidas, en píxeles. */
-const MAX_LADO = 1400;
 function ProductEditor({
   product,
   onSave,
@@ -1771,44 +1839,6 @@ function ProductEditor({
    * pesa varios MB y acá todo se guarda en el navegador, que da poco lugar.
    * Si el navegador no sabe achicar, se guarda tal cual y manda el límite.
    */
-  async function prepareImage(file: File) {
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
-      throw new Error("Elegí imágenes JPG, PNG o WebP.");
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("No pudimos leer la imagen."));
-      reader.readAsDataURL(file);
-    });
-    try {
-      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const el = new Image();
-        el.onload = () => resolve(el);
-        el.onerror = () => reject(new Error("imagen ilegible"));
-        el.src = dataUrl;
-      });
-      const lado = Math.max(img.width, img.height);
-      const escala = Math.min(1, MAX_LADO / lado);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * escala);
-      canvas.height = Math.round(img.height * escala);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("sin canvas");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const salida = canvas.toDataURL("image/webp", 0.82);
-      // Si el navegador no soporta WebP devuelve un PNG, que puede pesar más
-      // que el original: en ese caso conviene quedarse con el original.
-      if (salida.startsWith("data:image/webp") && salida.length < dataUrl.length)
-        return salida;
-    } catch {
-      /* Sin canvas se usa el archivo tal cual. */
-    }
-    if (file.size > 1024 * 1024)
-      throw new Error(
-        "La imagen debe pesar hasta 1 MB para guardarse en esta demo.",
-      );
-    return dataUrl;
-  }
   async function uploadImage(file?: File) {
     if (!file) return;
     try {
