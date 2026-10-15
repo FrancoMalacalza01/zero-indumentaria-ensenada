@@ -145,3 +145,16 @@ test("el QR de Cuenta DNI se guarda tal como se cargó", () => {
 test("la configuración de fábrica pasa por el lector sin cambiar", () => {
   assert.deepEqual(leerSettings(porDefecto()), porDefecto());
 });
+
+test("el cobro online viene apagado y se puede prender", () => {
+  assert.equal(leerSettings({}).pago.mercadoPagoOnline, false);
+  assert.equal(
+    leerSettings({ pago: { mercadoPagoOnline: true } }).pago.mercadoPagoOnline,
+    true,
+  );
+  // Lo que no es booleano no lo prende: un "true" de texto no alcanza.
+  assert.equal(
+    leerSettings({ pago: { mercadoPagoOnline: "true" } }).pago.mercadoPagoOnline,
+    false,
+  );
+});

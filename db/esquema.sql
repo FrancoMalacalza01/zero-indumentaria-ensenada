@@ -108,6 +108,15 @@ create table if not exists public.orders (
   -- cuánto de eso es el envío, para no tener que recalcularlo después.
   total      integer not null default 0 check (total >= 0),
   envio      integer not null default 0 check (envio >= 0),
+  -- El estado del cobro va aparte del estado del pedido: son dos cosas. Un
+  -- pedido puede estar pagado y sin preparar, o preparado y sin pagar.
+  payment_status text not null default 'sin_pago',
+  -- El id que devolvió la pasarela, para cruzarlo con el resumen.
+  pago_ref   text,
+  -- El mail del cliente y cuándo salió su confirmación. Lo segundo también
+  -- evita que la función de mail se use para bombardear a alguien.
+  email      text,
+  mail_enviado_at timestamptz,
   delivery   text not null default 'pickup',
   zone       text,
   payment    text,
@@ -116,12 +125,17 @@ create table if not exists public.orders (
   constraint orders_delivery_check check (delivery in ('pickup', 'shipping')),
   constraint orders_status_check check (
     status in ('Pendiente', 'Preparando', 'Listo para retirar', 'Completado',
-               -- Un pedido devuelto es un estado, no un pedido borrado: el
-               -- historial tiene que poder explicar por qué volvió el stock.
-               'Devuelto')
+               -- Un pedido devuelto o cancelado es un estado, no un pedido
+               -- borrado: el historial tiene que poder explicar por qué
+               -- volvió el stock.
+               'Devuelto', 'Cancelado')
+  ),
+  constraint orders_payment_status_check check (
+    payment_status in ('sin_pago', 'pendiente', 'aprobado', 'rechazado', 'devuelto')
   )
 );
 create index if not exists orders_fecha_idx on public.orders (fecha desc);
+create index if not exists orders_pago_idx on public.orders (payment_status);
 
 -- Los números de pedido los da la base, no el navegador.
 create sequence if not exists public.pedidos_web_seq;
@@ -226,3 +240,80 @@ comment on table public.movements is
   'Cada cambio de stock deja rastro. Sin clave foránea a products a propósito: el historial sobrevive al borrado de un producto, por eso guarda el nombre.';
 comment on table public.orders is
   'Pedidos de la tienda. Privado: tiene datos de clientes.';
+
+-- ---------------------------------------------------------------------------
+-- Cancelar un pedido
+-- ---------------------------------------------------------------------------
+-- La compra descuenta el stock al crearse, que es lo que evita sobrevender.
+-- Esto es el otro lado: un pedido que nadie paga tiene que poder devolver sus
+-- unidades. Las tres cosas pasan juntas —el stock vuelve, queda el movimiento
+-- y el pedido cambia de estado— porque de a una, un corte en el medio dejaría
+-- el stock devuelto y el pedido todavía activo.
+--
+-- Solo admins, e idempotente: cancelar dos veces no devuelve el stock dos
+-- veces, porque mira el estado antes de tocar nada.
+create or replace function public.cancelar_pedido(p_id text, p_motivo text default '')
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_pedido public.orders;
+  v_items  jsonb;
+begin
+  if not private.es_admin() then
+    return jsonb_build_object('error', 'No tenés permiso para cancelar pedidos.');
+  end if;
+
+  select * into v_pedido from public.orders where id = p_id for update;
+  if not found then
+    return jsonb_build_object('error', 'No encontramos ese pedido.');
+  end if;
+  if v_pedido.status in ('Cancelado', 'Devuelto') then
+    return jsonb_build_object(
+      'error', format('El pedido ya está %s.', lower(v_pedido.status)));
+  end if;
+
+  v_items := v_pedido.items;
+
+  insert into public.stock (product_id, size, qty)
+  select it->>'productId', it->>'size', (it->>'quantity')::int
+    from jsonb_array_elements(v_items) it
+   where exists (select 1 from public.products p where p.id = it->>'productId')
+  on conflict (product_id, size)
+    do update set qty = public.stock.qty + excluded.qty;
+
+  insert into public.movements (id, fecha, product_id, product_name, size, delta, reason, order_id)
+  select p_id || '-cancel-' || (ord - 1),
+         now(),
+         it->>'productId',
+         it->>'name',
+         it->>'size',
+         (it->>'quantity')::int,
+         'Devolución',
+         p_id
+    from jsonb_array_elements(v_items) with ordinality as t(it, ord)
+  on conflict (id) do nothing;
+
+  update public.orders
+     set status = 'Cancelado',
+         payment_status = case
+           when payment_status = 'aprobado' then 'devuelto'
+           else 'rechazado'
+         end
+   where id = p_id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'unidades', (select coalesce(sum((it->>'quantity')::int), 0)
+                   from jsonb_array_elements(v_items) it),
+    'motivo', p_motivo);
+end;
+$fn$;
+
+revoke all on function public.cancelar_pedido(text, text) from public;
+grant execute on function public.cancelar_pedido(text, text) to authenticated;
+
+comment on function public.cancelar_pedido(text, text) is
+  'Cancela un pedido y devuelve su stock en un solo paso. Solo admins. Idempotente.';

@@ -43,7 +43,9 @@ export interface Order {
     | "Listo para retirar"
     | "Completado"
     /** Volvió la mercadería. El stock se repone y queda el movimiento. */
-    | "Devuelto";
+    | "Devuelto"
+    /** Nadie lo pagó o no se concretó. El stock también vuelve. */
+    | "Cancelado";
   customer: string;
   /**
    * Forma de pago elegida. Opcional: los pedidos guardados antes de que
@@ -59,6 +61,19 @@ export interface Order {
   envio?: number;
   /** Las prendas solas, sin el envío. */
   subtotal?: number;
+  /** Cómo viene el cobro. Es distinto del estado del pedido. */
+  paymentStatus?:
+    | "sin_pago"
+    | "pendiente"
+    | "aprobado"
+    | "rechazado"
+    | "devuelto";
+  /** El id que devolvió la pasarela, para cruzarlo con el resumen. */
+  pagoRef?: string;
+  /** El mail al que se le mandó la confirmación. */
+  email?: string;
+  /** Cuándo salió el mail de confirmación. */
+  mailEnviadoAt?: string;
 }
 export interface ZonaEnvio {
   id: string;
@@ -90,6 +105,11 @@ export interface Settings {
     cuentaDniAlias: string;
     /** URL o la imagen del QR cargada desde el panel. */
     cuentaDniQr: string;
+    /**
+     * Cobrar online el monto exacto con Mercado Pago. Necesita además el
+     * token de la cuenta cargado como secreto en el servidor.
+     */
+    mercadoPagoOnline: boolean;
     banco: { nombre: string; titular: string; alias: string; cbu: string };
     efectivo: boolean;
     debito: boolean;

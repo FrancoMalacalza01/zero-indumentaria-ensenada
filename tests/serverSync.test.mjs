@@ -174,3 +174,64 @@ test("una fila de pedido rota no voltea el panel", () => {
   assert.deepEqual(vuelta.items, []);
   assert.equal(vuelta.total, 0);
 });
+
+test("un pedido con envío y pago aprobado va y vuelve igual", () => {
+  const pedido = {
+    id: "M-00009",
+    date: "2026-10-15T12:00:00.000Z",
+    items: [
+      { productId: "p1", size: "M", quantity: 1, name: "Buzo", price: 80000, image: "/a.webp" },
+    ],
+    total: 88000,
+    envio: 8000,
+    delivery: "shipping",
+    status: "Preparando",
+    customer: "Juana",
+    payment: "mercadopago",
+    zone: "Resto de la Provincia de Buenos Aires",
+    paymentStatus: "aprobado",
+  };
+  assert.deepEqual(rowToOrder(orderToRow(pedido)), pedido);
+});
+
+test("el panel no puede pisar un pago aprobado al guardar un pedido", () => {
+  // Un pedido sin estado de pago (por ejemplo uno viejo de la demo) no manda
+  // la columna: así el upsert del panel deja el pago como lo dejó el servidor.
+  const fila = orderToRow({
+    id: "M-00010",
+    date: "2026-10-15T12:00:00.000Z",
+    items: [],
+    total: 0,
+    delivery: "pickup",
+    status: "Completado",
+    customer: "Juana",
+  });
+  assert.equal("payment_status" in fila, false);
+  // Y uno con un estado inventado tampoco.
+  const falso = orderToRow({
+    id: "M-00011",
+    date: "2026-10-15T12:00:00.000Z",
+    items: [],
+    total: 0,
+    delivery: "pickup",
+    status: "Completado",
+    customer: "Juana",
+    paymentStatus: "regalado",
+  });
+  assert.equal("payment_status" in falso, false);
+});
+
+test("los estados nuevos del pedido no se caen a Pendiente", () => {
+  for (const status of ["Devuelto", "Cancelado"]) {
+    const fila = orderToRow({
+      id: "M-x",
+      date: "2026-10-15T12:00:00.000Z",
+      items: [],
+      total: 0,
+      delivery: "pickup",
+      status,
+      customer: "J",
+    });
+    assert.equal(fila.status, status);
+  }
+});

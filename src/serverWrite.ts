@@ -195,6 +195,29 @@ export async function guardarPedido(session: Session, order: Order) {
 }
 
 /**
+ * Cancela un pedido y devuelve su stock, en un solo paso.
+ *
+ * Lo hace la base y no el panel porque son tres cosas que tienen que pasar
+ * juntas: el stock vuelve, queda el movimiento y el pedido cambia de estado.
+ * Si el panel las hiciera de a una, un corte de red en el medio dejaría el
+ * stock devuelto y el pedido todavía activo.
+ */
+export async function cancelarPedido(
+  session: Session,
+  id: string,
+  motivo = "",
+) {
+  return conSesion(session, async (s) => {
+    const r = await pedir(s, "rpc/cancelar_pedido", {
+      method: "POST",
+      body: JSON.stringify({ p_id: id, p_motivo: motivo }),
+    });
+    if (r?.error) throw new ErrorDelServidor(String(r.error));
+    return r as { ok: true; unidades: number };
+  });
+}
+
+/**
  * Trae todo lo que el panel necesita, incluido lo que la tienda no muestra.
  *
  * La tienda pide solo lo publicado; el panel tiene que ver también lo

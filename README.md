@@ -133,16 +133,60 @@ lo que tiene que pasar — es la única forma de que un cliente compre — y es
 segura porque la función valida todo adentro, pone ella los precios y lo único
 que escribe es un pedido, sus movimientos y el descuento de stock.
 
-### Lo que todavía no hace
+### El sitio cobra
 
-El sitio no cobra. El pedido queda tomado y las prendas reservadas, pero el
-pago se coordina por WhatsApp. Para cobrar dentro del sitio hace falta un
-servidor que hable con Mercado Pago; el que hay guarda el catálogo.
+Con el cobro online prendido, al cerrar la compra el cliente ve **"Pagar
+ahora"** y va a Mercado Pago con el total exacto del pedido, envío incluido.
+Cuando el pago se acredita, el pedido queda marcado como pagado solo y pasa a
+*Preparando*.
+
+Eso vive en tres funciones que corren en el servidor, no en el navegador:
+
+| Función | Qué hace |
+|---|---|
+| `crear-pago` | Le pide a Mercado Pago el cobro del monto exacto del pedido. |
+| `pago-aviso` | Recibe el aviso de Mercado Pago y anota cómo quedó el pago. |
+| `enviar-mail` | Le manda al cliente la confirmación de su pedido. |
+
+Están en `supabase/functions/` y corren como Edge Functions, que entran en el
+plan gratuito de Supabase: **no agregan costo de infraestructura**. Lo que sí
+cuesta es la comisión de Mercado Pago por venta, que es de Mercado Pago.
+
+Cuatro decisiones que importan:
+
+- **El token de Mercado Pago nunca viaja al navegador.** Con ese token
+  cualquiera cobraría en nombre del local. Vive como secreto en Supabase y lo
+  único que lo usa es la función. Por eso el cobro online no se puede prender
+  del todo desde el panel: el interruptor está ahí, pero el token hay que
+  cargarlo en Supabase.
+- **El monto lo decide el servidor, no el navegador.** La función lee el
+  pedido de la base y cobra eso. Si alguien edita la página antes de pagar,
+  cambia lo que ve, no lo que paga.
+- **Al aviso de pago no se le cree.** Mercado Pago manda el id del pago, no el
+  resultado; la función le pregunta a Mercado Pago cómo quedó. Si se confiara
+  en el cuerpo del aviso, cualquiera podría mandar un POST diciendo "el pedido
+  M-00007 está pagado" y el local prepararía mercadería que nadie pagó.
+- **Sin configurar, nada se rompe.** Si falta el token, el botón avisa que el
+  cobro online no está disponible y la tienda sigue con el alias y el link de
+  siempre. Lo mismo con el mail.
+
+### Cancelar un pedido devuelve el stock
+
+La compra descuenta el stock al crearse, que es lo que evita sobrevender. El
+otro lado de esa moneda: un pedido que nadie paga se quedaría con las prendas
+reservadas para siempre. En la pestaña de pedidos, **Cancelar** devuelve el
+stock, deja el movimiento que lo explica y marca el pedido como *Cancelado*,
+los tres en un solo paso de la base. Es idempotente: cancelar dos veces no
+devuelve el stock dos veces.
+
+### Lo que todavía no hace
 
 Si el servidor no contesta cuando alguien entra, la tienda muestra el catálogo
 que trae adentro y la compra se cierra en el navegador, como en la demo: el
 pedido llega igual por WhatsApp, pero ese descuento de stock no está en la
 base y hay que acomodarlo a mano.
+
+**No factura.** Ver *Facturación* más abajo.
 
 ## Venta del mostrador
 
@@ -371,6 +415,96 @@ hace:
 
 Si vuelve todo el pedido, queda marcado como **Devuelto**.
 
+## Reportes
+
+Pestaña *Reportes* del panel, con períodos de 7, 30 y 90 días. Todo sale de
+datos que el sistema ya guardaba: no hay nada que cargar aparte.
+
+Qué muestra: unidades vendidas, pedidos de la web, facturado, cobrado, ticket
+promedio, la plata parada en el perchero, un gráfico de unidades por día, lo
+que más se vende, los talles que salen, **lo que conviene reponer** (se
+vendió y quedan 5 o menos) y **lo que no se movió** (publicado, con stock y
+sin una sola venta, ordenado por cuánta plata tiene dormida).
+
+Tres cosas que el reporte no mezcla, porque mezclarlas da un número lindo y
+falso:
+
+- **Unidades ≠ facturación.** "Unidades vendidas" incluye el mostrador;
+  "facturado" no. La venta del mostrador se carga para saber el stock y no
+  tiene importe, así que sumarla a la facturación sería inventarla.
+- **Facturado ≠ cobrado.** Lo segundo es sólo lo que Mercado Pago confirmó.
+- **Lo que volvió no se vendió.** Las unidades son netas: descuentan
+  devoluciones y cancelaciones. El gráfico por día sí muestra lo bruto, porque
+  una devolución de hoy no cambia lo que pasó el martes; por eso la tarjeta
+  aclara cuántas volvieron.
+
+Y una advertencia que está también en pantalla: la columna **Valor** de "lo
+que más se vende" está calculada al precio de hoy. El historial de movimientos
+no guarda a cuánto estaba la prenda cuando se vendió, así que es una
+referencia, no la facturación.
+
+La cuenta vive en `src/reportes.mjs`, separada de la pantalla y con pruebas:
+un reporte que suma mal es peor que no tener reporte, porque el dueño decide
+con eso qué comprar.
+
+## Mail de confirmación
+
+Cuando el cliente deja su mail en el checkout, recibe la confirmación del
+pedido con el detalle, el total y cómo sigue. Lo manda la función
+`enviar-mail` por SMTP.
+
+**Por SMTP y no con un servicio** porque los servicios tipo Resend piden un
+dominio propio verificado, y el sitio vive en vercel.app. Con SMTP se puede
+usar el Gmail del local con una contraseña de aplicación: no cuesta nada y no
+necesita dominio. El día que haya dominio, se cambian los secretos y listo.
+
+Se configura en Supabase → Edge Functions → Secrets:
+
+| Secreto | Ejemplo |
+|---|---|
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | el mail del local |
+| `SMTP_PASS` | una **contraseña de aplicación**, no la del mail |
+| `SMTP_DESDE` | `Mistral Ensenada <elmail@gmail.com>` |
+
+**Un pedido se confirma una sola vez.** Sin ese freno, alguien podría llamar a
+la función mil veces con el mismo número de pedido y usarla para bombardear el
+mail del cliente. La función anota cuándo mandó y no manda de nuevo.
+
+## Facturación
+
+**No está hecho, y no es una tarde de trabajo.** Esto es lo que hay que saber
+antes de decidir:
+
+- La factura electrónica se emite contra los web services de ARCA (ex AFIP), y
+  para eso hace falta un **certificado digital** atado al CUIT del local, que
+  se tramita en ARCA con clave fiscal nivel 3. Ese certificado y su clave
+  privada tienen que vivir del lado del servidor.
+- Un monotributista emite **comprobantes clase C**. Desde noviembre de 2026 la
+  factura electrónica pasa a ser obligatoria para monotributistas sociales y
+  del Monotributo Promovido, y en marzo de 2027 para el resto de los no
+  alcanzados por IVA (RG 5893/2026).
+- Un error acá no es un bug: es un problema con ARCA. Una factura mal emitida
+  hay que anularla con una nota de crédito.
+
+Tres caminos, de menos a más:
+
+1. **Como ahora, asistido.** Emitir desde *Comprobantes en línea* de ARCA, que
+   es gratuito, y anotar el número de comprobante en el pedido. Cuesta cero y
+   no tiene riesgo fiscal. Para el volumen de un local chico, alcanza.
+2. **Con un servicio de terceros** (Facturante, TusFacturasAPP y parecidos).
+   Es lo más rápido de integrar, pero son **pagos por mes**, y eso iba en
+   contra de no gastar de más.
+3. **Contra ARCA directo.** Sin costo mensual, pero es el trabajo más grande de
+   todo lo que tiene el sistema: autenticación con certificado, el web service
+   de facturación, numeración de puntos de venta, y manejo de errores que
+   tienen consecuencias fiscales.
+
+Mi recomendación: dejarlo en el camino 1 hasta que el volumen justifique el
+3. Si en algún momento se hace, conviene que lo mire el contador del local
+antes de emitir la primera factura de verdad.
+
 ## Alcance de la demo
 
 El catálogo, el stock, el historial y los pedidos cargados desde el panel
@@ -395,12 +529,13 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 ## Validación
 
-`pnpm test` ejecuta 74 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 97 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
 | `commerce.test.mjs` | la transacción de compra: inventario por talle, duplicados, stock insuficiente, productos ocultos o eliminados, cantidades inválidas y conservación del estado al rechazar una operación | 19 |
 | `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, y que un talle con coma no parta el filtro de borrado | 20 |
+| `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío y el umbral del envío gratis, y los topes que no se pueden bajar (los 10 días de la ley) | 17 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
@@ -409,7 +544,7 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 El login, la publicación y la compra se probaron además **en un navegador
 real**, contra un servidor que habla el mismo protocolo que Supabase y con los
-headers de producción puestos. 58 comprobaciones en tres tandas:
+headers de producción puestos. 83 comprobaciones en cuatro tandas:
 
 - *Panel* (20): contraseña mal puesta, cuenta sin permiso, entrada del dueño,
   publicar y ocultar, venta del mostrador bajando stock y dejando movimiento,
@@ -444,6 +579,11 @@ el stock quedó como estaba.
 ## Imágenes y referencias
 
 Marca y fotografías: [Mistral Argentina](https://www.mistral.com.ar/). Contacto local: [@mistral.zero.indumentaria](https://www.instagram.com/mistral.zero.indumentaria/). La procedencia detallada está en `docs/asset-sources.json`; las fotos usadas están en `public/images`. Su uso aquí es para la presentación del prototipo; confirmar con la marca el uso en la tienda final.
+
+Las tres funciones del servidor están **desplegadas y probadas**: contestan y
+avisan qué les falta. Lo que falta para que cobren y manden mails son los
+secretos, que son del local y nadie más puede cargar: el token de Mercado Pago
+y las credenciales del correo.
 
 Falta el catálogo real del local y los datos que sólo el dueño puede dar:
 el WhatsApp, los alias de pago, el QR de Cuenta DNI, los horarios y los costos

@@ -32,6 +32,14 @@ export const porDefecto = () => ({
     cuentaDniAlias: "",
     // Puede ser una URL o la imagen del QR cargada desde el panel.
     cuentaDniQr: "",
+    /**
+     * Cobrar online el monto exacto de la bolsa con Mercado Pago.
+     *
+     * Esto no alcanza con prenderlo: además hay que cargar el token de la
+     * cuenta como secreto en Supabase (MP_ACCESS_TOKEN). Sin el token, la
+     * tienda avisa que no está configurado y sigue con el alias de siempre.
+     */
+    mercadoPagoOnline: false,
     banco: { nombre: "", titular: "", alias: "", cbu: "" },
     efectivo: true,
     debito: true,
@@ -154,6 +162,10 @@ export function leerSettings(datos) {
       mercadoPagoAlias: texto(pago.mercadoPagoAlias),
       cuentaDniAlias: texto(pago.cuentaDniAlias),
       cuentaDniQr: texto(pago.cuentaDniQr),
+      mercadoPagoOnline: booleano(
+        pago.mercadoPagoOnline,
+        base.pago.mercadoPagoOnline,
+      ),
       banco: {
         nombre: texto(banco.nombre),
         titular: texto(banco.titular),

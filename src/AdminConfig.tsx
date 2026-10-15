@@ -235,6 +235,30 @@ export default function AdminConfig({
           ponemos acá porque cambia.
         </Ayuda>
 
+        <label className="config-switch">
+          <input
+            type="checkbox"
+            checked={draft.pago.mercadoPagoOnline}
+            onChange={(e) => setPago("mercadoPagoOnline", e.target.checked)}
+          />
+          <span>Cobrar online el monto exacto de la bolsa</span>
+        </label>
+        <Ayuda>
+          Con esto prendido, al cerrar la compra el cliente ve{" "}
+          <b>"Pagar ahora"</b> y va a Mercado Pago con el total exacto del
+          pedido, envío incluido. Cuando el pago se acredita, el pedido queda
+          marcado como pagado solo y pasa a <i>Preparando</i>.
+        </Ayuda>
+        <Ojo>
+          <b>Falta un paso que no se hace desde acá.</b> El token de tu cuenta
+          de Mercado Pago no puede vivir en el sitio: con él, cualquiera
+          cobraría en tu nombre. Hay que cargarlo como secreto en Supabase
+          (Edge Functions → Secrets → <code>MP_ACCESS_TOKEN</code>), y sale de
+          Mercado Pago en <i>Tu negocio → Credenciales → Credenciales de
+          producción</i>. Mientras no esté, el botón le avisa al cliente que el
+          cobro online no está configurado y no se rompe nada.
+        </Ojo>
+
         <div className="config-grid">
           <label className="admin-field">
             Alias o CVU de Cuenta DNI

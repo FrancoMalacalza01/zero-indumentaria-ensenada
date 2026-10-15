@@ -14,6 +14,15 @@ const ESTADOS = [
   "Preparando",
   "Listo para retirar",
   "Completado",
+  "Devuelto",
+  "Cancelado",
+];
+const ESTADOS_PAGO = [
+  "sin_pago",
+  "pendiente",
+  "aprobado",
+  "rechazado",
+  "devuelto",
 ];
 
 function entero(valor, porDefecto = 0) {
@@ -140,9 +149,16 @@ export function orderToRow(order) {
     items: Array.isArray(order.items) ? order.items : [],
     total: Math.max(0, entero(order.total)),
     delivery: ENTREGAS.includes(order.delivery) ? order.delivery : "pickup",
+    envio: Math.max(0, entero(order.envio)),
     zone: order.zone || null,
     payment: order.payment || null,
     status: ESTADOS.includes(order.status) ? order.status : "Pendiente",
+    // El estado del cobro y el mail los escribe el servidor, no el panel.
+    // Sólo se mandan si el pedido que tenemos los trae: si no, un guardado
+    // del panel pisaría un pago aprobado con un "sin_pago".
+    ...(ESTADOS_PAGO.includes(order.paymentStatus)
+      ? { payment_status: order.paymentStatus }
+      : {}),
   };
 }
 
@@ -158,5 +174,14 @@ export function rowToOrder(row) {
     customer: texto(row?.customer),
     ...(row?.payment ? { payment: row.payment } : {}),
     ...(row?.zone ? { zone: row.zone } : {}),
+    ...(row?.envio ? { envio: Math.max(0, entero(row.envio)) } : {}),
+    ...(ESTADOS_PAGO.includes(row?.payment_status)
+      ? { paymentStatus: row.payment_status }
+      : {}),
+    ...(row?.pago_ref ? { pagoRef: texto(row.pago_ref) } : {}),
+    ...(row?.email ? { email: texto(row.email) } : {}),
+    ...(row?.mail_enviado_at
+      ? { mailEnviadoAt: texto(row.mail_enviado_at) }
+      : {}),
   };
 }

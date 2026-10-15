@@ -7,6 +7,7 @@ import {
   Banknote,
   Check,
   CheckCircle2,
+  Clock,
   ChevronDown,
   ChevronRight,
   Copy,
@@ -32,6 +33,7 @@ import {
 import { money, useStore } from "./Store";
 import type { PaymentMethodId, Product, Order, Settings } from "./types";
 import { cartKey } from "./commerce.mjs";
+import { mandarConfirmacion, pedirLinkDePago } from "./funciones";
 import {
   chargesRealMoney,
   conDescuento,
@@ -1170,9 +1172,14 @@ function PaymentBlock({ option }: { option: PaymentOption }) {
 function Checkout() {
   const { cart, products, placeOrder, catalogSource, settings } = useStore();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // El cobro online es aparte de la compra: el pedido ya entró y las prendas
+  // están reservadas. Si el pago falla, no se deshace el pedido.
+  const [cobrando, setCobrando] = useState(false);
+  const [errorPago, setErrorPago] = useState("");
   // Si el local todavía no configuró ninguna, la lista queda vacía y el
   // checkout se ve igual que antes.
   const options = paymentOptions(settings);
@@ -1194,10 +1201,18 @@ function Checkout() {
     if (result.error) {
       setError(result.error);
       setBusy(false);
-    } else setOrder(result.order!);
+      return;
+    }
+    setOrder(result.order!);
+    // La confirmación sale sola y no se la espera: el pedido ya entró, y si
+    // el mail no sale no hay nada que el cliente pueda hacer al respecto.
+    if (enVivo && email) mandarConfirmacion(result.order!.id, email);
   };
   if (order) {
     const chosen = options.find((o) => o.id === order.payment);
+    // Sólo si el local lo prendió Y hay servidor: sin las dos cosas, el botón
+    // llevaría a un error.
+    const cobroOnline = enVivo && settings.pago.mercadoPagoOnline;
     return (
       <main className="checkout-success section">
         <CheckCircle2 size={58} />
@@ -1238,6 +1253,42 @@ function Checkout() {
             </>
           )}
         </div>
+        {cobroOnline && (
+          <div className="pago-online">
+            <button
+              className="button button-green"
+              disabled={cobrando}
+              onClick={async () => {
+                setCobrando(true);
+                setErrorPago("");
+                const r = await pedirLinkDePago(order.id);
+                if (r.url) {
+                  window.location.href = r.url;
+                  return;
+                }
+                setErrorPago(r.error || "No se pudo armar el cobro.");
+                setCobrando(false);
+              }}
+            >
+              {cobrando ? "Abriendo Mercado Pago…" : `Pagar ${money(order.total)} ahora`}
+              <ArrowRight size={18} />
+            </button>
+            <span>
+              Te lleva a Mercado Pago con el monto exacto. Podés pagar con
+              tarjeta, dinero en cuenta o efectivo.
+            </span>
+            {errorPago && (
+              <p className="form-error" role="alert">
+                {errorPago}
+              </p>
+            )}
+          </div>
+        )}
+        {email && (
+          <p className="reference-price">
+            Te mandamos la confirmación a <b>{email}</b>.
+          </p>
+        )}
         {chosen && <PaymentBlock option={chosen} />}
         <div className="success-actions">
           {chosen?.url && (
@@ -1325,6 +1376,19 @@ function Checkout() {
               onChange={(e) => setName(e.target.value)}
             />
           </label>
+          {enVivo && (
+            <label className="field">
+              Tu mail (opcional)
+              <input
+                type="email"
+                maxLength={120}
+                autoComplete="email"
+                placeholder="para mandarte la confirmación"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
+          )}
           <h2>2. Forma de entrega</h2>
           {deliveryAvailable(settings) ? (
             <>
@@ -1604,6 +1668,94 @@ function Stores() {
  * Los números (días, monto del cambio sin cargo, dirección) salen de la
  * configuración del panel.
  */
+/**
+ * Adonde vuelve el cliente desde Mercado Pago.
+ *
+ * Lo que dice acá es informativo: **el estado que vale es el que avisa
+ * Mercado Pago al servidor**, no el que viene en la URL. Cualquiera puede
+ * escribir `?estado=aprobado` en la barra de direcciones; el local ve en su
+ * panel lo que confirmó Mercado Pago, que es otra cosa.
+ */
+function PagoVuelta({ query }: { query: string }) {
+  const { settings } = useStore();
+  const params = new URLSearchParams(query);
+  const estado = params.get("estado") || "";
+  const pedido = params.get("pedido") || "";
+  const aprobado = estado === "aprobado";
+  const pendiente = estado === "pendiente";
+  return (
+    <main className="checkout-success section">
+      {aprobado ? <CheckCircle2 size={58} /> : <Clock size={58} />}
+      <span className="eyebrow dark">
+        {aprobado ? "PAGO RECIBIDO" : pendiente ? "PAGO EN CAMINO" : "PAGO NO COMPLETADO"}
+      </span>
+      <h1>
+        {aprobado ? (
+          <>
+            ¡Gracias!
+            <br />
+            Ya lo estamos preparando.
+          </>
+        ) : pendiente ? (
+          <>
+            Falta que
+            <br />
+            se acredite.
+          </>
+        ) : (
+          <>
+            El pago
+            <br />
+            no se completó.
+          </>
+        )}
+      </h1>
+      {pedido && (
+        <p>
+          Pedido <b>{pedido}</b>
+        </p>
+      )}
+      <div className="demo-box">
+        {aprobado ? (
+          <>
+            Nos llegó el aviso de Mercado Pago y el pedido ya figura como
+            pagado. Si pusiste tu mail, te mandamos la confirmación.
+          </>
+        ) : pendiente ? (
+          <>
+            Mercado Pago todavía no nos confirmó el pago. Puede tardar un
+            rato según cómo hayas pagado. Las prendas siguen reservadas a tu
+            nombre mientras tanto.
+          </>
+        ) : (
+          <>
+            No se cobró nada. Tus prendas siguen reservadas un rato más:
+            escribinos y lo resolvemos, o probá de nuevo con otra forma de
+            pago.
+          </>
+        )}
+      </div>
+      <div className="success-actions">
+        {settings.whatsapp && (
+          <a
+            className="button button-green"
+            href={`https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(
+              pedido ? `Hola Mistral, consulto por el pedido ${pedido}.` : "Hola Mistral,",
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle size={18} />
+            Escribinos por WhatsApp
+          </a>
+        )}
+        <Link className="text-link" to="/tienda">
+          Seguir viendo la colección <ArrowRight size={18} />
+        </Link>
+      </div>
+    </main>
+  );
+}
 function Returns() {
   const { settings } = useStore();
   const dev = settings.devoluciones;
@@ -1857,6 +2009,8 @@ export default function App() {
           <ProductDetail id={path.split("/")[2]} onCart={() => setCart(true)} />
         ) : path === "/checkout" ? (
           <Checkout />
+        ) : path.startsWith("/pago") ? (
+          <PagoVuelta query={location.search} />
         ) : path === "/devoluciones" ? (
           <Returns />
         ) : path === "/sucursales" ? (

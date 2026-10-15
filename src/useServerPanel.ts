@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "./Store";
 import type { Session } from "./auth";
 import {
+  cancelarPedido,
   cargarPanel,
   publicarProducto,
   borrarProducto,
@@ -46,6 +47,8 @@ export interface Panel {
   publicarPedido: (order: Order) => void;
   /** Stock y movimientos de una sola tanda de cambios. */
   publicarStock: (products: Product[], movements: Movement[]) => void;
+  /** Cancela el pedido en el servidor y le devuelve el stock. */
+  cancelar: (id: string) => void;
 }
 
 const SIN_SERVIDOR: Panel = {
@@ -60,6 +63,7 @@ const SIN_SERVIDOR: Panel = {
   publicarMovimientos: () => {},
   publicarPedido: () => {},
   publicarStock: () => {},
+  cancelar: () => {},
 };
 
 export function useServerPanel(
@@ -180,6 +184,10 @@ export function useServerPanel(
     publicarPedido: (order) =>
       mandar(`No se guardó el pedido ${order.id}`, (s) =>
         guardarPedido(s, order),
+      ),
+    cancelar: (id) =>
+      mandar(`No se pudo cancelar el pedido ${id}`, (s) =>
+        cancelarPedido(s, id),
       ),
     publicarStock: (products, movements) =>
       mandar("No se guardó el stock", async (s) => {

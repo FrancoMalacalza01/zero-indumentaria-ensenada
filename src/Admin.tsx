@@ -53,6 +53,7 @@ import { useServerPanel } from "./useServerPanel";
 import { prepararImagen as prepareImage } from "./imagen";
 import AdminConfig from "./AdminConfig";
 import AdminReturns from "./AdminReturns";
+import AdminReports from "./AdminReports";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
 import "./admin.css";
@@ -65,6 +66,7 @@ type Tab =
   | "movements"
   | "orders"
   | "returns"
+  | "reports"
   | "config";
 const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
   {
@@ -98,6 +100,11 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
       title: "Pedidos",
       lead: "Seguí cada compra y organizá la preparación de tus pedidos.",
     },
+    reports: {
+      crumb: "Reportes",
+      title: "Los números del local",
+      lead: "Qué se vende, qué no se mueve y qué conviene reponer.",
+    },
     returns: {
       crumb: "Devoluciones",
       title: "Devoluciones",
@@ -126,6 +133,19 @@ const orderStatuses: Order["status"][] = [
   "Listo para retirar",
   "Completado",
 ];
+/**
+ * "Cancelado" y "Devuelto" no están en esa lista a propósito: los dos mueven
+ * stock, así que no pueden ser un valor más de un desplegable. Se ponen desde
+ * el botón de cancelar o desde la pestaña de devoluciones, que son los que
+ * además devuelven las unidades.
+ */
+const pagoEtiquetas: Record<string, { texto: string; clase: string }> = {
+  sin_pago: { texto: "Sin pagar", clase: "pago-sin" },
+  pendiente: { texto: "Pago en curso", clase: "pago-curso" },
+  aprobado: { texto: "Pagado", clase: "pago-ok" },
+  rechazado: { texto: "Pago rechazado", clase: "pago-mal" },
+  devuelto: { texto: "Pago devuelto", clase: "pago-mal" },
+};
 const dateLabel = (date: string) =>
   new Date(date).toLocaleDateString("es-AR", {
     day: "2-digit",
@@ -256,6 +276,50 @@ export default function Admin({
     );
     closeEditor();
   }
+  /**
+   * Cancela un pedido y le devuelve el stock.
+   *
+   * Con servidor lo hace la base en un solo paso. Sin servidor (modo demo) se
+   * hace acá, que es lo que se puede: se repone el stock, queda el movimiento
+   * y el pedido pasa a Cancelado.
+   */
+  function cancelar(order: Order) {
+    const unidades = order.items.reduce((s, i) => s + i.quantity, 0);
+    if (
+      !confirm(
+        `¿Cancelar el pedido ${order.id}?\n\nVuelven ${unidades} ${unidades === 1 ? "unidad" : "unidades"} al stock. Esto no se puede deshacer.`,
+      )
+    )
+      return;
+    if (panel.conectado) {
+      panel.cancelar(order.id);
+      // En pantalla se adelanta; la recarga que viene después confirma.
+      setOrders(
+        orders.map((o) =>
+          o.id === order.id
+            ? { ...o, status: "Cancelado", paymentStatus: "rechazado" }
+            : o,
+        ),
+      );
+      notify("Pedido cancelado y stock devuelto");
+      return;
+    }
+    applyStock(
+      order.items.map((i) => ({
+        productId: i.productId,
+        size: i.size,
+        delta: i.quantity,
+        reason: "Devolución" as const,
+        orderId: order.id,
+      })),
+    );
+    setOrders(
+      orders.map((o) =>
+        o.id === order.id ? { ...o, status: "Cancelado" } : o,
+      ),
+    );
+    notify("Pedido cancelado y stock devuelto");
+  }
   function setOrderStatus(id: string, status: Order["status"]) {
     const siguientes = orders.map((o) => (o.id === id ? { ...o, status } : o));
     setOrders(siguientes);
@@ -381,6 +445,14 @@ export default function Admin({
             <span className="admin-nav-full">Pedidos</span>
             <span className="admin-nav-short">Pedidos</span>
             {pendingOrders.length > 0 && <b>{pendingOrders.length}</b>}
+          </button>
+          <button
+            className={tab === "reports" ? "is-active" : ""}
+            onClick={() => setTab("reports")}
+          >
+            <TrendingUp size={19} />
+            <span className="admin-nav-full">Reportes</span>
+            <span className="admin-nav-short">Números</span>
           </button>
           <button
             className={tab === "returns" ? "is-active" : ""}
@@ -914,6 +986,14 @@ export default function Admin({
           )}
           {tab === "movements" && <MovementsView movements={movements} />}
 
+          {tab === "reports" && (
+            <AdminReports
+              products={products}
+              movements={movements}
+              orders={orders}
+            />
+          )}
+
           {tab === "returns" && (
             <AdminReturns
               orders={orders}
@@ -993,7 +1073,9 @@ export default function Admin({
                         <th>PRODUCTOS</th>
                         <th>ENTREGA</th>
                         <th>TOTAL</th>
+                        <th>COBRO</th>
                         <th>ESTADO</th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1035,23 +1117,65 @@ export default function Admin({
                               )}
                             </div>
                           </td>
-                          <td className="admin-price-cell">{money(o.total)}</td>
                           <td>
-                            <select
-                              className="admin-status-select"
-                              aria-label={`Estado del pedido ${o.id}`}
-                              value={o.status}
-                              onChange={(e) =>
-                                setOrderStatus(
-                                  o.id,
-                                  e.target.value as Order["status"],
-                                )
-                              }
+                            <div className="admin-order-id">
+                              <strong>{money(o.total)}</strong>
+                              {o.envio ? (
+                                <small>{money(o.envio)} de envío</small>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td>
+                            <span
+                              className={`admin-pago ${
+                                pagoEtiquetas[o.paymentStatus || "sin_pago"]
+                                  ?.clase || "pago-sin"
+                              }`}
                             >
-                              {orderStatuses.map((s) => (
-                                <option key={s}>{s}</option>
-                              ))}
-                            </select>
+                              <span />
+                              {pagoEtiquetas[o.paymentStatus || "sin_pago"]
+                                ?.texto || "Sin pagar"}
+                            </span>
+                            {o.mailEnviadoAt && (
+                              <small className="admin-pago-nota">
+                                Mail enviado
+                              </small>
+                            )}
+                          </td>
+                          <td>
+                            {["Cancelado", "Devuelto"].includes(o.status) ? (
+                              <span className="admin-pago pago-mal">
+                                <span />
+                                {o.status}
+                              </span>
+                            ) : (
+                              <select
+                                className="admin-status-select"
+                                aria-label={`Estado del pedido ${o.id}`}
+                                value={o.status}
+                                onChange={(e) =>
+                                  setOrderStatus(
+                                    o.id,
+                                    e.target.value as Order["status"],
+                                  )
+                                }
+                              >
+                                {orderStatuses.map((s) => (
+                                  <option key={s}>{s}</option>
+                                ))}
+                              </select>
+                            )}
+                          </td>
+                          <td>
+                            {!["Cancelado", "Devuelto"].includes(o.status) && (
+                              <button
+                                className="admin-text-button"
+                                onClick={() => cancelar(o)}
+                                title="Cancelar y devolver el stock"
+                              >
+                                Cancelar
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
