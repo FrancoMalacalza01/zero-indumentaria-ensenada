@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  cuitFormateado,
+  faltaParaVender,
   leerSettings,
   porDefecto,
   costoEnvio,
@@ -155,6 +157,63 @@ test("el cobro online viene apagado y se puede prender", () => {
   // Lo que no es booleano no lo prende: un "true" de texto no alcanza.
   assert.equal(
     leerSettings({ pago: { mercadoPagoOnline: "true" } }).pago.mercadoPagoOnline,
+    false,
+  );
+});
+
+test("el CUIT se muestra con los guiones donde van", () => {
+  assert.equal(cuitFormateado("30712345670"), "30-71234567-0");
+  assert.equal(cuitFormateado("30-71234567-0"), "30-71234567-0");
+  // Uno incompleto se muestra tal cual en vez de inventarle un formato.
+  assert.equal(cuitFormateado("3071"), "3071");
+  assert.equal(cuitFormateado(undefined), "");
+});
+
+test("el CUIT guarda sólo dígitos y no más de once", () => {
+  assert.equal(leerSettings({ empresa: { cuit: "30-71234567-0" } }).empresa.cuit, "30712345670");
+  assert.equal(
+    leerSettings({ empresa: { cuit: "3071234567012345" } }).empresa.cuit.length,
+    11,
+  );
+});
+
+test("una tienda recién instalada no está en condiciones de vender, y dice por qué", () => {
+  const faltan = faltaParaVender(leerSettings({}));
+  const ids = faltan.map((f) => f.id);
+  for (const id of ["razonSocial", "cuit", "domicilio", "contacto", "talles"])
+    assert.ok(ids.includes(id), `falta avisar de ${id}`);
+  // Cada punto explica de dónde sale: si no, es una lista de caprichos.
+  assert.ok(faltan.every((f) => f.porque.length > 20));
+});
+
+test("con los datos cargados, lo que impide vender desaparece", () => {
+  const s = leerSettings({
+    whatsapp: "5492211234567",
+    empresa: {
+      razonSocial: "Mistral Ensenada SRL",
+      cuit: "30712345670",
+      domicilioLegal: "La Merced 327, Ensenada",
+    },
+    talles: { filas: [{ talle: "M", pecho: "96", cintura: "80", cadera: "100" }] },
+  });
+  assert.deepEqual(faltaParaVender(s).filter((f) => f.impide), []);
+});
+
+test("sin tabla de medidas no se puede vender ropa, aunque esté todo lo demás", () => {
+  const s = leerSettings({
+    whatsapp: "5492211234567",
+    empresa: { razonSocial: "X", cuit: "30712345670", domicilioLegal: "Y" },
+  });
+  assert.deepEqual(
+    faltaParaVender(s).filter((f) => f.impide).map((f) => f.id),
+    ["talles"],
+  );
+});
+
+test("un mail de contacto alcanza aunque no haya WhatsApp", () => {
+  const conMail = leerSettings({ empresa: { emailContacto: "hola@mistral.com" } });
+  assert.equal(
+    faltaParaVender(conMail).some((f) => f.id === "contacto"),
     false,
   );
 });

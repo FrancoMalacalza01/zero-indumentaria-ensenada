@@ -72,6 +72,27 @@ export const porDefecto = () => ({
     /** Desde este monto de prendas, el envío va sin cargo. 0 = nunca. */
     envioGratisDesde: 99999,
   },
+  /**
+   * Quién vende. El consumidor tiene que poder saberlo antes de comprar:
+   * nombre o razón social, CUIT y domicilio. Sin esto cargado, el sitio no
+   * está en condiciones de vender.
+   */
+  empresa: {
+    razonSocial: "",
+    cuit: "",
+    domicilioLegal: "",
+    emailContacto: "",
+  },
+  /**
+   * La tabla de medidas corporales. La Ley 27.521 (SUNITI) la exige en un
+   * lugar de fácil acceso y claramente identificable, también en las ventas
+   * electrónicas. Las medidas van en centímetros y las carga el local: no se
+   * inventan acá.
+   */
+  talles: {
+    filas: [],
+    nota: "",
+  },
   devoluciones: {
     /** Días corridos del derecho de arrepentimiento. La ley dice diez. */
     dias: 10,
@@ -131,6 +152,31 @@ function zonas(valor, base) {
 }
 
 /**
+ * Las filas de la tabla de medidas.
+ *
+ * Una fila sin talle no sirve, y una medida vacía se muestra vacía en vez de
+ * inventarse. Acá no hay valores por defecto a propósito: las medidas las
+ * carga el local.
+ */
+function filasDeTalles(valor) {
+  if (!Array.isArray(valor)) return [];
+  const filas = [];
+  for (const f of valor) {
+    const talle = texto(f?.talle).trim();
+    if (!talle) continue;
+    // Dos filas con el mismo talle serían dos medidas distintas para lo mismo.
+    if (filas.some((x) => x.talle === talle)) continue;
+    filas.push({
+      talle,
+      pecho: texto(f?.pecho).trim(),
+      cintura: texto(f?.cintura).trim(),
+      cadera: texto(f?.cadera).trim(),
+    });
+  }
+  return filas;
+}
+
+/**
  * Convierte lo que haya guardado en la base en una configuración usable.
  *
  * Nunca falla: lo que no entiende lo reemplaza por el valor de fábrica. Una
@@ -147,6 +193,8 @@ export function leerSettings(datos) {
     d.devoluciones && typeof d.devoluciones === "object" ? d.devoluciones : {};
   const dir =
     d.direccion && typeof d.direccion === "object" ? d.direccion : {};
+  const emp = d.empresa && typeof d.empresa === "object" ? d.empresa : {};
+  const tal = d.talles && typeof d.talles === "object" ? d.talles : {};
   return {
     // Solo dígitos: un número con espacios o guiones rompe el link de WhatsApp.
     whatsapp: texto(d.whatsapp).replace(/\D/g, ""),
@@ -186,6 +234,17 @@ export function leerSettings(datos) {
         envio.envioGratisDesde,
         base.envio.envioGratisDesde,
       ),
+    },
+    empresa: {
+      razonSocial: texto(emp.razonSocial).trim(),
+      // Solo dígitos: el CUIT se muestra formateado aparte.
+      cuit: texto(emp.cuit).replace(/\D/g, "").slice(0, 11),
+      domicilioLegal: texto(emp.domicilioLegal).trim(),
+      emailContacto: texto(emp.emailContacto).trim(),
+    },
+    talles: {
+      filas: filasDeTalles(tal.filas),
+      nota: texto(tal.nota),
     },
     devoluciones: {
       dias: Math.max(10, entero(dev.dias, base.devoluciones.dias)),
@@ -230,4 +289,75 @@ export function faltaParaEnvioGratis(settings, subtotal) {
   const gratis = settings?.envio?.envioGratisDesde || 0;
   if (!gratis || subtotal >= gratis) return 0;
   return gratis - subtotal;
+}
+
+/** El CUIT con los guiones donde van: 30-71234567-0. */
+export function cuitFormateado(cuit) {
+  const n = texto(cuit).replace(/\D/g, "");
+  if (n.length !== 11) return n;
+  return `${n.slice(0, 2)}-${n.slice(2, 10)}-${n.slice(10)}`;
+}
+
+/**
+ * Qué le falta al sitio para estar en condiciones de vender.
+ *
+ * No es una opinión de diseño: cada punto sale de algo que la ley argentina
+ * le exige a quien vende por internet. Lo que devuelve esta función es lo que
+ * el panel muestra como pendiente, y es a propósito que la mayoría sean datos
+ * del local: el sistema no puede inventar un CUIT ni una tabla de medidas.
+ *
+ * `impide` marca lo que no debería estar sin resolver el día que se abra la
+ * tienda de verdad; el resto es recomendable.
+ */
+export function faltaParaVender(settings) {
+  const s = settings || {};
+  const emp = s.empresa || {};
+  const faltan = [];
+  if (!emp.razonSocial)
+    faltan.push({
+      id: "razonSocial",
+      impide: true,
+      que: "El nombre o razón social de quien vende",
+      porque:
+        "El consumidor tiene que poder saber a quién le compra antes de comprar (Ley 24.240, art. 4).",
+    });
+  if (emp.cuit.length !== 11)
+    faltan.push({
+      id: "cuit",
+      impide: true,
+      que: "El CUIT",
+      porque: "Identifica al vendedor y va junto con el nombre.",
+    });
+  if (!emp.domicilioLegal)
+    faltan.push({
+      id: "domicilio",
+      impide: true,
+      que: "El domicilio",
+      porque:
+        "Es adonde el consumidor puede dirigir un reclamo, y adonde se mandan las devoluciones.",
+    });
+  if (!s.whatsapp && !emp.emailContacto)
+    faltan.push({
+      id: "contacto",
+      impide: true,
+      que: "Un contacto para consultas y reclamos",
+      porque:
+        "La ley pide un teléfono o un medio electrónico de atención publicado en el sitio.",
+    });
+  if (!(s.talles?.filas || []).length)
+    faltan.push({
+      id: "talles",
+      impide: true,
+      que: "La tabla de medidas corporales",
+      porque:
+        "La Ley 27.521 (SUNITI) la exige en un lugar de fácil acceso también en la venta por internet. Son medidas: no se pueden inventar.",
+    });
+  if (!s.direccion?.horarios)
+    faltan.push({
+      id: "horarios",
+      impide: false,
+      que: "Los horarios del local",
+      porque: "Hace falta para que el cliente sepa cuándo puede retirar.",
+    });
+  return faltan;
 }

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Settings, ZonaEnvio } from "./types";
 import { prepararImagen } from "./imagen";
+import { faltaParaVender } from "./settingsMap.mjs";
 import { money } from "./Store";
 
 /**
@@ -69,6 +70,9 @@ export default function AdminConfig({
   const qrInput = useRef<HTMLInputElement>(null);
 
   const tocado = JSON.stringify(draft) !== JSON.stringify(settings);
+  // Sobre el borrador, no sobre lo guardado: así el aviso se va apagando a
+  // medida que se completan los campos, antes de apretar guardar.
+  const faltan = faltaParaVender(draft);
 
   function set<K extends keyof Settings>(clave: K, valor: Settings[K]) {
     setDraft((d) => ({ ...d, [clave]: valor }));
@@ -87,6 +91,15 @@ export default function AdminConfig({
   }
   function setDir(clave: keyof Settings["direccion"], valor: string) {
     setDraft((d) => ({ ...d, direccion: { ...d.direccion, [clave]: valor } }));
+  }
+  function setEmpresa(clave: keyof Settings["empresa"], valor: string) {
+    setDraft((d) => ({ ...d, empresa: { ...d.empresa, [clave]: valor } }));
+  }
+  function setTalles(filas: Settings["talles"]["filas"]) {
+    setDraft((d) => ({ ...d, talles: { ...d.talles, filas } }));
+  }
+  function editarTalle(i: number, cambio: Partial<Settings["talles"]["filas"][0]>) {
+    setTalles(draft.talles.filas.map((f, j) => (j === i ? { ...f, ...cambio } : f)));
   }
   function setDev<K extends keyof Settings["devoluciones"]>(
     clave: K,
@@ -142,6 +155,167 @@ export default function AdminConfig({
           </p>
         </div>
       )}
+
+      {faltan.length > 0 && (
+        <div className="config-faltan">
+          <h2>
+            <TriangleAlert size={16} /> Para vender por internet falta cargar
+            esto
+          </h2>
+          <p>
+            No es una lista de caprichos: cada punto sale de algo que la ley
+            argentina le exige a quien vende por internet. Lo que el sistema no
+            puede hacer solo es inventar un CUIT o una tabla de medidas.
+          </p>
+          <ul>
+            {faltan.map((f) => (
+              <li key={f.id} className={f.impide ? "impide" : ""}>
+                <b>{f.que}</b>
+                <span>{f.porque}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="config-bloque">
+        <h2>Quién vende</h2>
+        <div className="config-grid">
+          <label className="admin-field">
+            Nombre o razón social
+            <input
+              type="text"
+              placeholder="Mistral Ensenada SRL"
+              value={draft.empresa.razonSocial}
+              onChange={(e) => setEmpresa("razonSocial", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            CUIT
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="30-71234567-0"
+              value={draft.empresa.cuit}
+              onChange={(e) => setEmpresa("cuit", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Domicilio
+            <input
+              type="text"
+              placeholder="La Merced 327, Ensenada, Buenos Aires"
+              value={draft.empresa.domicilioLegal}
+              onChange={(e) => setEmpresa("domicilioLegal", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Mail de contacto
+            <input
+              type="email"
+              placeholder="hola@..."
+              value={draft.empresa.emailContacto}
+              onChange={(e) => setEmpresa("emailContacto", e.target.value)}
+            />
+          </label>
+        </div>
+        <Ayuda>
+          Esto aparece en el pie de la tienda y en las páginas legales. El
+          consumidor tiene derecho a saber a quién le compra antes de comprar
+          (Ley 24.240, art. 4), y el domicilio es adonde puede dirigir un
+          reclamo.
+        </Ayuda>
+      </div>
+
+      <div className="config-bloque">
+        <h2>Tabla de talles</h2>
+        <div className="config-talles">
+          {draft.talles.filas.map((f, i) => (
+            <div className="config-talle" key={i}>
+              <label className="admin-field">
+                Talle
+                <input
+                  type="text"
+                  value={f.talle}
+                  onChange={(e) => editarTalle(i, { talle: e.target.value })}
+                />
+              </label>
+              <label className="admin-field">
+                Pecho (cm)
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={f.pecho}
+                  onChange={(e) => editarTalle(i, { pecho: e.target.value })}
+                />
+              </label>
+              <label className="admin-field">
+                Cintura (cm)
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={f.cintura}
+                  onChange={(e) => editarTalle(i, { cintura: e.target.value })}
+                />
+              </label>
+              <label className="admin-field">
+                Cadera (cm)
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={f.cadera}
+                  onChange={(e) => editarTalle(i, { cadera: e.target.value })}
+                />
+              </label>
+              <button
+                type="button"
+                className="admin-text-button"
+                onClick={() =>
+                  setTalles(draft.talles.filas.filter((_, j) => j !== i))
+                }
+                aria-label={`Quitar el talle ${f.talle}`}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="admin-button"
+          onClick={() =>
+            setTalles([
+              ...draft.talles.filas,
+              { talle: "", pecho: "", cintura: "", cadera: "" },
+            ])
+          }
+        >
+          <Plus size={15} /> Agregar un talle
+        </button>
+        <label className="admin-field config-ancho">
+          Aclaración (opcional)
+          <input
+            type="text"
+            placeholder="Las medidas son del cuerpo, no de la prenda."
+            value={draft.talles.nota}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                talles: { ...d.talles, nota: e.target.value },
+              }))
+            }
+          />
+        </label>
+        <Ojo>
+          <b>Esto es obligatorio para vender ropa.</b> La Ley 27.521 (SUNITI)
+          exige que la tabla de medidas corporales esté a la vista, y en las
+          ventas por internet, en un lugar de fácil acceso y claramente
+          identificable. La tienda la publica en <b>/talles</b>, enlazada desde
+          el pie y desde cada prenda. Las medidas las cargás vos: el sistema no
+          puede inventarlas, porque inventar una tabla de talles es justo lo
+          que esa ley vino a evitar.
+        </Ojo>
+      </div>
 
       <div className="config-bloque">
         <h2>El local</h2>

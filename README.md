@@ -367,6 +367,68 @@ El servidor que ya hay guarda el catálogo; no cobra.
 Mientras los precios y el stock sean de ejemplo, conviene dejar el link y el
 alias vacíos: con uno cargado, un visitante puede pagar de verdad.
 
+## Legales
+
+Lo que la ley argentina le exige a quien vende ropa por internet, y dónde está
+cada cosa en el sitio. **Esto es un resumen armado sobre las normas citadas,
+no asesoramiento legal**: antes de abrir la tienda de verdad conviene que lo
+lea un abogado.
+
+| Qué | Dónde está | De dónde sale |
+|---|---|---|
+| **Botón de arrepentimiento** | `/arrepentimiento`, enlazado desde el pie de **todas** las pantallas | Disposición 954/2025, que reemplazó a la Resolución 424/2020 |
+| **Política de devoluciones y garantía** | `/devoluciones` | Ley 24.240, arts. 34 y 11 |
+| **Tabla de medidas corporales** | `/talles`, enlazada desde el pie y desde cada prenda | Ley 27.521 (SUNITI) y Decreto 375/2021 |
+| **Términos y condiciones** | `/terminos` | Ley 24.240 · Disposición 377/2026 sobre cláusulas abusivas |
+| **Política de privacidad** | `/privacidad` | Ley 25.326 y Decreto 1558/2001 |
+| **Quién vende** (nombre, CUIT, domicilio) | pie de todas las pantallas y pie de cada página legal | Ley 24.240, art. 4 |
+| **Contacto para consultas y reclamos** | pie y páginas legales | Ley 24.240 |
+| **Enlace a Defensa del Consumidor** | pie, en Legales | Ventanilla Federal Única |
+| **Precios finales en pesos** | aclarado en el pie y en los términos | Régimen de exhibición de precios |
+
+### Tres decisiones que vale la pena explicar
+
+**El botón de arrepentimiento está en el pie de todo, no adentro de una
+página.** La Disposición 954/2025 pide que el link esté *a simple vista, en
+lugar destacado y en el primer acceso*, y que usarlo no obligue a registrarse
+ni a hacer ningún otro trámite. Por eso es una página propia, el link se llama
+exactamente así, y el formulario no pide cuenta ni login.
+
+**Las páginas legales no inventan datos.** Si falta el CUIT o el nombre de
+quien vende, la página lo muestra como pendiente, resaltado, en vez de
+completarlo con algo verosímil. Un dato legal inventado es peor que uno vacío:
+el vacío se nota y se corrige, el inventado se publica.
+
+**Los términos no tienen cláusulas abusivas, y eso fue a propósito.** La
+Disposición 377/2026 actualizó el listado de cláusulas prohibidas en contratos
+de consumo apuntando especialmente a la contratación digital. En `/terminos`
+no hay ninguna que le dé al local el derecho exclusivo de interpretar el
+contrato, que lo autorice a modificarlo unilateralmente, que le permita
+rescindir sin causa, que limite su responsabilidad por una prenda fallada, o
+que haga renunciar al cliente al arrepentimiento o a la garantía. Ninguna de
+esas vale, y ponerlas igual es lo que convierte unos términos en un problema.
+
+### Lo que el sistema no puede resolver solo
+
+El panel, en *Configuración*, muestra arriba de todo **qué falta para estar en
+condiciones de vender**, con el motivo legal de cada punto. La lista sale de
+`faltaParaVender()` en `src/settingsMap.mjs`, que está probada.
+
+Lo que sólo puede cargar el local: el nombre o razón social, el CUIT, el
+domicilio, un contacto, y **la tabla de medidas corporales**. Esa última es
+la más importante para una tienda de ropa y la única que el sistema no podría
+completar ni queriendo: son medidas del cuerpo, y inventarlas es exactamente
+lo que la ley de talles vino a evitar.
+
+### Lo que queda fuera de la página
+
+Tener el sitio en orden no alcanza para vender legalmente. Fuera del alcance
+de este código quedan la inscripción fiscal, la facturación (ver más abajo),
+el etiquetado de las prendas —cada prenda tiene que llevar su talle
+identificado con pictograma, y eso pasa en el taller, no en la web— y, si se
+guardan datos de clientes en forma de base destinada a dar informes, la
+inscripción ante la AAIP.
+
 ## Cambios y devoluciones
 
 La tienda publica la política en **`/devoluciones`**, enlazada desde el pie y
@@ -529,7 +591,7 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 
 ## Validación
 
-`pnpm test` ejecuta 97 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 103 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -537,14 +599,14 @@ El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `
 | `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, y que un talle con coma no parta el filtro de borrado | 20 |
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
-| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío y el umbral del envío gratis, y los topes que no se pueden bajar (los 10 días de la ley) | 17 |
+| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
 `pnpm build` comprueba TypeScript y genera el paquete de producción.
 
 El login, la publicación y la compra se probaron además **en un navegador
 real**, contra un servidor que habla el mismo protocolo que Supabase y con los
-headers de producción puestos. 83 comprobaciones en cuatro tandas:
+headers de producción puestos. 111 comprobaciones en cinco tandas:
 
 - *Panel* (20): contraseña mal puesta, cuenta sin permiso, entrada del dueño,
   publicar y ocultar, venta del mostrador bajando stock y dejando movimiento,

@@ -653,7 +653,8 @@ svg {
 }
 .footer-top {
   display: grid;
-  grid-template-columns: 1.4fr 0.8fr 1fr;
+  /* Cuatro columnas desde que los legales tienen la suya. */
+  grid-template-columns: 1.3fr 0.7fr 0.9fr 1.1fr;
   gap: 40px;
   padding-bottom: 48px;
 }
@@ -1631,7 +1632,7 @@ svg {
   }
   .footer-top {
     gap: 30px;
-    grid-template-columns: 1.2fr 0.8fr 1fr;
+    grid-template-columns: 1.1fr 0.7fr 0.8fr 1fr;
   }
   .detail-grid {
     gap: 5%;
@@ -2459,4 +2460,107 @@ svg {
   line-height: 1.6;
   color: var(--muted);
   text-align: center;
+}
+
+/* --- Páginas legales: identidad, tablas y avisos ------------------------ */
+.legal-intro {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--muted);
+  max-width: 60ch;
+  margin-top: 6px;
+}
+/* Lo que falta cargar se ve como falta, no se disimula: un dato legal
+   inventado es peor que uno vacío. */
+.legal-pendiente {
+  display: inline;
+  padding: 1px 7px;
+  border-radius: 3px;
+  background: #fcf0f2;
+  color: #8a1f36;
+  font-style: italic;
+  font-size: 0.95em;
+}
+.legal-identidad {
+  margin-top: 40px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.legal-identidad h3 {
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.legal-identidad p {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 5px;
+}
+.legal-identidad a {
+  color: var(--brand);
+  text-decoration: underline;
+}
+/* De dónde sale cada cosa. Sin esto, el texto legal es una opinión. */
+.legal-fuente {
+  margin-top: 26px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.tabla-talles-marco {
+  margin: 22px 0 10px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+}
+.tabla-talles {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  background: #fff;
+}
+.tabla-talles th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.tabla-talles td {
+  font-size: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #f1f1ef;
+}
+.tabla-talles tr:last-child td {
+  border-bottom: 0;
+}
+.tabla-talles td:first-child {
+  color: var(--brand);
+}
+
+/* --- El pie: legales e identidad del vendedor --------------------------- */
+.footer-top > div.footer-legales > a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* El botón de arrepentimiento tiene que verse: la norma pide que esté a
+   simple vista y en lugar destacado, no escondido entre otros links. */
+.footer-top > div.footer-legales > a.pie-arrepentimiento {
+  font-weight: 600;
+  color: #fff;
+}
+.footer-identidad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  padding: 0 0 18px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #c3c8d8;
 }

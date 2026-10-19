@@ -31,6 +31,15 @@ import {
   X,
 } from "lucide-react";
 import { money, useStore } from "./Store";
+import { Link, navigate, useRoute } from "./router";
+import {
+  Arrepentimiento,
+  LegalesDelPie,
+  Privacidad,
+  Talles,
+  Terminos,
+} from "./Legales";
+import { cuitFormateado } from "./settingsMap.mjs";
 import type { PaymentMethodId, Product, Order, Settings } from "./types";
 import { cartKey } from "./commerce.mjs";
 import { mandarConfirmacion, pedirLinkDePago } from "./funciones";
@@ -79,39 +88,6 @@ function whatsappOrderUrl(order: Order, settings: Settings) {
   ].join("\n");
   return `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`;
 }
-function navigate(path: string) {
-  window.history.pushState({}, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "instant" });
-}
-function Link({
-  to,
-  children,
-  className = "",
-  ...rest
-}: {
-  to: string;
-  children: ReactNode;
-  className?: string;
-  tabIndex?: number;
-  "aria-hidden"?: boolean;
-}) {
-  return (
-    <a
-      className={className}
-      href={to}
-      {...rest}
-      onClick={(e) => {
-        if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-          e.preventDefault();
-          navigate(to);
-        }
-      }}
-    >
-      {children}
-    </a>
-  );
-}
 function Brand({ light = false }: { light?: boolean }) {
   return (
     <span className={`brand ${light ? "brand-light" : ""}`}>
@@ -119,15 +95,6 @@ function Brand({ light = false }: { light?: boolean }) {
       <span>ENSENADA</span>
     </span>
   );
-}
-function useRoute() {
-  const [path, setPath] = useState(location.pathname + location.search);
-  useEffect(() => {
-    const handler = () => setPath(location.pathname + location.search);
-    addEventListener("popstate", handler);
-    return () => removeEventListener("popstate", handler);
-  }, []);
-  return path;
 }
 function Overlay({
   title,
@@ -246,6 +213,12 @@ function ProductCard({ product: p }: { product: Product }) {
 }
 function Header({ onCart }: { onCart: () => void }) {
   const { cart, favorites, settings } = useStore();
+  // Las zonas salen de la configuración. La de la ciudad del local no se
+  // repite: ya está dicha al lado.
+  const otrasZonas = settings.envio.zonas
+    .map((z) => z.nombre)
+    .filter((n) => n !== settings.direccion.ciudad)
+    .join(", ");
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
   const [query, setQuery] = useState("");
@@ -260,7 +233,8 @@ function Header({ onCart }: { onCart: () => void }) {
       <div className="announcement">
         <span>EL ESPÍRITU MISTRAL, MÁS CERCA TUYO</span>
         <span>
-          Ensenada · Envíos a La Plata y Berisso <ArrowUpRightSmall />
+          {settings.direccion.ciudad}
+          {otrasZonas ? ` · Envíos a ${otrasZonas}` : ""} <ArrowUpRightSmall />
         </span>
       </div>
       <header className="site-header">
@@ -743,7 +717,7 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
   );
 }
 function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
-  const { products, cart, setCart, favorites, toggleFavorite, notify } =
+  const { products, cart, setCart, favorites, toggleFavorite, notify, settings } =
     useStore();
   const [size, setSize] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -943,22 +917,56 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
       </section>
       {guide && (
         <Overlay title="Encontrá tu talle" onClose={() => setGuide(false)}>
-          <p className="modal-copy">
-            En esta demo mostramos los talles del catálogo de referencia. La
-            tabla de medidas de cada prenda se incorporará con la información
-            del local.
-          </p>
-          <p className="modal-copy">
-            Para asesoramiento, escribinos por Instagram.
-          </p>
-          <a
-            className="button button-green"
-            href={instagram}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Consultar por Instagram <Instagram size={18} />
-          </a>
+          {settings.talles.filas.length ? (
+            <>
+              <p className="modal-copy">
+                Medite sin apretar y buscá la fila que te queda más cerca. Si
+                quedás entre dos talles, conviene el más grande.
+              </p>
+              <div className="tabla-talles-marco">
+                <table className="tabla-talles">
+                  <thead>
+                    <tr>
+                      <th>TALLE</th>
+                      <th>PECHO</th>
+                      <th>CINTURA</th>
+                      <th>CADERA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {settings.talles.filas.map((f) => (
+                      <tr key={f.talle}>
+                        <td>
+                          <b>{f.talle}</b>
+                        </td>
+                        <td>{f.pecho || "—"}</td>
+                        <td>{f.cintura || "—"}</td>
+                        <td>{f.cadera || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <p className="modal-copy">
+              La tabla de medidas todavía no está cargada. Escribinos y te
+              pasamos las medidas de esta prenda.
+            </p>
+          )}
+          <Link className="button button-green" to="/talles">
+            Ver la tabla completa <ArrowRight size={18} />
+          </Link>
+          {settings.whatsapp && (
+            <a
+              className="text-link"
+              href={`https://wa.me/${settings.whatsapp}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              O consultanos por WhatsApp
+            </a>
+          )}
         </Overlay>
       )}
     </main>
@@ -1798,6 +1806,11 @@ function Returns() {
         <p className="legal-nota">
           Completá los datos y se abre el mensaje listo para enviar. Te
           respondemos con un código de seguimiento dentro de las 24 horas.
+          También está{" "}
+          <Link className="text-link" to="/arrepentimiento">
+            en su propia página
+          </Link>
+          , enlazada desde el pie de todas las pantallas.
         </p>
         <div className="legal-form">
           <label className="field">
@@ -1859,6 +1872,13 @@ function Returns() {
           </li>
         </ul>
         <p className="legal-nota">
+          Para saber qué talle pedir, mirá{" "}
+          <Link className="text-link" to="/talles">
+            la tabla de medidas
+          </Link>
+          .
+        </p>
+        <p className="legal-nota">
           Esto vale sólo para el cambio por gusto o por talle. Si te
           arrepentiste de la compra o la prenda vino fallada, el envío lo
           pagamos nosotros siempre, sin importar el monto.
@@ -1894,10 +1914,18 @@ function Returns() {
           Volver a la tienda <ArrowRight size={16} />
         </Link>
       </div>
+      <p className="legal-fuente">
+        Ley 24.240 de Defensa del Consumidor, arts. 34 (arrepentimiento) y 11
+        (garantía legal) · Código Civil y Comercial, art. 1112 · Disposición
+        954/2025 de la Subsecretaría de Defensa del Consumidor y Lealtad
+        Comercial, que reemplazó a la Resolución 424/2020.
+      </p>
     </main>
   );
 }
 function Footer() {
+  const { settings, catalogSource } = useStore();
+  const e = settings.empresa;
   return (
     <footer className="footer">
       <div className="footer-top">
@@ -1928,19 +1956,35 @@ function Footer() {
         <div>
           <h3>CERCA TUYO</h3>
           <Link to="/sucursales">Nuestras tiendas</Link>
-          <Link to="/devoluciones">Cambios y devoluciones</Link>
           <a href={instagram} target="_blank" rel="noreferrer">
             Contacto por Instagram
           </a>
           <Link to="/favoritos">Mis favoritos</Link>
         </div>
+        <div className="footer-legales">
+          <h3>LEGALES</h3>
+          <LegalesDelPie />
+        </div>
       </div>
+      {(e.razonSocial || e.cuit || e.domicilioLegal) && (
+        <div className="footer-identidad">
+          <span>
+            {e.razonSocial}
+            {e.cuit ? ` · CUIT ${cuitFormateado(e.cuit)}` : ""}
+          </span>
+          {e.domicilioLegal && <span>{e.domicilioLegal}</span>}
+        </div>
+      )}
       <div className="footer-bottom">
         <span>© {new Date().getFullYear()} Mistral Ensenada</span>
-        <span>
-          Prototipo de presentación. Precios y stock de referencia. Sin ventas
-          reales.
-        </span>
+        {catalogSource === "servidor" ? (
+          <span>Precios en pesos, finales y con impuestos incluidos.</span>
+        ) : (
+          <span>
+            Prototipo de presentación. Precios y stock de referencia. Sin
+            ventas reales.
+          </span>
+        )}
         <span>MADE FOR LIFE OUTSIDE.</span>
       </div>
     </footer>
@@ -2011,6 +2055,14 @@ export default function App() {
           <Checkout />
         ) : path.startsWith("/pago") ? (
           <PagoVuelta query={location.search} />
+        ) : path === "/arrepentimiento" ? (
+          <Arrepentimiento />
+        ) : path === "/talles" ? (
+          <Talles />
+        ) : path === "/terminos" ? (
+          <Terminos />
+        ) : path === "/privacidad" ? (
+          <Privacidad />
         ) : path === "/devoluciones" ? (
           <Returns />
         ) : path === "/sucursales" ? (

@@ -124,6 +124,18 @@ export interface Settings {
     /** Monto de prendas desde el que el envío va sin cargo. 0 = nunca. */
     envioGratisDesde: number;
   };
+  /** Quién vende. El consumidor tiene que poder saberlo antes de comprar. */
+  empresa: {
+    razonSocial: string;
+    cuit: string;
+    domicilioLegal: string;
+    emailContacto: string;
+  };
+  /** La tabla de medidas corporales que exige la Ley 27.521 (SUNITI). */
+  talles: {
+    filas: { talle: string; pecho: string; cintura: string; cadera: string }[];
+    nota: string;
+  };
   devoluciones: {
     dias: number;
     cambioGratisDesde: number;
