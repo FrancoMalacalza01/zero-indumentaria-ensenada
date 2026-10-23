@@ -1,0 +1,431 @@
+{
+  "verifiedAt": "2026-09-26",
+  "source": "https://www.mistral.com.ar/",
+  "notes": [
+    "Prices and images are from official nationwide e-commerce and are reference data for the prototype, not independently verified La Plata/Ensenada inventory.",
+    "Instagram direct fetch was unavailable. No local street addresses verified.",
+    "Official summer campaign art is precomposed with text."
+  ],
+  "visualDirection": {
+    "colors": [
+      "navy",
+      "red",
+      "off-white"
+    ],
+    "style": "Casual nautical/surf heritage, bold sans-serif type, neutral product photography, sunny seasonal imagery."
+  },
+  "products": [
+    {
+      "name": "Remera Blank MC - 10206-10",
+      "category": "Hombre",
+      "source": "https://www.mistral.com.ar/productos/remera-blank-mc-10206-17-copia-bwr9n/",
+      "priceARS": 35900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-verde-claro-4-3efe5a47f6b12b1d1c17899951511820-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-aero-3-aa45ea031c48069a1e17899951519154-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-crema-4-1fc116183a9845c1ca17899951526944-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-verde-claro-1-fb14377c0bebab464717899951512711-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-aero-1-37cbfbdb0276a0ab6b17899951522204-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-crema-1-4f1fc4a40b20c50ae517899951516612-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-verde-claro-3-610ffe28445c6e595f17899951512803-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-aero-4-195da8d7ceddd3512c17899951516147-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-crema-3-f7398412d8aec12b2117899951512147-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-verde-claro-2-ed2cb5d0ae64f59e5417899951509868-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-aero-2-b122e2e0b53cbcf21017899951524372-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-10-crema-2-a6c4ad47a27c453b2817899951516234-1024-1024.webp"
+      ],
+      "colors": [
+        "Aero",
+        "Crudo",
+        "Verde claro"
+      ],
+      "sizes": [
+        "XXXL",
+        "XXXXL",
+        "M",
+        "XXL",
+        "L",
+        "XL"
+      ],
+      "id": 1,
+      "image": "/images/product-1.webp"
+    },
+    {
+      "name": "Remera Stripes MC - 10193-4",
+      "category": "Hombre",
+      "source": "https://www.mistral.com.ar/productos/remera-stripes-mc-10193-4-aggyh/",
+      "priceARS": 50900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10193-4-2-8a4c3abd5d1c669b5717868464041007-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10193-4-1-0574c515643581d16217868464044541-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10193-4-3-d2d9768af899a4398317868464041006-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10193-4-4-c90d803fa0e9cb3d2d17868464038371-1024-1024.webp"
+      ],
+      "colors": [
+        "Celeste"
+      ],
+      "sizes": [
+        "L",
+        "XL",
+        "M",
+        "XXL",
+        "XXXL"
+      ],
+      "id": 2,
+      "image": "/images/product-2.webp"
+    },
+    {
+      "name": "Polo Pique Rayada MC - 20080-19",
+      "category": "Hombre",
+      "source": "https://www.mistral.com.ar/productos/polo-pique-rayada-mc-20080-19-5ald6/",
+      "priceARS": 66900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/20080mv19-4-0ecd6e525f4d70e4a517625504169176-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/20080mv19-5-788dfe9f5a9c79d44017625504166736-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/20080mv19-7-875f38468005e5170b17625504169758-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/20080mv19-10-a4de31e9dd8f5f6ae017625504168162-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/20080mv19-3-d8952161e35514186617625504169944-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/20080mv19-11-3bbb62b8ea21becd8e17625504169438-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/20080mv19-12-dbb1ba173d7c2ab2f417625504165706-1024-1024.webp"
+      ],
+      "colors": [
+        "Azul marino"
+      ],
+      "sizes": [
+        "L",
+        "S",
+        "M",
+        "XL",
+        "XXL",
+        "XXXL"
+      ],
+      "id": 3,
+      "image": "/images/product-3.webp"
+    },
+    {
+      "name": "Remera Blank MC - 10206-4",
+      "category": "Hombre",
+      "source": "https://www.mistral.com.ar/productos/remera-blank-mc-10206-4-7xkcw/",
+      "priceARS": 35900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-militar-2-fc748d61225fa97fb117899941929212-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-negro-3-9dbfbf3165c770d7f117899941925528-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-crema-3-b45103652ad6be8a9917899941926133-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-militar-3-d3cafa1d32937cf99e17899941925553-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-negro-2-50ef81288c986996fb17899941922935-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-crema-1-9e2eff8892f922795517899941929885-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-militar-1-335544fc67555fd1b617899941919582-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-negro-1-7bcf89e57ca9b5b83f17899941921959-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-crema-2-da5f61cbabfd56c9ee17899941927556-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-militar-4-fe280ad542fda3ddd917899941925230-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-negro-4-a4dca0ee41f125653f17899941924390-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10206-4-crema-4-1b96f77d257122e3e717899941918601-1024-1024.webp"
+      ],
+      "colors": [
+        "Crudo",
+        "Verde",
+        "Negro"
+      ],
+      "sizes": [
+        "XXXL",
+        "XXXXL",
+        "L",
+        "M",
+        "XL",
+        "XXL"
+      ],
+      "id": 4,
+      "image": "/images/product-4.webp"
+    },
+    {
+      "name": "Remera Print MC - 10205-10",
+      "category": "Hombre",
+      "source": "https://www.mistral.com.ar/productos/remera-print-mc-10205-10-8ffrj/",
+      "priceARS": 33900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-10-talampaya-1-791e524e627db7a5ee17848929109190-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-10-aero-1-aa2e2371b58a15312217713697990719-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-10-talampaya-2-71b76c0426a60b735317848929107717-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-10-aero-3-60c3a77596270d3c8e17713697989494-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-10-talampaya-4-e6d6457157778317f617848929109921-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-10-aero-2-58e2597a376889a4b317713697986909-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-10-aero-4-9e23a0f641983ecbeb17713697991095-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/10205-11-talampaya-4-29a595f2715b206f2817848929109560-1024-1024.webp"
+      ],
+      "colors": [
+        "Aero",
+        "Ivory"
+      ],
+      "sizes": [
+        "XXXL",
+        "XXXXL",
+        "L",
+        "M",
+        "XXL",
+        "XL"
+      ],
+      "id": 5,
+      "image": "/images/product-5.webp"
+    },
+    {
+      "name": "Buzo Alva - 48108",
+      "category": "Mujer",
+      "source": "https://www.mistral.com.ar/productos/buzo-alva-48108-1rt0f/",
+      "priceARS": 87900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/48108-crudo-1-e3ea86fc4785cb9a3617903817925274-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/48108-safari-1-7e1c654ba9ccb8987317903817925516-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/48108-crudo-3-251440ebd01854da3817903817924699-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/48108-safari-3-caf3d2dc2d77d77d3817903817928390-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/48108-crudo-2-3f2162c75757857e4917903817925240-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/48108-safari-2-610e53a27eb0f1899517903817922273-1024-1024.webp"
+      ],
+      "colors": [
+        "Crudo",
+        "Safari"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "id": 6,
+      "image": "/images/product-6.webp"
+    },
+    {
+      "name": "Remera Bellagio MC - 41341",
+      "category": "Mujer",
+      "source": "https://www.mistral.com.ar/productos/remera-bellagio-mc-41341-1vtkh/",
+      "priceARS": 41900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/41341b-marron-4-6489cefecfc009669517903778122065-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/41341b-marron-3-450cf0a4a44b96159a17903778120326-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/41341b-marron-2-56512e1709ef1108b117903778119389-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/41341b-marron-1-cb2ade8672abfd023317903778119994-1024-1024.webp"
+      ],
+      "colors": [
+        "Marrón"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "id": 7,
+      "image": "/images/product-7.webp"
+    },
+    {
+      "name": "Musculosa Tahiti - 40138",
+      "category": "Mujer",
+      "source": "https://www.mistral.com.ar/productos/musculosa-tahiti-40138-1eg9c/",
+      "priceARS": 35900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/40138-beige-3-ff86857b5b4539997217903768395699-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/40138-negro-3-47845b6dd5936c68f117903768390845-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/40138-beige-4-1574c5179c1b8f6d4217903768395677-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/40138-negro-1-440603bbf0cf6fc27117903768396719-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/40138-beige-2-a36e5edfd58965ef4f17903768395178-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/40138-beige-1-832b4230d5d534891a17903768395980-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/40138-negro-2-1c17e54c9586c1dcff17903768391496-1024-1024.webp"
+      ],
+      "colors": [
+        "Beige",
+        "Negro"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "id": 8,
+      "image": "/images/product-8.webp"
+    },
+    {
+      "name": "Vestido Guyana - 45479",
+      "category": "Mujer",
+      "source": "https://www.mistral.com.ar/productos/vestido-guyana-45479-13ke1/",
+      "priceARS": 54900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-crudo-3-a8525b26513473fbf917903414608053-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-marino-1-ccd6f00538813ad35717903414607179-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-crudo-2-29942d18c82778af0717903414606758-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-marino-3-9fecd64931a7b0f1e317903414607774-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-crudo-1-4e94026a469f8957e217903414605279-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-marino-2-c7eb790f4b38f3cea717903414609238-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-crudo-5-2a961a1018abe7ccb417903414603696-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-marino-5-6c7cda6fbe3ca979aa17903414600256-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-crudo-4-6e1afc7a07040bb64b17903414604368-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/45479-marino-4-b917b2448575e210e917903414598216-1024-1024.webp"
+      ],
+      "colors": [
+        "Crudo",
+        "Azul marino"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "id": 9,
+      "image": "/images/product-9.webp"
+    },
+    {
+      "name": "Blusa Laos Embroidery - 43007",
+      "category": "Mujer",
+      "source": "https://www.mistral.com.ar/productos/blusa-laos-embroidery-43007-rpq83/",
+      "priceARS": 64900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/43007-negro-4-14372e2732725a891717903408952926-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/43007-negro-1-a255dd64043189297717903408957250-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/43007-negro-3-f7cdc660d41f19de5a17903408954133-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/43007-negro-2-ee0781860824ee313717903408953449-1024-1024.webp"
+      ],
+      "colors": [
+        "Negro"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "id": 10,
+      "image": "/images/product-10.webp"
+    },
+    {
+      "name": "Cap Gaspard - Código 90000",
+      "category": "Accesorios",
+      "source": "https://www.mistral.com.ar/productos/cap-gaspard-codigo-90000/",
+      "priceARS": 32900,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m007-5-c8c39c1e132cc3ee5717596752557850-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m040-6-7078cdb939dea9523b17596753660301-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m012-10-1c8d263a3614a3af8417596753108206-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m014-5-5d65776ad52de1e50617596755894260-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m007-8-1da147a6dc44792cdb17596752558103-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m012-4-4a20bd6caf0168aab617596753104950-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m012-6-9e7dae1666badc07fb17596753111626-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m014-4-46d41d740cf956f21c17596753348820-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m007-6-cdd435020e57398ec317596752561349-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m014-6-926def78ace7226f5817596753351190-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m040-7-ecef64992ef09db13c17596753661937-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m014-5-1830926ff6174b4c9917596753346833-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m012-7-a10b6fbef2fb16c34417596753102689-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m007-7-9363b92dc4912c1bbe17596752560487-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m012-8-3dab38f3dc7c029ed317596753106154-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m014-8-ed6536bb47003b111017596753345838-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m014-7-921973c3910e37c82f17596753347941-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m040-9-c194d77a8df58cd9f117596753662783-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/90000m040-8-8443b3c66f936095c617596753658018-1024-1024.webp"
+      ],
+      "colors": [
+        "Azul marino",
+        "Militar",
+        "Beige",
+        "Gris oscuro"
+      ],
+      "sizes": [],
+      "id": 11,
+      "image": "/images/product-11.webp"
+    },
+    {
+      "name": "Billetera Roger - 19803",
+      "category": "Accesorios",
+      "source": "https://www.mistral.com.ar/productos/billetera-roger-19803/",
+      "priceARS": 62200,
+      "images": [
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-10-1b2d8d90b68ec65f6217573451047103-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-rojo-12-997643e1511f0d820317573450722467-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-azul-11-d10abc88b7b24e56fa17573450279678-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-9-61e7c68d6bea6f66d017573450513224-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-negro-7-431400cef036b7306d17573450892341-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-11-2ad1f394e98fb2611117573451047183-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-rojo-11-08cc304564c6b24c4f17573450722010-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-azul-10-3a10f4a7ab54a891a917573450279567-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-12-6066beb5b58fb436f717573450517803-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-negro-10-5af97b1e3e0c74e25e17573450890745-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-azul-8-660b8334de36d78d1517573450282683-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-8-691d0a60d3330e318d17573450515939-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-azul-7-dc40a288002431e07717573450282585-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-9-dc743619cb3944608917573451046799-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-7-eab0a3501171f895c717573450513389-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-rojo-10-d64a36f1210fb44de017573450718871-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-azul-6-1cbf9b6969c411cbde17573450279868-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-5-2d85c04bdb5b61cefe17573450513283-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-rojo-8-4661b69bf9d76cf08317573450719241-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-azul-4-9d3b94dae52e81679e17573450283498-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-10-27dd0cd3bad2fe618e17573450513093-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-negro-6-6194b31ea531dea44117573450889270-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-rojo-4-49410c1785deda82c617573450719005-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-8-848e54fd2f7b96b31b17573451046846-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-negro-2-28f7c3c33ea7ab28af17573450889444-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-4-56cf1ba5a1c95e66ff17573451044355-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-azul-2-0caf5a42208529082617573450282978-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-2-3dac53b974290791f417573450516189-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-2-f20e9794c565aecb6e17573451046959-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-rojo-2-19cafa3e8ca5c28f1b17573450722002-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-negro-3-cf2a9ee5d8c691eea317573450889274-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-marron-4-429920ffb4da30cf9017573450513445-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-rojo-6-1a7d9fd07065d85f8617573450721873-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-negro-8-c583739021c314cc3d17573450892030-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-negro-5-1726f6c03b6f2fcf2817573450893353-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-7-69c9e149a0b2b4671f17573451047333-1024-1024.webp",
+        "https://acdn-us.mitiendanube.com/stores/001/369/862/products/19803-tostado-6-832b73ae98c7cf1ef417573451044314-1024-1024.webp"
+      ],
+      "colors": [
+        "Marrón",
+        "Rojo",
+        "Azul oscuro",
+        "Negro",
+        "Tostado"
+      ],
+      "sizes": [
+        "U"
+      ],
+      "id": 12,
+      "image": "/images/product-12.webp"
+    }
+  ],
+  "banners": [
+    {
+      "source": "https://acdn-us.mitiendanube.com/stores/001/369/862/themes/rio/2-slide-1789997771110-2752097928-41b758fe992d6e39b6a175db5a816bb71789997772-1920-1920.webp?4386654611101819291",
+      "image": "/images/banner-0.webp",
+      "name": "Clásicos que no fallan — vertical"
+    },
+    {
+      "source": "https://acdn-us.mitiendanube.com/stores/001/369/862/themes/rio/2-slide-1789997771089-746268116-e49362ecc473084ed7cc82c52753094e1789997771-1920-1920.webp?4386654611101819291",
+      "image": "/images/banner-1.webp",
+      "name": "Clásicos que no fallan — horizontal"
+    },
+    {
+      "source": "https://acdn-us.mitiendanube.com/stores/001/369/862/themes/rio/2-slide-1786021696322-6825219297-6179ddb7ccc2c135385f31b1b80afe361786021636-1920-1920.webp?4386654611101819291",
+      "image": "/images/banner-2.webp",
+      "name": "Remera Pack"
+    },
+    {
+      "source": "https://acdn-us.mitiendanube.com/stores/001/369/862/themes/rio/2-slide-1790091489989-3508388559-78c15018b1ead4961e495ee892dd17971790091491-1920-1920.webp?4386654611101819291",
+      "image": "/images/banner-3.webp",
+      "name": "Hello Summer — mujer"
+    },
+    {
+      "source": "https://acdn-us.mitiendanube.com/stores/001/369/862/themes/rio/2-slide-1790091489990-8869323783-5bfa15a0eb4cef4e44afbfb608468d6a1790091491-1920-1920.webp?4386654611101819291",
+      "image": "/images/banner-4.webp",
+      "name": "Hello Summer — junior"
+    }
+  ],
+  "logo": {
+    "source": "https://acdn-us.mitiendanube.com/stores/001/369/862/themes/common/logo-521951243-1601909929-2bf0ba3b22a4b4227310edcfb7ff19eb1601909930.png?0",
+    "image": "/images/mistral-logo.png"
+  },
+  "lifestyle": {
+    "source": "https://acdn-us.mitiendanube.com/stores/001/369/862/themes/rio/2-img-5090453535030974262-1781116863-749d56f1e5f93938bee87e3f2f5301e11781116863-1920-1920.webp?4386654611101819291",
+    "image": "/images/lifestyle.webp"
+  },
+  "stores": [],
+  "instagram": "https://www.instagram.com/mistral.zero.indumentaria/"
+}
