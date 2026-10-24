@@ -185,7 +185,7 @@ export default function AdminConfig({
             Nombre o razón social
             <input
               type="text"
-              placeholder="Mistral Ensenada SRL"
+              placeholder="Zero Indumentaria"
               value={draft.empresa.razonSocial}
               onChange={(e) => setEmpresa("razonSocial", e.target.value)}
             />

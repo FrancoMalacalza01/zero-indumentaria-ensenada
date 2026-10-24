@@ -1,4 +1,4 @@
--- Esquema de la base de Mistral Ensenada.
+-- Esquema de la base de Zero Indumentaria.
 --
 -- Esto es el estado al que hay que llegar, armado para poder correrlo de
 -- nuevo sin romper nada: sirve para levantar la base de cero, para revisar

@@ -59,6 +59,7 @@ import {
 } from "./delivery";
 const Admin = lazy(() => import("./Admin"));
 const AdminGate = lazy(() => import("./AdminGate"));
+const MenCatalog = lazy(() => import("./MenCatalog"));
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
 // El WhatsApp, la dirección, las formas de pago, las zonas de envío y la
 // política de devoluciones se cargan desde el panel y viven en la base. Acá
@@ -67,7 +68,7 @@ const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
 function whatsappOrderUrl(order: Order, settings: Settings) {
   const envio = order.envio || 0;
   const text = [
-    `Hola Mistral, quiero hacer este pedido:`,
+    `Hola Zero Indumentaria, quiero hacer este pedido:`,
     "",
     ...order.items.map(
       (i) =>
@@ -91,7 +92,7 @@ function whatsappOrderUrl(order: Order, settings: Settings) {
 function Brand({ light = false }: { light?: boolean }) {
   return (
     <span className={`brand ${light ? "brand-light" : ""}`}>
-      <img src="/images/mistral-logo.png" alt="Mistral" />
+      <img src="/images/zero-indumentaria-logo.png" alt="Zero Indumentaria" />
       <span>ENSENADA</span>
     </span>
   );
@@ -224,14 +225,14 @@ function Header({ onCart }: { onCart: () => void }) {
   const [query, setQuery] = useState("");
   const nav = [
     ["New in", "/tienda?new=1"],
-    ["Hombre", "/tienda?categoria=Hombre"],
+    ["Hombre", "/hombre"],
     ["Mujer", "/tienda?categoria=Mujer"],
     ["Accesorios", "/tienda?categoria=Accesorios"],
   ];
   return (
     <>
       <div className="announcement">
-        <span>EL ESPÍRITU MISTRAL, MÁS CERCA TUYO</span>
+        <span>ZERO INDUMENTARIA · TU ESTILO, CERCA TUYO</span>
         <span>
           {settings.direccion.ciudad}
           {otrasZonas ? ` · Envíos a ${otrasZonas}` : ""} <ArrowUpRightSmall />
@@ -310,7 +311,7 @@ function Header({ onCart }: { onCart: () => void }) {
         )}
       </header>
       {menu && (
-        <Overlay title="Explorá Mistral" side onClose={() => setMenu(false)}>
+        <Overlay title="Explorá Zero Indumentaria" side onClose={() => setMenu(false)}>
           <nav className="mobile-nav">
             {[
               ["Inicio", "/"],
@@ -342,7 +343,7 @@ function Header({ onCart }: { onCart: () => void }) {
 const heroImages = [
   {
     src: "/images/lifestyle.webp",
-    alt: "Campaña Mistral: un momento compartido, a tu manera",
+    alt: "Campaña de indumentaria Mistral, una de las marcas de Zero Indumentaria",
   },
 ];
 function HeroSlides() {
@@ -428,24 +429,24 @@ function Home() {
         <HeroSlides />
         <div className="hero-shade" />
         <div className="hero-content">
-          <span className="eyebrow">MISTRAL · EVERYDAY ADVENTURES</span>
+          <span className="eyebrow">ZERO INDUMENTARIA · MISTRAL + BROOKSFIELD</span>
           <h1>
             Tu esencia.
             <br />
             Tu ritmo.
             <br />
-            <em>Tu Mistral.</em>
+            <em>Tu Zero.</em>
           </h1>
           <p>
-            El espíritu de siempre.
+            Mistral y Brooksfield, en un solo lugar.
             <br />
             Nuevas formas de vivirlo.
           </p>
-          <Link className="button button-white" to="/tienda">
+          <Link className="button button-white" to="/hombre">
             Explorá la colección <ArrowRight size={19} />
           </Link>
         </div>
-        <span className="hero-side">MISTRAL — EVERYDAY ESSENTIALS</span>
+        <span className="hero-side">ZERO INDUMENTARIA — TU ESTILO</span>
         <div className="hero-bottom">
           <span>ENSENADA</span>
           <a href="#novedades" aria-label="Ver novedades">
@@ -504,10 +505,10 @@ function Home() {
         </div>
       </section>
       <section className="collection-grid">
-        <Link to="/tienda?categoria=Hombre" className="collection-card">
+        <Link to="/hombre" className="collection-card">
           <img
             src="/images/product-3.webp"
-            alt="Colección para hombre Mistral"
+            alt="Colección para hombre en Zero Indumentaria"
             loading="lazy"
           />
           <div>
@@ -521,7 +522,7 @@ function Home() {
         <Link to="/tienda?categoria=Mujer" className="collection-card">
           <img
             src="/images/product-9.webp"
-            alt="Colección para mujer Mistral"
+            alt="Colección para mujer en Zero Indumentaria"
             loading="lazy"
           />
           <div>
@@ -603,7 +604,7 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
           {favorites
             ? "Tus favoritos."
             : onlyNew
-              ? "Lo nuevo de Mistral."
+              ? "Lo nuevo de Zero."
               : category === "Todos"
                 ? "Encontrá tu próximo esencial."
                 : category + "."}
@@ -767,7 +768,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
           <div className="detail-photo">
             <ProductImage product={p} src={photos[photo] || p.image} />
             <span className="product-tag">
-              {p.isNew ? "NEW IN" : "MISTRAL ESSENTIALS"}
+              {p.isNew ? "NEW IN" : "ZERO INDUMENTARIA"}
             </span>
           </div>
           {photos.length > 1 && (
@@ -1613,7 +1614,7 @@ function Stores() {
       <h1>
         Pasá. Probá.
         <br />
-        Encontrá tu Mistral.
+        Encontrá tu estilo.
       </h1>
       <p>
         Estamos en {d.ciudad}.
@@ -1748,7 +1749,7 @@ function PagoVuelta({ query }: { query: string }) {
           <a
             className="button button-green"
             href={`https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(
-              pedido ? `Hola Mistral, consulto por el pedido ${pedido}.` : "Hola Mistral,",
+              pedido ? `Hola Zero Indumentaria, consulto por el pedido ${pedido}.` : "Hola Zero Indumentaria,",
             )}`}
             target="_blank"
             rel="noreferrer"
@@ -1772,7 +1773,7 @@ function Returns() {
   const [pedido, setPedido] = useState("");
   const [quien, setQuien] = useState("");
   const texto = [
-    "Hola Mistral, quiero ejercer el derecho de arrepentimiento.",
+    "Hola Zero Indumentaria, quiero ejercer el derecho de arrepentimiento.",
     "",
     quien ? `Nombre: ${quien}` : "",
     pedido ? `Pedido: ${pedido}` : "",
@@ -1949,7 +1950,7 @@ function Footer() {
         <div>
           <h3>EXPLORÁ</h3>
           <Link to="/tienda?new=1">New in</Link>
-          <Link to="/tienda?categoria=Hombre">Hombre</Link>
+          <Link to="/hombre">Hombre</Link>
           <Link to="/tienda?categoria=Mujer">Mujer</Link>
           <Link to="/tienda?categoria=Accesorios">Accesorios</Link>
         </div>
@@ -1976,7 +1977,7 @@ function Footer() {
         </div>
       )}
       <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} Mistral Ensenada</span>
+        <span>© {new Date().getFullYear()} Zero Indumentaria</span>
         {catalogSource === "servidor" ? (
           <span>Precios en pesos, finales y con impuestos incluidos.</span>
         ) : (
@@ -1985,7 +1986,7 @@ function Footer() {
             ventas reales.
           </span>
         )}
-        <span>MADE FOR LIFE OUTSIDE.</span>
+        <span>ZERO INDUMENTARIA · ENSENADA</span>
       </div>
     </footer>
   );
@@ -2009,15 +2010,16 @@ export default function App() {
     // Nombra la ciudad en cada título: es lo que se lee en la pestaña, en el
     // historial y en el resultado de Google.
     const titles: Record<string, string> = {
-      "/": "Mistral Ensenada — Indumentaria",
-      "/tienda": "Tienda — Mistral Ensenada",
-      "/sucursales": "Dónde estamos — Mistral Ensenada",
-      "/favoritos": "Favoritos — Mistral Ensenada",
-      "/checkout": "Tu pedido — Mistral Ensenada",
-      "/admin": "Panel interno — Mistral",
+      "/": "Zero Indumentaria — Ensenada",
+      "/tienda": "Tienda — Zero Indumentaria",
+      "/hombre": "Hombre — Zero Indumentaria",
+      "/sucursales": "Dónde estamos — Zero Indumentaria",
+      "/favoritos": "Favoritos — Zero Indumentaria",
+      "/checkout": "Tu pedido — Zero Indumentaria",
+      "/admin": "Panel interno — Zero Indumentaria",
     };
     document.title =
-      titles[path] || "Mistral Ensenada — Indumentaria";
+      titles[path] || "Zero Indumentaria — Ensenada";
   }, [path]);
   if (path === "/admin")
     return (
@@ -2045,6 +2047,10 @@ export default function App() {
       <div id="contenido" key={route}>
         {path === "/" ? (
           <Home />
+        ) : path === "/hombre" ? (
+          <Suspense fallback={<div className="loading">Cargando colección…</div>}>
+            <MenCatalog />
+          </Suspense>
         ) : path === "/tienda" ? (
           <Catalog />
         ) : path === "/favoritos" ? (

@@ -1,4 +1,4 @@
-# Mistral · Ensenada
+# Zero Indumentaria · Ensenada
 
 Prototipo interactivo de tienda y administración, desarrollado con React, TypeScript y Vite. Adaptado a escritorio y celular.
 
@@ -21,6 +21,7 @@ pnpm preview
 ## Recorridos
 
 - `/`: inicio, novedades y colecciones.
+- `/hombre`: colección de Hombre de Mistral y Brooksfield, con todas las secciones, búsqueda y galerías de fotos. Los modelos, precios y talles disponibles en Zero se confirman con el local.
 - `/tienda`: catálogo con búsqueda, categorías, orden por precio, talles y disponibilidad.
 - `/producto/1`: detalle, selección de talle/cantidad y bolsa.
 - `/favoritos`: productos guardados.
@@ -206,17 +207,9 @@ Devolución, Rotura y Ajuste; las ventas no se cargan ahí.
 
 ## Paleta
 
-El azul y el rojo salen del logo oficial (`public/images/mistral-logo.png`),
-medidos sobre el archivo: `#132457` es el 89% de los píxeles opacos y `#cc0035`
-es el punto de la "i". Coinciden con la dirección visual anotada en
-`docs/asset-sources.json` ("navy, red, off-white") al relevar el sitio de la
-marca.
-
-Los tokens están en `:root`, en `src/styles.css`. El resto de la paleta se
-derivó del verde anterior conservando la luminosidad de cada color y girando
-solo el tono, así que los contrastes no empeoraron. Quedaron fuera a propósito
-los colores con significado: entrada y salida de stock, error y alerta de stock
-bajo.
+La identidad visible usa el logo de Zero Indumentaria en
+`public/images/zero-indumentaria-logo.png` y una paleta neutra. Los colores
+principales están en `:root`, en `src/styles.css`.
 ## Configuración del local
 
 Esto antes vivía en el código y había que tocar archivos y volver a publicar
@@ -528,7 +521,7 @@ Se configura en Supabase → Edge Functions → Secrets:
 | `SMTP_PORT` | `465` |
 | `SMTP_USER` | el mail del local |
 | `SMTP_PASS` | una **contraseña de aplicación**, no la del mail |
-| `SMTP_DESDE` | `Mistral Ensenada <elmail@gmail.com>` |
+| `SMTP_DESDE` | `Zero Indumentaria <elmail@gmail.com>` |
 
 **Un pedido se confirma una sola vez.** Sin ese freno, alguien podría llamar a
 la función mil veces con el mismo número de pedido y usarla para bombardear el
@@ -574,8 +567,9 @@ viven en el servidor. Lo que queda en `localStorage` (`mistral-local-demo-v1`)
 es la bolsa, los favoritos, los pedidos hechos desde la tienda y todo lo que
 se edite en modo demo.
 
-Lo que el sitio **no** hace: cobrar (las formas de pago son un link y unos
-datos para transferir; el sitio no cobra) ni mandar correos.
+El cobro online y el mail de confirmación requieren los secretos del local en
+Supabase. Mientras no estén configurados, siguen disponibles las formas de
+pago y contacto configuradas para coordinar el pedido.
 
 Precios, imágenes y talles cargados hoy en el servidor vienen del catálogo
 nacional como referencia; **el stock es ficticio** hasta que el dueño cargue
@@ -585,13 +579,17 @@ Para reiniciar la demo, borrar los datos de este sitio en el navegador. No ingre
 
 ## Publicación en Vercel
 
-El proyecto es [`mistral-la-plata`](https://vercel.com/frannn-m/mistral-la-plata), conectado a `FrancoMalacalza01/Mistral-la-plata`. Producción: https://mistral-la-plata-lime.vercel.app/ (sale de `main`). Para rearmarlo: importar `FrancoMalacalza01/Mistral-la-plata`, usar la raíz del repositorio, preset **Vite**, comando `pnpm build` y salida `dist`. `vercel.json` ya configura el frontend y las rutas de la aplicación. No requiere variables de entorno.
+Este repositorio de trabajo es [`Solia-laplata/Presentacion`](https://github.com/Solia-laplata/Presentacion). Para publicarlo en Vercel: importar ese repositorio, usar la raíz, preset **Vite**, comando `pnpm build` y salida `dist`. `vercel.json` configura el frontend y sus rutas. El servidor Supabase puede configurarse con `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY` o con las claves públicas de respaldo en `src/server.ts`.
 
-El sitio es indexable: el `noindex,nofollow` se sacó al agregar el SEO local. `public/robots.txt` pide no indexar `/admin`, lo que no constituye control de acceso. Para volver a esconderlo de los buscadores, agregar `<meta name="robots" content="noindex,nofollow" />` en `index.html`. Conviene hacerlo mientras el catálogo sea de ejemplo y no esté confirmado el uso del nombre y las fotos de Mistral.
+El sitio queda fuera de los buscadores con `noindex,nofollow` y
+`public/robots.txt` mientras los precios y el inventario de Zero estén
+pendientes de confirmar. Se retiraron las URL canónicas y los datos de negocio
+que apuntaban a un despliegue anterior. Al publicar en un dominio propio,
+completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 103 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 105 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -640,7 +638,25 @@ el stock quedó como estaba.
 
 ## Imágenes y referencias
 
-Marca y fotografías: [Mistral Argentina](https://www.mistral.com.ar/). Contacto local: [@mistral.zero.indumentaria](https://www.instagram.com/mistral.zero.indumentaria/). La procedencia detallada está en `docs/asset-sources.json`; las fotos usadas están en `public/images`. Su uso aquí es para la presentación del prototipo; confirmar con la marca el uso en la tienda final.
+Logo: Zero Indumentaria, aportado por el dueño. Fotografías de las marcas
+[Mistral Argentina](https://www.mistral.com.ar/) y
+[Brooksfield](https://www.brooksfieldstore.com/). Contacto local:
+[@mistral.zero.indumentaria](https://www.instagram.com/mistral.zero.indumentaria/).
+La procedencia de las fotos previas está en `docs/asset-sources.json`; su uso
+en una tienda pública debe estar autorizado por las marcas.
+
+El relevamiento de `/hombre` se genera con `scripts/scrape-men.py` a partir de
+las páginas públicas de [Mistral Hombre](https://www.mistral.com.ar/hombre/)
+y [Brooksfield Hombre](https://www.brooksfieldstore.com/3-hombre-brooksfield).
+Sus fichas, categorías, precios y enlaces de origen a todas las fotos observadas
+están en `src/men-catalog.json`; una portada optimizada por ficha está en
+`public/men-images` y todas las fotos de las galerías en `public/men-gallery`.
+El catálogo
+de Hombre aún no se mezcla con los productos publicados en Supabase ni permite
+comprar o consultar stock, porque faltan los precios y existencias propios de
+Zero. Para regenerarlo hacen falta Python, `lxml` y
+`Pillow`: primero ejecutar `scripts/scrape-men.py` y luego
+`scripts/download-men-covers.py` y `scripts/download-men-gallery.py`.
 
 Las tres funciones del servidor están **desplegadas y probadas**: contestan y
 avisan qué les falta. Lo que falta para que cobren y manden mails son los
