@@ -13,10 +13,27 @@ import type {
 import { seedProducts } from "./data";
 import { prepareOrder } from "./commerce.mjs";
 import { flattenStock, needsStockMigration } from "./migrate.mjs";
-import { fetchCatalog, crearPedido } from "./server";
+import { fetchCatalog, fetchAjustes, crearPedido } from "./server";
+import { leerAjustes, ajusteAFila } from "./menOverrides.mjs";
+import type { AjustesHombre } from "./menOverrides.mjs";
 import { fetchSettings, porDefecto } from "./settings";
 import { costoEnvio } from "./settingsMap.mjs";
 const KEY = "mistral-local-demo-v1";
+/**
+ * Los ajustes del catálogo de hombre se guardan aparte de la demo: no son parte
+ * de ella (viven en el servidor) y "borrar los datos de la demo" no tiene que
+ * llevárselos. Acá queda lo último que se supo, para que una tienda que no
+ * llega al servidor no vuelva a mostrar lo que el local ya dio de baja.
+ */
+const KEY_AJUSTES = "zero-ajustes-hombre-v1";
+function restaurarAjustes(): AjustesHombre {
+  try {
+    const filas = JSON.parse(localStorage.getItem(KEY_AJUSTES) || "null");
+    return leerAjustes(filas);
+  } catch {
+    return {};
+  }
+}
 type Data = {
   products: Product[];
   orders: Order[];
@@ -83,6 +100,13 @@ interface Context extends StoreContextType {
   settings: Settings;
   /** Pisa la configuración en pantalla, después de guardarla en el servidor. */
   setSettings: (settings: Settings) => void;
+  /**
+   * Precios propios y bajas del catálogo de hombre. Sale del servidor; mientras
+   * no llegue, lo último que se supo en este navegador.
+   */
+  menOverrides: AjustesHombre;
+  /** Pisa los ajustes en pantalla, antes de guardarlos en el servidor. */
+  setMenOverrides: (ajustes: AjustesHombre) => void;
   favorites: string[];
   movements: Movement[];
   toggleFavorite: (id: string) => void;
@@ -170,6 +194,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     "local",
   );
   const [settings, setSettings] = useState<Settings>(porDefecto);
+  const [menOverrides, setMenOverrides] = useState<AjustesHombre>(restaurarAjustes);
   // Espejo del estado al día, para poder leerlo en el mismo tick en que se
   // escribe. Sin esto, dos cambios seguidos (guardar un producto y asentar su
   // movimiento, por ejemplo) se pisan: el segundo parte del estado viejo.
@@ -208,6 +233,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       vigente = false;
     };
   }, []);
+  // Si el servidor no contesta (`null`), se queda lo último que se supo.
+  useEffect(() => {
+    let vigente = true;
+    fetchAjustes().then((ajustes) => {
+      if (vigente && ajustes) setMenOverrides(ajustes);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        KEY_AJUSTES,
+        JSON.stringify(Object.entries(menOverrides).map(([id, a]) => ajusteAFila(id, a))),
+      );
+    } catch {
+      /* Sin almacenamiento sigue andando: sólo no queda copia local. */
+    }
+  }, [menOverrides]);
   useEffect(() => {
     let vigente = true;
     fetchCatalog().then((productos) => {
@@ -232,6 +277,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     catalogSource,
     settings,
     setSettings,
+    menOverrides,
+    setMenOverrides,
     notify,
     setProducts: (products) => actualizar((d) => ({ ...d, products })),
     setOrders: (orders) => actualizar((d) => ({ ...d, orders })),

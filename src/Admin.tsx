@@ -24,6 +24,7 @@ import {
   Search,
   Receipt,
   Settings,
+  Shirt,
   ShoppingBag,
   SlidersHorizontal,
   Store,
@@ -54,6 +55,8 @@ import { prepararImagen as prepareImage } from "./imagen";
 import AdminConfig from "./AdminConfig";
 import AdminReturns from "./AdminReturns";
 import AdminReports from "./AdminReports";
+import AdminMen from "./AdminMen";
+import { avisoDeCambio, leerPrecio } from "./menOverrides.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
 import "./admin.css";
@@ -62,6 +65,7 @@ type Tab =
   | "overview"
   | "sale"
   | "inventory"
+  | "men"
   | "stock"
   | "movements"
   | "orders"
@@ -84,6 +88,11 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
       crumb: "Productos y stock",
       title: "Productos y stock",
       lead: "Administrá el catálogo y las unidades disponibles.",
+    },
+    men: {
+      crumb: "Catálogo de hombre",
+      title: "Catálogo de hombre",
+      lead: "Tu precio y las bajas de las prendas de Mistral y Brooksfield.",
     },
     stock: {
       crumb: "Cargar stock",
@@ -182,6 +191,8 @@ export default function Admin({
     catalogSource,
     settings,
     setSettings,
+    menOverrides,
+    setMenOverrides,
   } = useStore();
   // Todo lo que el panel manda al servidor sale por acá. Sin sesión, estas
   // funciones no hacen nada y el panel se comporta como la demo de antes.
@@ -229,6 +240,41 @@ export default function Admin({
   function closeEditor() {
     setEditing(null);
     requestAnimationFrame(() => formTrigger.current?.focus());
+  }
+  /**
+   * Da de baja un producto del todo: sale de la tienda y del panel, con su
+   * stock. Para sacarlo de la vista sin perderlo está "Ocultar".
+   *
+   * Lo que queda: el historial de movimientos (guarda el nombre adentro, justo
+   * para esto) y los pedidos ya hechos. Antes de borrar, el stock que había se
+   * anota como ajuste, para que el historial explique adónde fue.
+   */
+  function darDeBaja(product: Product) {
+    const unidades = units(product);
+    const detalle = unidades
+      ? `Se pierden ${unidades} ${unidades === 1 ? "unidad" : "unidades"} de stock.`
+      : "No tiene stock cargado.";
+    if (
+      !confirm(
+        `¿Dar de baja "${product.name}"?\n\n${detalle} Sale de la tienda y del panel. El historial y los pedidos ya hechos se conservan. Esto no se puede deshacer.\n\nSi sólo querés que no se vea por ahora, usá Ocultar.`,
+      )
+    )
+      return;
+    const changes: StockChange[] = Object.entries(product.stock || {})
+      .filter(([, qty]) => qty > 0)
+      .map(([size, qty]) => ({
+        productId: product.id,
+        size,
+        delta: -qty,
+        reason: "Ajuste" as MovementReason,
+      }));
+    // Primero el historial, que busca el nombre del producto en la lista.
+    const asentado = changes.length ? recordMovements(changes) : null;
+    setProducts(products.filter((p) => p.id !== product.id));
+    if (asentado?.movements.length) panel.publicarMovimientos(asentado.movements);
+    panel.despublicarBorrando(product.id);
+    notify(`"${product.name}" dado de baja`);
+    closeEditor();
   }
   function saveProduct(product: Product) {
     const previous = products.find((p) => p.id === product.id);
@@ -420,6 +466,14 @@ export default function Admin({
             <Boxes size={19} />
             <span className="admin-nav-full">Productos y stock</span>
             <span className="admin-nav-short">Productos</span>
+          </button>
+          <button
+            className={tab === "men" ? "is-active" : ""}
+            onClick={() => setTab("men")}
+          >
+            <Shirt size={19} />
+            <span className="admin-nav-full">Catálogo de hombre</span>
+            <span className="admin-nav-short">Hombre</span>
           </button>
           <button
             className={tab === "stock" ? "is-active" : ""}
@@ -986,6 +1040,19 @@ export default function Admin({
           )}
           {tab === "movements" && <MovementsView movements={movements} />}
 
+          {tab === "men" && (
+            <AdminMen
+              ajustes={menOverrides}
+              conectado={panel.conectado}
+              notify={notify}
+              onCambiar={(ids, siguiente) => {
+                // En pantalla primero; el servidor confirma (o avisa) después.
+                setMenOverrides(siguiente);
+                panel.publicarAjustes(ids, siguiente);
+              }}
+            />
+          )}
+
           {tab === "reports" && (
             <AdminReports
               products={products}
@@ -1221,6 +1288,7 @@ export default function Admin({
         <ProductEditor
           product={editing === "new" ? undefined : editing}
           onSave={saveProduct}
+          onDelete={darDeBaja}
           onClose={closeEditor}
           notify={notify}
         />
@@ -1903,11 +1971,14 @@ const imagePattern =
 function ProductEditor({
   product,
   onSave,
+  onDelete,
   onClose,
   notify,
 }: {
   product?: Product;
   onSave: (product: Product) => void;
+  /** Dar de baja el producto del todo. Sólo existe al editar uno que ya está. */
+  onDelete?: (product: Product) => void;
   onClose: () => void;
   notify: (message: string) => void;
 }) {
@@ -2008,10 +2079,31 @@ function ProductEditor({
       setError("Completá el nombre, tipo de prenda y color.");
       return;
     }
-    if (!Number.isFinite(draft.price) || draft.price <= 0) {
-      setError("Ingresá un precio mayor a cero.");
+    // El precio se guarda en pesos enteros: con centavos o con basura no se
+    // adivina, se avisa.
+    const precio = leerPrecio(draft.price);
+    if (!precio.ok) {
+      setError(precio.error);
       return;
     }
+    // El precio anterior es el que se muestra tachado: si no es mayor que el
+    // actual, la tienda mostraría un "descuento" que sube el precio.
+    if (draft.oldPrice !== undefined) {
+      const anterior = leerPrecio(draft.oldPrice);
+      if (!anterior.ok) {
+        setError(`Precio anterior: ${anterior.error}`);
+        return;
+      }
+      if (anterior.value <= precio.value) {
+        setError(
+          "El precio anterior tiene que ser mayor al actual: es el que se muestra tachado. Si no hay descuento, dejalo vacío.",
+        );
+        return;
+      }
+    }
+    // Un cambio enorme casi siempre es un cero de más o de menos.
+    const aviso = product ? avisoDeCambio(product.price, precio.value) : null;
+    if (aviso && !confirm(aviso)) return;
     if (!sizes.length) {
       setError("Agregá al menos un talle; podés usar ÚNICO.");
       return;
@@ -2373,6 +2465,15 @@ function ProductEditor({
           )}
         </div>
         <div className="admin-dialog-footer">
+          {product && onDelete && (
+            <button
+              type="button"
+              className="admin-button admin-button-danger"
+              onClick={() => onDelete(product)}
+            >
+              Dar de baja
+            </button>
+          )}
           <button
             type="button"
             className="admin-button admin-button-outline"

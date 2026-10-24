@@ -189,6 +189,42 @@ base y hay que acomodarlo a mano.
 
 **No factura.** Ver *Facturación* más abajo.
 
+## Precios y bajas
+
+**Productos de la base** (pestaña *Productos y stock*). El precio se carga en
+pesos enteros: con centavos, en cero o con letras el formulario avisa en vez de
+adivinar. El *precio anterior* es el que se muestra tachado, así que tiene que
+ser mayor al actual. Un cambio de más del doble o menos de la mitad pregunta
+antes de guardar, porque casi siempre es un cero de más o de menos.
+
+Hay dos formas de sacar un producto:
+
+- **Ocultar** (el interruptor *Publicado*): deja de verse pero queda en el
+  panel, con su stock, para volver a publicarlo.
+- **Dar de baja** (en el editor): lo borra del panel y de la tienda. El stock
+  que tenía queda anotado en *Movimientos* como ajuste, y el historial y los
+  pedidos ya hechos se conservan. No se deshace.
+
+**Catálogo de hombre** (pestaña *Catálogo de hombre*). Viene de fábrica en
+`src/men-catalog.json` con el precio que publica cada marca, y eso no se edita.
+Lo que el local cambia se guarda aparte, como una lista de excepciones por
+prenda, así que con 961 prendas no hay que cargar nada para que la tienda ande:
+
+- **Precio propio**: se muestra como *Precio Zero* en lugar del de la marca.
+  *Quitar* vuelve al de la marca.
+- **Dar de baja**: la prenda deja de verse en la tienda. No se borra, se repone
+  cuando vuelva y recupera el precio que tenía. Se puede elegir una selección
+  entera, o todas las que cumplen un filtro, y darlas de baja de una vez.
+
+La lógica está en `src/menOverrides.mjs` (probada en
+`tests/menOverrides.test.mjs`). Las excepciones viven en la tabla
+`catalog_overrides`: se lee pública, porque la tienda necesita saber qué ocultar,
+y sólo la escribe un admin. **Hay que crearla una vez** corriendo
+`db/ajustes-catalogo.sql` en el SQL Editor de Supabase; mientras no exista, el
+panel avisa que no pudo guardar. Si la tienda no llega al servidor, usa lo
+último que supo en ese navegador antes que volver a mostrar lo que se dio de
+baja.
+
 ## Venta del mostrador
 
 La pantalla **Venta del día** del panel es para descontar lo que se vende en el
@@ -597,6 +633,7 @@ completar esos datos con información confirmada del local.
 | `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, y que un talle con coma no parta el filtro de borrado | 20 |
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
+| `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90% | 13 |
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 

@@ -3093,3 +3093,106 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Catálogo de hombre: precio propio y bajas. */
+.admin-men-summary {
+  margin-top: 6px;
+  color: #62719d;
+}
+.admin-men-summary b {
+  color: #233058;
+}
+.admin-men-bulk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 23px 14px;
+  padding: 10px 14px;
+  border: 1px solid #dadfed;
+  border-radius: 6px;
+  background: #eef1fa;
+  color: #233058;
+}
+.admin-men-bulk strong {
+  margin-right: auto;
+}
+.admin-men-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 150px;
+}
+.admin-men-price > strong {
+  color: #233058;
+}
+/* Sin precio propio: se ve el de la marca, atenuado, para que se note la diferencia. */
+.admin-men-price > strong.is-brand {
+  color: #848b9f;
+  font-weight: 500;
+}
+.admin-men-price-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.admin-men-price-row input {
+  width: 110px;
+  padding: 7px 9px;
+  border: 1px solid #b8c0da;
+  border-radius: 5px;
+  font: inherit;
+}
+.admin-men-price-row input[aria-invalid="true"] {
+  border-color: #c0392b;
+}
+.admin-men-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #dadde8;
+  border-radius: 5px;
+  background: #fff;
+  color: #637096;
+  cursor: pointer;
+}
+.admin-men-icon.is-ok {
+  background: #233058;
+  border-color: #233058;
+  color: #fff;
+}
+.admin-men-error {
+  color: #c0392b;
+  font-size: 10px;
+  max-width: 220px;
+}
+.admin-men-baja td {
+  opacity: 0.6;
+}
+.admin-men-baja td:last-child {
+  opacity: 1;
+}
+.admin-men-empty {
+  padding: 24px;
+  text-align: center;
+  color: #62719d;
+}
+@media (max-width: 720px) {
+  .admin-men-bulk {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+}
+
+/* Dar de baja: la acción que no se deshace, a la izquierda y apartada del resto. */
+.admin-button-danger {
+  background: #fff;
+  border-color: #e3b5ae;
+  color: #b0342a;
+  margin-right: auto;
+}
+.admin-button-danger:hover {
+  background: #fbeceb;
+}

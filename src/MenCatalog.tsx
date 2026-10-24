@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Link } from "./router";
+import { useStore } from "./Store";
+import { aplicarAjustes } from "./menOverrides.mjs";
 import catalog from "./men-catalog.json";
 import "./men-catalog.css";
 
@@ -14,9 +16,11 @@ type MenProduct = {
   url: string;
   images: string[];
   cover?: string;
+  /** true cuando el local le puso su propio precio a la prenda. */
+  precioZero?: boolean;
 };
 
-const products = catalog.products as MenProduct[];
+const catalogo = catalog.products as MenProduct[];
 const pageSize = 48;
 const peso = new Intl.NumberFormat("es-AR", {
   style: "currency",
@@ -52,7 +56,7 @@ function ProductGallery({ product, close }: { product: MenProduct; close: () => 
         <div className="men-gallery-details">
           <span>{product.brand} / {product.category}</span>
           <h2>{product.name}</h2>
-          <p>Precio publicado por la marca: {peso.format(product.priceARS)}</p>
+          <p>{product.precioZero ? "Precio Zero" : "Precio publicado por la marca"}: {peso.format(product.priceARS)}</p>
           <p>{photo + 1} de {product.images.length} fotos</p>
           <Link to="/sucursales">Consultar en Zero <ArrowRight size={16} /></Link>
         </div>
@@ -65,6 +69,10 @@ function ProductGallery({ product, close }: { product: MenProduct; close: () => 
 }
 
 export default function MenCatalog() {
+  // Las prendas que el local dio de baja no se muestran, y las que tienen
+  // precio propio lo muestran en lugar del de la marca.
+  const { menOverrides } = useStore();
+  const products = useMemo(() => aplicarAjustes(catalogo, menOverrides) as MenProduct[], [menOverrides]);
   const [brand, setBrand] = useState("Todas");
   const [category, setCategory] = useState("Todas");
   const [query, setQuery] = useState("");
@@ -106,8 +114,8 @@ export default function MenCatalog() {
         {categories.map(([name, count]) => <button key={name} className={category === name ? "active" : ""} onClick={() => chooseCategory(name)} aria-pressed={category === name}>{name} <span>{count}</span></button>)}
       </div>
       <div className="men-toolbar"><label><Search size={18} /><input value={query} onChange={(event) => { setQuery(event.target.value); setVisible(pageSize); }} placeholder="Buscar prenda, código o sección" aria-label="Buscar productos de hombre" /></label><span>{filtered.length} productos</span></div>
-      {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p>{peso.format(product.priceARS)}</p><small>Precio publicado por la marca</small></div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
-      <p className="men-source-note">Catálogo de marcas relevado el {new Date(`${catalog.capturedAt}T12:00:00`).toLocaleDateString("es-AR")}. Fotos y precios publicados por <a href="https://www.mistral.com.ar/hombre/" target="_blank" rel="noopener noreferrer">Mistral</a> y <a href="https://www.brooksfieldstore.com/3-hombre-brooksfield" target="_blank" rel="noopener noreferrer">Brooksfield</a>. Consultá el precio final y la disponibilidad en Zero Indumentaria.</p>
+      {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p>{peso.format(product.priceARS)}</p><small>{product.precioZero ? "Precio Zero" : "Precio publicado por la marca"}</small></div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
+      <p className="men-source-note">Catálogo de marcas relevado el {new Date(`${catalog.capturedAt}T12:00:00`).toLocaleDateString("es-AR")}. Fotos publicadas por <a href="https://www.mistral.com.ar/hombre/" target="_blank" rel="noopener noreferrer">Mistral</a> y <a href="https://www.brooksfieldstore.com/3-hombre-brooksfield" target="_blank" rel="noopener noreferrer">Brooksfield</a>. Los precios son los de la marca, salvo donde dice Precio Zero. Consultá la disponibilidad en Zero Indumentaria.</p>
     </div>
     {selected && <ProductGallery key={selected.id} product={selected} close={() => setSelected(null)} />}
   </main>;
