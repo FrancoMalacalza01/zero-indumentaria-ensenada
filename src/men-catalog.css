@@ -8,16 +8,19 @@
 .men-intro-stats strong { color: #fff; font-size: 19px; }
 .men-intro-stats span { padding: 0 12px; }
 .men-content { padding-top: 0; }
-.men-brands { display: flex; gap: 0; margin-top: -31px; position: relative; z-index: 1; background: #fff; width: fit-content; box-shadow: 0 14px 32px #1c1c1c17; }
-.men-brands button { padding: 19px 27px; border-bottom: 3px solid transparent; font-weight: 600; }
-.men-brands button.active { border-color: #666666; color: #1c1c1c; }
-.men-brands span { font-size: 11px; color: #747d93; margin-left: 8px; }
+.men-brands { display: flex; gap: 4px; margin-top: -31px; padding: 6px; position: relative; z-index: 1; background: #fff; border-radius: 16px; width: fit-content; box-shadow: 0 14px 32px #1c1c1c17; }
+.men-brands button { padding: 16px 24px; border-radius: 11px; font-weight: 600; transition: background .2s, color .2s; }
+.men-brands button:hover { background: #f2f2f2; }
+.men-brands button.active, .men-brands button.active:hover { background: #1c1c1c; color: #fff; }
+.men-brands span { font-size: 11px; color: #747474; margin-left: 8px; }
+.men-brands button.active span { color: #dedede; }
 .men-section-head { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin: 63px 0 25px; }
 .men-section-head h2 { margin-top: 12px; font-size: clamp(1.8rem, 3vw, 2.7rem); }
 .men-section-head a { display: inline-flex; align-items: center; gap: 8px; color: #1c1c1c; font-weight: 700; font-size: 13px; border-bottom: 1px solid #1c1c1c; padding-bottom: 6px; }
 .men-categories { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 34px; }
-.men-categories button { border: 1px solid #dedede; padding: 10px 15px; color: #333; font-size: 12px; transition: background .2s, color .2s; }
-.men-categories button:hover, .men-categories button.active { background: #1c1c1c; color: #fff; border-color: #1c1c1c; }
+.men-categories button { border: 1px solid #dedede; border-radius: 999px; padding: 10px 15px; color: #333; background: #fff; font-size: 12px; transition: background .2s, color .2s, border-color .2s, transform .2s; }
+.men-categories button:hover { border-color: #666; transform: translateY(-2px); }
+.men-categories button.active { background: #1c1c1c; color: #fff; border-color: #1c1c1c; }
 .men-categories span { opacity: .6; margin-left: 5px; }
 .men-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 0 22px; color: #6b6d73; font-size: 12px; }
 .men-toolbar label { border: 1px solid #dedede; display: flex; align-items: center; gap: 10px; min-width: min(100%, 360px); padding: 12px 14px; color: #666; }

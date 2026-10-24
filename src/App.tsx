@@ -14,6 +14,7 @@ import {
   CreditCard,
   ExternalLink,
   Heart,
+  Grid2X2,
   Instagram,
   Landmark,
   MapPin,
@@ -23,6 +24,7 @@ import {
   Plus,
   Search,
   ShoppingBag,
+  Shirt,
   SlidersHorizontal,
   Smartphone,
   Store,
@@ -61,6 +63,12 @@ const Admin = lazy(() => import("./Admin"));
 const AdminGate = lazy(() => import("./AdminGate"));
 const MenCatalog = lazy(() => import("./MenCatalog"));
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
+const storefrontCategories = ["Todos", "Hombre", "Accesorios"] as const;
+type StorefrontCategory = (typeof storefrontCategories)[number];
+const isStorefrontProduct = (product: Product) =>
+  product.active && product.category !== "Mujer";
+const storefrontCategory = (value: string | null): StorefrontCategory =>
+  storefrontCategories.find((category) => category === value) || "Todos";
 // El WhatsApp, la dirección, las formas de pago, las zonas de envío y la
 // política de devoluciones se cargan desde el panel y viven en la base. Acá
 // sólo se leen. Mientras el WhatsApp esté vacío, el pedido se abre con el
@@ -226,7 +234,6 @@ function Header({ onCart }: { onCart: () => void }) {
   const nav = [
     ["New in", "/tienda?new=1"],
     ["Hombre", "/hombre"],
-    ["Mujer", "/tienda?categoria=Mujer"],
     ["Accesorios", "/tienda?categoria=Accesorios"],
   ];
   return (
@@ -398,14 +405,49 @@ function ProductMarquee({ products }: { products: Product[] }) {
     </section>
   );
 }
+function CategoryFilters({
+  value,
+  onChange,
+  products,
+  label,
+}: {
+  value: StorefrontCategory;
+  onChange: (category: StorefrontCategory) => void;
+  products: Product[];
+  label: string;
+}) {
+  return (
+    <div className="category-tabs" role="group" aria-label={label}>
+      {storefrontCategories.map((category) => {
+        const count = category === "Todos"
+          ? products.length
+          : products.filter((product) => product.category === category).length;
+        return (
+          <button
+            type="button"
+            key={category}
+            className={value === category ? "active" : ""}
+            aria-pressed={value === category}
+            onClick={() => onChange(category)}
+          >
+            {category === "Todos" ? <Grid2X2 size={16} /> : category === "Hombre" ? <Shirt size={16} /> : <ShoppingBag size={16} />}
+            <span>{category}</span>
+            <small>{count}</small>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 function ArrowUpRightSmall() {
   return <ArrowRight size={13} style={{ transform: "rotate(-40deg)" }} />;
 }
 function Home() {
   const { products } = useStore();
-  const [tab, setTab] = useState("Todos");
+  const [tab, setTab] = useState<StorefrontCategory>("Todos");
+  const storefrontProducts = products.filter(isStorefrontProduct);
   const selected = products.filter(
-    (p) => p.active && (tab === "Todos" || p.category === tab),
+    (p) => isStorefrontProduct(p) && (tab === "Todos" || p.category === tab),
   );
   const picks =
     tab === "Todos"
@@ -413,9 +455,9 @@ function Home() {
           new Map(
             [
               selected[0],
-              selected.find((p) => p.id === "7"),
               selected.find((p) => p.id === "3"),
               selected.find((p) => p.id === "11"),
+              selected.find((p) => p.id === "12"),
               ...selected,
             ]
               .filter((p): p is Product => !!p)
@@ -483,21 +525,7 @@ function Home() {
             Ver toda la colección <ArrowRight size={18} />
           </Link>
         </div>
-        <div
-          className="category-tabs"
-          role="group"
-          aria-label="Categorías de novedades"
-        >
-          {["Todos", "Hombre", "Mujer", "Accesorios"].map((t) => (
-            <button
-              className={tab === t ? "active" : ""}
-              key={t}
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <CategoryFilters value={tab} onChange={setTab} products={storefrontProducts} label="Categorías de novedades" />
         <div className="product-grid">
           {picks.map((p) => (
             <ProductCard key={p.id} product={p} />
@@ -519,15 +547,15 @@ function Home() {
             </span>
           </div>
         </Link>
-        <Link to="/tienda?categoria=Mujer" className="collection-card">
+        <Link to="/tienda?categoria=Accesorios" className="collection-card">
           <img
-            src="/images/product-9.webp"
-            alt="Colección para mujer en Zero Indumentaria"
+            src="/images/product-11.webp"
+            alt="Gorra de la colección de accesorios en Zero Indumentaria"
             loading="lazy"
           />
           <div>
-            <span className="eyebrow">LIBRE POR NATURALEZA</span>
-            <h2>Mujer</h2>
+            <span className="eyebrow">LOS DETALLES CUENTAN</span>
+            <h2>Accesorios</h2>
             <span>
               Descubrí la colección <ArrowRight size={19} />
             </span>
@@ -561,19 +589,26 @@ function Home() {
 function Catalog({ favorites = false }: { favorites?: boolean }) {
   const { products, favorites: saved } = useStore();
   const params = new URLSearchParams(location.search);
-  const [category, setCategory] = useState(params.get("categoria") || "Todos");
+  const [category, setCategory] = useState<StorefrontCategory>(storefrontCategory(params.get("categoria")));
   const [query, setQuery] = useState(params.get("q") || "");
   const [sort, setSort] = useState("featured");
   const [size, setSize] = useState("Todos");
   const [stock, setStock] = useState(false);
   const [filters, setFilters] = useState(false);
   const onlyNew = params.get("new") === "1";
-  let result = products.filter(
+  useEffect(() => {
+    setCategory(storefrontCategory(params.get("categoria")));
+    setQuery(params.get("q") || "");
+  }, [location.search]);
+  const availableProducts = products.filter(
     (p) =>
-      p.active &&
+      isStorefrontProduct(p) &&
       (!favorites || saved.includes(p.id)) &&
+      (!onlyNew || p.isNew),
+  );
+  let result = availableProducts.filter(
+    (p) =>
       (category === "Todos" || p.category === category) &&
-      (!onlyNew || p.isNew) &&
       `${p.name} ${p.type} ${p.color}`
         .toLowerCase()
         .includes(query.toLowerCase()) &&
@@ -585,6 +620,7 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
   );
   if (sort === "asc") result.sort((a, b) => a.price - b.price);
   if (sort === "desc") result.sort((a, b) => b.price - a.price);
+  const activeFilterCount = Number(Boolean(query.trim())) + Number(size !== "Todos") + Number(stock);
   const clear = () => {
     setCategory("Todos");
     setQuery("");
@@ -612,39 +648,31 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
         <span>{result.length} productos</span>
       </div>
       <div className="catalog-controls">
-        <div className="category-tabs">
-          {["Todos", "Hombre", "Mujer", "Accesorios"].map((t) => (
-            <button
-              className={category === t ? "active" : ""}
-              key={t}
-              onClick={() => setCategory(t)}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <CategoryFilters value={category} onChange={setCategory} products={availableProducts} label="Filtrar productos por categoría" />
         <div className="sort-controls">
           <button
             className={`filter-button ${filters ? "active" : ""}`}
             aria-expanded={filters}
+            aria-controls="shop-filter-panel"
             onClick={() => setFilters(!filters)}
           >
             <SlidersHorizontal size={17} />
             Filtros
+            {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
           </button>
-          <select
-            aria-label="Ordenar productos"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-          >
-            <option value="featured">Destacados</option>
-            <option value="asc">Menor precio</option>
-            <option value="desc">Mayor precio</option>
-          </select>
+          <label className="sort-select">
+            <span className="sr-only">Ordenar productos</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="featured">Destacados</option>
+              <option value="asc">Menor precio</option>
+              <option value="desc">Mayor precio</option>
+            </select>
+            <ChevronDown size={16} aria-hidden="true" />
+          </label>
         </div>
       </div>
       {filters && (
-        <div className="filter-panel">
+        <div className="filter-panel" id="shop-filter-panel">
           <label className="field">
             Buscar producto
             <input
@@ -725,7 +753,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
   const [guide, setGuide] = useState(false);
   const [photo, setPhoto] = useState(0);
   const [error, setError] = useState("");
-  const p = products.find((p) => p.id === id && p.active);
+  const p = products.find((p) => p.id === id && isStorefrontProduct(p));
   if (!p) return <NotFound />;
   const max = size ? p.stock[size] || 0 : 0;
   const photos = [p.image, ...(p.images || [])].filter(Boolean);
@@ -909,7 +937,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
         </div>
         <div className="product-grid">
           {products
-            .filter((x) => x.active && x.id !== id)
+            .filter((x) => isStorefrontProduct(x) && x.id !== id)
             .slice(0, 4)
             .map((x) => (
               <ProductCard key={x.id} product={x} />
@@ -1951,7 +1979,6 @@ function Footer() {
           <h3>EXPLORÁ</h3>
           <Link to="/tienda?new=1">New in</Link>
           <Link to="/hombre">Hombre</Link>
-          <Link to="/tienda?categoria=Mujer">Mujer</Link>
           <Link to="/tienda?categoria=Accesorios">Accesorios</Link>
         </div>
         <div>

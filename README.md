@@ -22,7 +22,7 @@ pnpm preview
 
 - `/`: inicio, novedades y colecciones.
 - `/hombre`: colección de Hombre de Mistral y Brooksfield, con todas las secciones, búsqueda y galerías de fotos. Los modelos, precios y talles disponibles en Zero se confirman con el local.
-- `/tienda`: catálogo con búsqueda, categorías, orden por precio, talles y disponibilidad.
+- `/tienda`: catálogo público de Hombre y Accesorios, con búsqueda, filtros visuales, orden por precio, talles y disponibilidad. Las fichas antiguas de Mujer se conservan en administración para no borrar datos históricos, pero no se publican en la tienda.
 - `/producto/1`: detalle, selección de talle/cantidad y bolsa.
 - `/favoritos`: productos guardados.
 - `/checkout`: compra de demostración, con retiro en el local o envío a La Plata, Berisso o Ensenada.
