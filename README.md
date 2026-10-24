@@ -18,6 +18,8 @@ pnpm test
 pnpm preview
 ```
 
+Para trabajar de a dos (ramas, pull requests, qué no tocar): [`AGENTS.md`](AGENTS.md).
+
 ## Recorridos
 
 - `/`: inicio, novedades y colecciones.
