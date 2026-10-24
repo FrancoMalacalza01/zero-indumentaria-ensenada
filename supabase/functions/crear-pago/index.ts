@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
       ...(envio ? { shipments: { cost: envio, mode: "not_specified" } } : {}),
       // Esto es lo que ata el pago al pedido cuando vuelve el aviso.
       external_reference: pedido.id,
-      statement_descriptor: "MISTRAL",
+      statement_descriptor: "ZERO INDUM",
       notification_url: `${URL_BASE}/functions/v1/pago-aviso`,
       ...(SITIO
         ? {

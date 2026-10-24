@@ -369,7 +369,7 @@ export default function Admin({
     );
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "mistral-inventario.csv";
+    anchor.download = "zero-inventario.csv";
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     notify("Inventario exportado");
@@ -381,16 +381,16 @@ export default function Admin({
         <button
           className="admin-brand"
           onClick={onExit}
-          aria-label="Volver a Mistral tienda"
+          aria-label="Volver a Zero Indumentaria"
         >
-          mistral<span>GESTIÓN DE TIENDA</span>
+          zero<span>INDUMENTARIA · GESTIÓN</span>
         </button>
         <div className="admin-location">
           <span className="admin-location-icon">
             <Store size={19} />
           </span>
           <div>
-            <strong>Mistral local</strong>
+            <strong>Zero Indumentaria</strong>
             <small>Ensenada</small>
           </div>
           <ChevronDown size={15} />
@@ -499,7 +499,7 @@ export default function Admin({
       <div className="admin-workspace">
         <header className="admin-topbar">
           <div>
-            <span className="admin-mobile-brand">mistral</span>
+            <span className="admin-mobile-brand">zero</span>
             <span className="admin-breadcrumb">
               Administración <span>/</span>{" "}
 {pageTitles[tab].crumb}
@@ -1211,7 +1211,7 @@ export default function Admin({
           )}
           <footer className="admin-footer">
             <span>
-              mistral <span>·</span> Ensenada
+              zero <span>·</span> Ensenada
             </span>
             <span>Panel de administración · Prototipo</span>
           </footer>

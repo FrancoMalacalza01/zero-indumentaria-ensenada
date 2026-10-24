@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!assets/|images/).*)",
+      "source": "/((?!assets/|images/|men-images/|men-gallery/).*)",
       "destination": "/index.html"
     }
   ],

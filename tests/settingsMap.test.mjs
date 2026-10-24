@@ -190,7 +190,7 @@ test("con los datos cargados, lo que impide vender desaparece", () => {
   const s = leerSettings({
     whatsapp: "5492211234567",
     empresa: {
-      razonSocial: "Mistral Ensenada SRL",
+      razonSocial: "Zero Indumentaria",
       cuit: "30712345670",
       domicilioLegal: "La Merced 327, Ensenada",
     },

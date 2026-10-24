@@ -1,7 +1,3 @@
-# Fuera de Google mientras los precios y el stock sean de muestra. Ver el
-# comentario en index.html: cuando el catálogo sea el real, volver a
-# "Allow: /" y sacar la etiqueta noindex.
+# Fuera de buscadores mientras precios y stock del local estén pendientes.
 User-agent: *
 Disallow: /
-
-Sitemap: https://mistral-la-plata-lime.vercel.app/sitemap.xml

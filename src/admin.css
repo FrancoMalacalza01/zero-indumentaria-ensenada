@@ -1,5 +1,5 @@
 .admin-shell {
-  --admin-green: #132457;
+  --admin-green: #1c1c1c;
   --admin-muted: #787b85;
   --admin-border: #e5e7eb;
   display: flex;
@@ -1059,7 +1059,7 @@
   transition: border-color .15s, background .15s;
 }
 .admin-sale-size:hover:not(:disabled) {
-  border-color: #132457;
+  border-color: #1c1c1c;
   background: #f3f5fb;
 }
 .admin-sale-size:disabled {
@@ -1068,7 +1068,7 @@
 }
 .admin-sale-size b {
   font-size: 12px;
-  color: #132457;
+  color: #1c1c1c;
 }
 .admin-sale-size span {
   font-size: 9px;
@@ -1092,7 +1092,7 @@
   justify-content: space-between;
   align-items: baseline;
   margin: 0;
-  color: #132457;
+  color: #1c1c1c;
 }
 .admin-ticket h3 span {
   font-size: 21px;
@@ -1147,7 +1147,7 @@
   border: 1px solid #d0d6e9;
   border-radius: 50%;
   background: #fff;
-  color: #132457;
+  color: #1c1c1c;
 }
 .admin-ticket-cantidad button:hover:not(:disabled) {
   background: #edeff6;
@@ -1369,11 +1369,11 @@
   background: #fff;
   border: 1px solid #d0d6e9;
   color: #1f2431;
-  box-shadow: 0 1px 3px #13245726;
+  box-shadow: 0 1px 3px #1c1c1c26;
 }
 .admin-gallery-list button:hover {
-  background: #cc0035;
-  border-color: #cc0035;
+  background: #666666;
+  border-color: #666666;
   color: #fff;
 }
 .admin-gallery-url {
@@ -1475,7 +1475,7 @@
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: #132457;
+  accent-color: #1c1c1c;
 }
 .admin-form-switches strong {
   display: block;
@@ -1687,9 +1687,9 @@
     border-bottom: 2px solid transparent;
   }
   .admin-nav > button.is-active {
-    border-bottom-color: #132457;
+    border-bottom-color: #1c1c1c;
     background: #fff;
-    color: #132457;
+    color: #1c1c1c;
   }
   .admin-nav > button b {
     margin-left: 0;
@@ -1714,7 +1714,7 @@
     font-size: 31px;
     font-weight: 850;
     letter-spacing: -2px;
-    color: #132457;
+    color: #1c1c1c;
   }
   .admin-topbar-right {
     gap: 15px;
@@ -2574,7 +2574,7 @@
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: #132457;
+  accent-color: #1c1c1c;
 }
 .config-zonas {
   display: grid;
@@ -2684,7 +2684,7 @@
   width: 15px;
   height: 15px;
   margin: 0;
-  accent-color: #cc0035;
+  accent-color: #666666;
 }
 .admin-devolucion-pie {
   display: flex;
@@ -2796,7 +2796,7 @@
 
 /* --- El gráfico de barras -----------------------------------------------
    Una sola serie: un solo color y sin leyenda, el título dice qué es. El
-   navy es más claro que el de marca a propósito: treinta barras en #132457
+   navy es más claro que el de marca a propósito: treinta barras en #1c1c1c
    son un paredón negro. Contraste contra el blanco verificado. */
 .reporte-barras {
   display: flex;
@@ -2863,7 +2863,7 @@
   bottom: 100%;
   left: 50%;
   transform: translate(-50%, -6px);
-  background: #132457;
+  background: #1c1c1c;
   color: #fff;
   font-size: 10px;
   line-height: 1.4;
@@ -2909,7 +2909,7 @@
   font-weight: 550;
 }
 .reporte-poco {
-  color: #cc0035;
+  color: #666666;
   font-weight: 650;
 }
 .reporte-talles {
@@ -2983,7 +2983,7 @@
   color: #8a1f36;
 }
 .pago-mal > span {
-  background: #cc0035;
+  background: #666666;
 }
 .admin-pago-nota {
   display: block;
@@ -3008,7 +3008,7 @@
   margin-bottom: 26px;
   padding: 20px 22px;
   border: 1px solid #e9c3cc;
-  border-left: 3px solid #cc0035;
+  border-left: 3px solid #666666;
   border-radius: 7px;
   background: #fcf0f2;
 }
@@ -3049,7 +3049,7 @@
   background: #c9a3ad;
 }
 .config-faltan li.impide::before {
-  background: #cc0035;
+  background: #666666;
 }
 .config-faltan b {
   display: block;

@@ -26,7 +26,7 @@
  *   SMTP_PORT      465
  *   SMTP_USER      el mail del local
  *   SMTP_PASS      contraseña de aplicación (no la del mail)
- *   SMTP_DESDE     "Mistral Ensenada <elmail@gmail.com>"
+ *   SMTP_DESDE     "Zero Indumentaria <elmail@gmail.com>"
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
@@ -83,13 +83,13 @@ function escapar(texto: unknown) {
 
 function armarMail(pedido: Record<string, any>, cfg: Record<string, any>) {
   const dir = cfg?.direccion || {};
-  const nombreLocal = "Mistral Ensenada";
+  const nombreLocal = "Zero Indumentaria";
   const filas = (Array.isArray(pedido.items) ? pedido.items : [])
     .map(
       (i: Record<string, unknown>) => `
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #eceef4">
-            <strong style="color:#132457">${escapar(i.name)}</strong><br>
+            <strong style="color:#1c1c1c">${escapar(i.name)}</strong><br>
             <span style="color:#787b85;font-size:13px">Talle ${escapar(i.size)} · ${Number(i.quantity) || 0} ${
               (Number(i.quantity) || 0) === 1 ? "unidad" : "unidades"
             }</span>
@@ -109,17 +109,17 @@ function armarMail(pedido: Record<string, any>, cfg: Record<string, any>) {
   const html = `<!doctype html>
 <html lang="es-AR"><body style="margin:0;background:#f5f6f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
   <div style="max-width:560px;margin:0 auto;padding:28px 18px">
-    <div style="background:#132457;color:#fff;padding:26px 24px;border-radius:9px 9px 0 0">
-      <div style="font-size:19px;font-weight:700;letter-spacing:3px">MISTRAL</div>
+    <div style="background:#1c1c1c;color:#fff;padding:26px 24px;border-radius:9px 9px 0 0">
+      <div style="font-size:19px;font-weight:700;letter-spacing:3px">ZERO INDUMENTARIA</div>
       <div style="font-size:11px;letter-spacing:2px;opacity:.75">ENSENADA</div>
     </div>
     <div style="background:#fff;padding:28px 24px;border-radius:0 0 9px 9px">
-      <h1 style="margin:0 0 6px;font-size:21px;color:#132457">Recibimos tu pedido</h1>
+      <h1 style="margin:0 0 6px;font-size:21px;color:#1c1c1c">Recibimos tu pedido</h1>
       <p style="margin:0 0 22px;color:#787b85;font-size:14px;line-height:1.6">
         ${escapar(pedido.customer)}, las prendas quedaron reservadas a tu nombre.
-        Pedido <strong style="color:#132457">${escapar(pedido.id)}</strong>.
+        Pedido <strong style="color:#1c1c1c">${escapar(pedido.id)}</strong>.
       </p>
-      <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#132457">
+      <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#1c1c1c">
         ${filas}
         ${
           Number(pedido.envio)
@@ -133,7 +133,7 @@ function armarMail(pedido: Record<string, any>, cfg: Record<string, any>) {
         </tr>
       </table>
       <p style="margin:22px 0 0;color:#787b85;font-size:14px;line-height:1.6">
-        <strong style="color:#132457">${entrega}</strong><br>
+        <strong style="color:#1c1c1c">${entrega}</strong><br>
         ${
           pedido.payment_status === "aprobado"
             ? "Tu pago está acreditado."
@@ -147,7 +147,7 @@ function armarMail(pedido: Record<string, any>, cfg: Record<string, any>) {
       ${
         cfg?.whatsapp
           ? `<p style="margin:24px 0 0"><a href="https://wa.me/${escapar(cfg.whatsapp)}"
-               style="display:inline-block;background:#132457;color:#fff;text-decoration:none;padding:12px 20px;border-radius:5px;font-size:14px">
+               style="display:inline-block;background:#1c1c1c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:5px;font-size:14px">
                Escribinos por WhatsApp</a></p>`
           : ""
       }
@@ -237,7 +237,7 @@ Deno.serve(async (req: Request) => {
     await cliente.send({
       from: DESDE,
       to: destino,
-      subject: `Tu pedido ${pedido.id} — Mistral Ensenada`,
+      subject: `Tu pedido ${pedido.id} — Zero Indumentaria`,
       content: texto,
       html,
     });

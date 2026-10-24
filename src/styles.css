@@ -4,16 +4,14 @@
   color: #1f2431;
   background: #fff;
   font-synthesis: none;
-  /* Paleta de la marca, medida sobre el logo oficial
-     (public/images/mistral-logo.png): el azul es el 89% de los píxeles y el
-     rojo es el punto de la "i". */
-  --brand: #132457;
-  --red: #cc0035;
+  /* Paleta neutra de Zero Indumentaria, basada en su logo. */
+  --brand: #1c1c1c;
+  --red: #666666;
   --ink: #1f2431;
   --muted: #6b6d73;
   --line: #e0e2e7;
   --paper: #f0f2f6;
-  --accent: #a6b7e9;
+  --accent: #d0d0d0;
 }
 * {
   box-sizing: border-box;
@@ -58,7 +56,7 @@ input:focus-visible,
 select:focus-visible,
 summary:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #364f98;
+  outline: 2px solid #666666;
   outline-offset: 4px;
 }
 h1,
@@ -161,9 +159,9 @@ svg {
   gap: 7px;
 }
 .brand img {
-  width: 151px;
-  height: 36px;
-  object-fit: contain;
+  width: 166px;
+  height: 55px;
+  object-fit: cover;
 }
 .brand > span {
   font-size: 9px;
@@ -278,10 +276,10 @@ svg {
   inset: 0;
   background: linear-gradient(
     90deg,
-    #132457 0%,
-    #132457 29%,
-    #132457e6 36%,
-    #13245773 46%,
+    #1c1c1c 0%,
+    #1c1c1c 29%,
+    #1c1c1ce6 36%,
+    #1c1c1c73 46%,
     transparent 60%
   );
 }
@@ -647,7 +645,7 @@ svg {
   color: #6e7383;
 }
 .footer {
-  background: #0b1535;
+  background: #181818;
   color: #dde0eb;
   padding: 55px 5.5% 0;
 }
@@ -662,8 +660,9 @@ svg {
   align-items: start;
 }
 .footer .brand img {
-  width: 145px;
-  filter: brightness(0) invert(1);
+  width: 160px;
+  filter: invert(1);
+  mix-blend-mode: screen;
 }
 .footer .brand > span {
   font-size: 8px;
@@ -1620,10 +1619,10 @@ svg {
   .hero-shade {
     background: linear-gradient(
       90deg,
-      #132457 0%,
-      #132457 24%,
-      #132457d9 34%,
-      #13245755 48%,
+      #1c1c1c 0%,
+      #1c1c1c 24%,
+      #1c1c1cd9 34%,
+      #1c1c1c55 48%,
       transparent 65%
     );
   }
@@ -1679,8 +1678,8 @@ svg {
     display: none;
   }
   .brand img {
-    width: 120px;
-    height: 29px;
+    width: 133px;
+    height: 45px;
   }
   .brand > span {
     font-size: 7px;
@@ -1718,8 +1717,8 @@ svg {
   }
   .hero-shade {
     background:
-      linear-gradient(90deg, #132457bb, transparent 90%),
-      linear-gradient(0deg, #132457 0%, #132457c4 21%, #13245720 62%, #1324570d);
+      linear-gradient(90deg, #1c1c1cbb, transparent 90%),
+      linear-gradient(0deg, #1c1c1c 0%, #1c1c1cc4 21%, #1c1c1c20 62%, #1c1c1c0d);
   }
   .hero-content {
     width: 100%;
@@ -2155,7 +2154,7 @@ svg {
 }
 @media (max-width: 360px) {
   .header-main { padding-inline: 12px; }
-  .header-main .brand img { width: 99px; height: 25px; }
+  .header-main .brand img { width: 105px; height: 38px; }
   .header-main .brand > span { font-size: 6px; letter-spacing: .8px; }
   .header-actions { gap: 1px; }
   .header-actions > .icon-button { min-width: 27px; }
@@ -2318,10 +2317,10 @@ svg {
   .hero-shade {
     background: linear-gradient(
       0deg,
-      #132457 0%,
-      #132457e0 30%,
-      #13245759 64%,
-      #13245714 100%
+      #1c1c1c 0%,
+      #1c1c1ce0 30%,
+      #1c1c1c59 64%,
+      #1c1c1c14 100%
     );
   }
   .hero-image {
@@ -2354,7 +2353,7 @@ svg {
   font-weight: 650;
   letter-spacing: 0.4px;
   color: #fff;
-  background: var(--brand-red, #cc0035);
+  background: var(--brand-red, #666666);
   border-radius: 3px;
   vertical-align: middle;
 }
