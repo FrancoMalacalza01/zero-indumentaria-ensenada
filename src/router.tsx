@@ -21,6 +21,7 @@ export function Link({
   to,
   children,
   className = "",
+  onClick,
   ...rest
 }: {
   to: string;
@@ -28,6 +29,7 @@ export function Link({
   className?: string;
   tabIndex?: number;
   "aria-hidden"?: boolean;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }) {
   return (
     <a
@@ -39,6 +41,7 @@ export function Link({
           e.preventDefault();
           navigate(to);
         }
+        onClick?.(e);
       }}
     >
       {children}

@@ -65,6 +65,18 @@ const MenCatalog = lazy(() => import("./MenCatalog"));
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
 const storefrontCategories = ["Todos", "Hombre", "Accesorios"] as const;
 type StorefrontCategory = (typeof storefrontCategories)[number];
+const menSections = [
+  { name: "Remeras", image: "/men-images/m-375247890.webp" },
+  { name: "Jeans y pantalones", image: "/men-images/m-371537748.webp" },
+  { name: "Buzos", image: "/men-images/m-340508830.webp" },
+  { name: "Sweaters", image: "/men-images/m-345910765.webp" },
+  { name: "Camperas", image: "/men-images/m-341995503.webp" },
+  { name: "Camisas", image: "/men-images/m-344406235.webp" },
+  { name: "Polos", image: "/men-images/m-361349135.webp" },
+  { name: "Bermudas", image: "/men-images/b-11504.webp" },
+];
+const menSectionUrl = (name?: string) =>
+  name ? `/hombre?categoria=${encodeURIComponent(name)}` : "/hombre";
 const isStorefrontProduct = (product: Product) =>
   product.active && product.category !== "Mujer";
 const storefrontCategory = (value: string | null): StorefrontCategory =>
@@ -229,6 +241,7 @@ function Header({ onCart }: { onCart: () => void }) {
     .filter((n) => n !== settings.direccion.ciudad)
     .join(", ");
   const [menu, setMenu] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [search, setSearch] = useState(false);
   const [query, setQuery] = useState("");
   const nav = [
@@ -284,6 +297,15 @@ function Header({ onCart }: { onCart: () => void }) {
           </div>
         </div>
         <nav className="desktop-nav" aria-label="Navegación principal">
+          <button
+            className={`nav-category-trigger ${categoriesOpen ? "active" : ""}`}
+            type="button"
+            aria-expanded={categoriesOpen}
+            aria-controls="category-mega-menu"
+            onClick={() => setCategoriesOpen((open) => !open)}
+          >
+            Categorías <ChevronDown size={15} />
+          </button>
           {nav.map(([name, to]) => (
             <Link key={name} to={to}>
               {name}
@@ -294,6 +316,23 @@ function Header({ onCart }: { onCart: () => void }) {
             Nuestras tiendas <MapPin size={14} />
           </Link>
         </nav>
+        {categoriesOpen && (
+          <div className="category-mega-menu" id="category-mega-menu">
+            <div className="category-mega-heading">
+              <span className="eyebrow dark">ENCONTRÁ TU PRÓXIMA PRENDA</span>
+              <Link to={menSectionUrl()} onClick={() => setCategoriesOpen(false)}>
+                Ver toda la colección <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="category-mega-grid">
+              {menSections.map(({ name }) => (
+                <Link key={name} to={menSectionUrl(name)} onClick={() => setCategoriesOpen(false)}>
+                  {name}<ArrowRight size={15} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         {search && (
           <form
             className="search-bar"
@@ -323,6 +362,7 @@ function Header({ onCart }: { onCart: () => void }) {
             {[
               ["Inicio", "/"],
               ...nav,
+              ...menSections.map(({ name }) => [name, menSectionUrl(name)]),
               ["Nuestras tiendas", "/sucursales"],
               ["Favoritos", "/favoritos"],
             ].map(([name, to]) => (
@@ -514,6 +554,25 @@ function Home() {
           <small>Cerca tuyo, como siempre</small>
         </span>
       </div>
+      <section className="home-category-section" aria-labelledby="home-categories-title">
+        <div className="home-category-heading">
+          <div>
+            <span className="eyebrow dark">ELEGÍ POR CATEGORÍA</span>
+            <h2 id="home-categories-title">Encontrá lo que va con vos.</h2>
+          </div>
+          <Link className="text-link" to={menSectionUrl()}>
+            Ver todo hombre <ArrowRight size={18} />
+          </Link>
+        </div>
+        <div className="home-category-grid">
+          {menSections.slice(0, 6).map(({ name, image }, index) => (
+            <Link className={`home-category-card home-category-${index + 1}`} key={name} to={menSectionUrl(name)}>
+              <img src={image} alt={`Prendas de ${name.toLocaleLowerCase("es-AR")}`} loading="lazy" />
+              <span>{name}<ArrowRight size={18} /></span>
+            </Link>
+          ))}
+        </div>
+      </section>
       <ProductMarquee products={selected.slice(0, 10)} />
       <section className="section new-section" id="novedades">
         <div className="section-heading">

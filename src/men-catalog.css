@@ -58,5 +58,82 @@
 .men-gallery-thumbs button { flex: 0 0 60px; width: 60px; height: 75px; padding: 0; opacity: .6; border: 2px solid transparent; }
 .men-gallery-thumbs button.active { opacity: 1; border-color: #1c1c1c; }
 .men-gallery-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+.men-content {
+  display: grid;
+  grid-template-columns: 225px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 38px;
+  padding-top: 52px;
+}
+.men-sidebar {
+  position: sticky;
+  top: 22px;
+  align-self: start;
+  padding: 0 22px 22px 0;
+  border-right: 1px solid #e2e3e6;
+}
+.men-sidebar-group { padding: 0 0 22px; margin-bottom: 22px; border-bottom: 1px solid #e2e3e6; }
+.men-sidebar-group h2 { margin: 0 0 14px; font-size: 15px; letter-spacing: .02em; }
+.men-sidebar-links { display: flex; flex-direction: column; gap: 3px; }
+.men-sidebar-links button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  color: #373a40;
+  text-align: left;
+  background: transparent;
+  font-size: 13px;
+  transition: color .18s, background .18s;
+}
+.men-sidebar-links button:hover { background: #f4f4f5; }
+.men-sidebar-links button.active { color: #182b61; background: #eff1f6; font-weight: 700; }
+.men-sidebar-links button span { flex: 0 0 auto; color: #858a94; font-size: 11px; }
+.men-sidebar-links button.active span { color: #182b61; }
+.men-show-categories, .men-clear-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0 0 10px;
+  padding: 0;
+  color: #182b61;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 650;
+}
+.men-show-categories svg { transition: transform .2s; }
+.men-show-categories svg.rotated { transform: rotate(180deg); }
+.men-search { display: flex; align-items: center; gap: 9px; padding: 11px 12px; border: 1px solid #dedfe2; color: #737782; }
+.men-search:focus-within { border-color: #182b61; }
+.men-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: #1f2431; font-size: 12px; }
+.men-clear-filters { margin: 0; text-decoration: underline; }
+.men-results { min-width: 0; }
+.men-results .men-section-head { margin: 0 0 22px; }
+.men-results .men-section-head h2 { font-size: clamp(1.65rem, 2.5vw, 2.4rem); }
+.men-results .men-section-head a { font-size: 12px; white-space: nowrap; }
+.men-toolbar { min-height: 35px; margin-bottom: 12px; }
+.men-search-summary { margin-left: auto; }
+.men-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 31px 16px; }
+.men-source-note { grid-column: 1 / -1; }
+@media (max-width: 1000px) {
+  .men-content { grid-template-columns: 205px minmax(0, 1fr); gap: 28px; }
+  .men-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 650px) {
+  .men-content { display: block; padding-top: 32px; }
+  .men-sidebar { position: static; padding: 0 0 16px; border-right: 0; border-bottom: 1px solid #dedfe2; margin-bottom: 29px; }
+  .men-sidebar-group { padding-bottom: 16px; margin-bottom: 16px; }
+  .men-sidebar-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 8px; max-height: 260px; overflow: auto; }
+  .men-sidebar-links button { padding: 8px; font-size: 12px; }
+  .men-sidebar-group h2 { font-size: 14px; }
+  .men-search { max-width: 420px; }
+  .men-results .men-section-head { margin: 0 0 15px; }
+  .men-results .men-section-head h2 { font-size: 1.7rem; }
+  .men-results .men-section-head a { font-size: 11px; }
+  .men-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px 10px; }
+  .men-source-note { margin-top: 38px; }
+}
 @media (max-width: 850px) { .men-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } .men-gallery { grid-template-columns: minmax(0,1fr) 240px; } }
 @media (max-width: 650px) { .men-intro { padding-bottom: 65px; } .men-intro .breadcrumb { margin-bottom: 45px; } .men-intro p { font-size: 14px; } .men-brands { width: 100%; } .men-brands button { flex: 1; padding: 17px 6px; } .men-brands span { display: block; margin: 4px 0 0; } .men-section-head { align-items: start; flex-direction: column; margin-top: 45px; } .men-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 27px 10px; } .men-card-body > button { font-size: 13px; } .men-gallery-backdrop { padding: 0; } .men-gallery { height: 100dvh; grid-template-columns: 1fr; grid-template-rows: minmax(0,1fr) auto 82px; } .men-gallery-details { grid-column: 1; grid-row: 2; padding: 15px 18px; } .men-gallery-details h2 { font-size: 17px; margin: 6px 0; } .men-gallery-details a { margin-top: 10px; } .men-gallery-thumbs { grid-row: 3; } }
