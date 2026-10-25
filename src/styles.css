@@ -1735,6 +1735,10 @@ svg {
 .store-card .button {
   margin: 25px 0 15px;
 }
+.store-card .store-map-button {
+  margin: 0 0 10px;
+  border-color: var(--line);
+}
 .stores-page .store-footnote {
   margin-top: 25px;
   font-size: 12px;

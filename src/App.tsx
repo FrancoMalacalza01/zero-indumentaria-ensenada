@@ -1634,6 +1634,9 @@ function Stores() {
   const { settings } = useStore();
   const d = settings.direccion;
   const zonas = deliveryZones(settings);
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${d.calle}, ${d.ciudad}, ${d.provincia}, Argentina`,
+  )}`;
   return (
     <main className="section stores-page">
       <span className="eyebrow dark">EL MISMO ESPÍRITU. TU CIUDAD.</span>
@@ -1662,6 +1665,14 @@ function Stores() {
             )}
             Hacemos envíos a {zonas.map((z) => z.nombre).join(", ")}.
           </p>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="button button-white store-map-button"
+          >
+            Ver ubicación en Google Maps <MapPin size={17} />
+          </a>
           <a
             href={instagram}
             target="_blank"
