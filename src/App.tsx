@@ -62,6 +62,9 @@ import {
 const Admin = lazy(() => import("./Admin"));
 const AdminGate = lazy(() => import("./AdminGate"));
 const MenCatalog = lazy(() => import("./MenCatalog"));
+const HomeBrandCatalog = lazy(() =>
+  import("./MenCatalog").then((module) => ({ default: module.HomeBrandCatalog })),
+);
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
 const storefrontCategories = ["Todos", "Hombre", "Accesorios"] as const;
 type StorefrontCategory = (typeof storefrontCategories)[number];
@@ -389,8 +392,8 @@ function Header({ onCart }: { onCart: () => void }) {
 // cuanto se sumen más, se encadenan solas con un fundido.
 const heroImages = [
   {
-    src: "/images/lifestyle.webp",
-    alt: "Campaña de indumentaria Mistral, una de las marcas de Zero Indumentaria",
+    src: "/images/lifestyle-zero.webp",
+    alt: "Campaña de Zero Indumentaria",
   },
 ];
 function HeroSlides() {
@@ -416,33 +419,6 @@ function HeroSlides() {
         />
       ))}
     </>
-  );
-}
-/** Tira de prendas que se desplaza sola. Se frena al pasar el mouse o al
- *  llegar con el teclado, y con "reducir movimiento" queda quieta. */
-function ProductMarquee({ products }: { products: Product[] }) {
-  if (products.length < 3) return null;
-  const loop = [...products, ...products];
-  return (
-    <section className="marquee" aria-label="Prendas de la colección">
-      <div className="marquee-track">
-        {loop.map((p, i) => {
-          const clone = i >= products.length;
-          return (
-            <Link
-              key={`${p.id}-${i}`}
-              to={`/producto/${p.id}`}
-              className="marquee-item"
-              aria-hidden={clone}
-              tabIndex={clone ? -1 : undefined}
-            >
-              <ProductImage product={p} loading="lazy" />
-              <span>{p.name}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 function CategoryFilters({
@@ -483,33 +459,12 @@ function ArrowUpRightSmall() {
   return <ArrowRight size={13} style={{ transform: "rotate(-40deg)" }} />;
 }
 function Home() {
-  const { products } = useStore();
-  const [tab, setTab] = useState<StorefrontCategory>("Todos");
-  const storefrontProducts = products.filter(isStorefrontProduct);
-  const selected = products.filter(
-    (p) => isStorefrontProduct(p) && (tab === "Todos" || p.category === tab),
-  );
-  const picks =
-    tab === "Todos"
-      ? Array.from(
-          new Map(
-            [
-              selected[0],
-              selected.find((p) => p.id === "3"),
-              selected.find((p) => p.id === "11"),
-              selected.find((p) => p.id === "12"),
-              ...selected,
-            ]
-              .filter((p): p is Product => !!p)
-              .map((p) => [p.id, p]),
-          ).values(),
-        ).slice(0, 4)
-      : selected.slice(0, 4);
   return (
     <>
       <section className="hero">
         <HeroSlides />
         <div className="hero-shade" />
+        <div className="hero-brand-mark"><img src="/images/zero-logo-photo.png" alt="Zero Indumentaria" /></div>
         <div className="hero-content">
           <span className="eyebrow">ZERO INDUMENTARIA · MISTRAL + BROOKSFIELD</span>
           <h1>
@@ -528,7 +483,6 @@ function Home() {
             Explorá la colección <ArrowRight size={19} />
           </Link>
         </div>
-        <span className="hero-side">ZERO INDUMENTARIA — TU ESTILO</span>
         <div className="hero-bottom">
           <span>ENSENADA</span>
           <a href="#novedades" aria-label="Ver novedades">
@@ -573,28 +527,13 @@ function Home() {
           ))}
         </div>
       </section>
-      <ProductMarquee products={selected.slice(0, 10)} />
-      <section className="section new-section" id="novedades">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow dark">UN AIRE NUEVO</span>
-            <h2>Lo que se viene con vos.</h2>
-          </div>
-          <Link className="text-link" to="/tienda">
-            Ver toda la colección <ArrowRight size={18} />
-          </Link>
-        </div>
-        <CategoryFilters value={tab} onChange={setTab} products={storefrontProducts} label="Categorías de novedades" />
-        <div className="product-grid">
-          {picks.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+      <Suspense fallback={<section className="section new-section" id="novedades"><span className="eyebrow dark">MISTRAL + BROOKSFIELD</span><h2 className="brand-catalog-loading">Cargando el catálogo…</h2></section>}>
+        <HomeBrandCatalog />
+      </Suspense>
       <section className="collection-grid">
         <Link to="/hombre" className="collection-card">
           <img
-            src="/images/product-3.webp"
+            src="/men-images/m-375247890.webp"
             alt="Colección para hombre en Zero Indumentaria"
             loading="lazy"
           />
@@ -608,7 +547,7 @@ function Home() {
         </Link>
         <Link to="/tienda?categoria=Accesorios" className="collection-card">
           <img
-            src="/images/product-11.webp"
+            src="/men-images/b-3767.webp"
             alt="Gorra de la colección de accesorios en Zero Indumentaria"
             loading="lazy"
           />

@@ -340,6 +340,18 @@ svg {
   width: 55%;
   z-index: 1;
 }
+.hero-brand-mark {
+  position: absolute;
+  z-index: 2;
+  top: 20px;
+  left: 67%;
+  pointer-events: none;
+}
+.hero-brand-mark img {
+  display: block;
+  width: clamp(130px, 16vw, 205px);
+  height: auto;
+}
 .eyebrow {
   display: block;
   font-size: 10px;
@@ -397,14 +409,6 @@ svg {
 }
 .button-green:hover {
   background: #192b60;
-}
-.hero-side {
-  position: absolute;
-  right: 23px;
-  top: 50%;
-  writing-mode: vertical-rl;
-  letter-spacing: 2px;
-  font-size: 9px;
 }
 .hero-bottom {
   position: absolute;
@@ -508,6 +512,45 @@ svg {
   font-size: clamp(1rem, 1.65vw, 1.45rem);
   font-weight: 700;
 }
+.home-brand-catalog { scroll-margin-top: 30px; }
+.home-brand-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.home-brand-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 22px 0 25px;
+}
+.home-brand-tabs { display: flex; flex-wrap: wrap; gap: 9px; }
+.home-brand-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 8px 15px;
+  border: 1px solid #d9d9d9;
+  border-radius: 999px;
+  background: #fff;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+}
+.home-brand-tabs button.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+.home-brand-tabs small { display: inline-grid; place-items: center; min-width: 23px; height: 23px; padding: 0 5px; border-radius: 999px; background: #f1f1f1; color: #666; font-size: 10px; }
+.home-brand-tabs button.active small { background: #ffffff29; color: #fff; }
+.home-brand-category { position: relative; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.home-brand-category select { appearance: none; min-height: 42px; max-width: 230px; padding: 9px 38px 9px 14px; border: 1px solid #d9d9d9; border-radius: 999px; background: #fff; color: var(--ink); font-size: 12px; font-weight: 600; }
+.home-brand-category svg { position: absolute; right: 14px; pointer-events: none; color: var(--ink); }
+.home-brand-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 18px; }
+.home-brand-card .men-card-image { background: #f1f2f4; }
+.home-brand-card .men-card-body { padding-top: 12px; }
+.home-brand-more { display: flex; align-items: center; justify-content: center; gap: 11px; min-height: 46px; margin: 38px auto 0; padding: 10px 20px; border: 1px solid #d9d9d9; border-radius: 999px; background: #fff; font-size: 12px; font-weight: 650; }
+.home-brand-more:hover { border-color: var(--brand); background: var(--brand); color: #fff; }
+.home-brand-more span { color: var(--muted); font-weight: 400; }
+.home-brand-more:hover span { color: #ffffffc9; }
+.home-brand-note { margin: 15px 0 0; color: var(--muted); text-align: center; font-size: 11px; }
+.brand-catalog-loading { margin-top: 16px; }
 .section {
   padding: 70px 5.5%;
   max-width: 1700px;
@@ -1892,6 +1935,13 @@ svg {
     height: 100%;
     object-position: 66% center;
   }
+  .hero-brand-mark {
+    left: 21px;
+    top: 18px;
+  }
+  .hero-brand-mark img {
+    width: 154px;
+  }
   .hero-shade {
     background:
       linear-gradient(90deg, #1c1c1cbb, transparent 90%),
@@ -1920,9 +1970,6 @@ svg {
     padding: 12px 19px;
     font-size: 11px;
     gap: 26px;
-  }
-  .hero-side {
-    display: none;
   }
   .hero-bottom {
     bottom: 18px;
@@ -2412,68 +2459,17 @@ svg {
   .home-category-card { aspect-ratio: 1.1; }
   .home-category-card > span { bottom: 13px; left: 12px; right: 10px; font-size: 14px; }
   .home-category-card > span svg { width: 15px; }
+  .home-brand-controls { align-items: start; flex-direction: column; margin: 18px 0 20px; }
+  .home-brand-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .home-brand-tabs button { gap: 5px; min-height: 40px; padding: 7px 8px; font-size: 11px; }
+  .home-brand-tabs small { min-width: 19px; height: 19px; padding: 0 4px; font-size: 9px; }
+  .home-brand-category { width: 100%; justify-content: space-between; }
+  .home-brand-category select { flex: 1; max-width: none; }
+  .home-brand-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px 10px; }
+  .home-brand-card .men-card-body > button { font-size: 13px; }
+  .home-brand-more { margin-top: 28px; }
   .category-mega-menu { display: none; }
   .mobile-nav > a:nth-child(n + 5):nth-child(-n + 12) { padding-left: 17px; font-size: 16px; }
-}
-
-/* ---------- Tira de prendas ---------- */
-.marquee {
-  overflow: hidden;
-  padding: 26px 0;
-  background: var(--paper);
-  border-bottom: 1px solid var(--line);
-}
-.marquee-track {
-  display: flex;
-  gap: 18px;
-  width: max-content;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .marquee-track {
-    animation: marqueeSlide 46s linear infinite;
-  }
-  .marquee:hover .marquee-track,
-  .marquee:focus-within .marquee-track {
-    animation-play-state: paused;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee {
-    overflow-x: auto;
-  }
-}
-@keyframes marqueeSlide {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(calc(-50% - 9px));
-  }
-}
-.marquee-item {
-  width: 148px;
-  flex-shrink: 0;
-  text-decoration: none;
-  color: var(--ink);
-}
-.marquee-item img {
-  width: 100%;
-  aspect-ratio: 4/5;
-  object-fit: cover;
-  background: #fff;
-}
-.marquee-item span {
-  display: block;
-  margin-top: 7px;
-  font-size: 11.5px;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.marquee-item:hover span {
-  color: var(--brand);
 }
 
 /* ---------- Galería: miniaturas al costado, siempre a la vista ---------- */
