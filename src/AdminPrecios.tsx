@@ -7,6 +7,7 @@ import {
   Download,
   Pencil,
   Redo2,
+  Tag,
   Search,
   SlidersHorizontal,
   Undo2,
@@ -24,6 +25,7 @@ import {
   aplicarFoto,
   capturar,
   deshacer,
+  descuento,
   filasACsv,
   historialVacio,
   leerRegla,
@@ -68,8 +70,11 @@ type Articulo = {
   precio: number;
   /** Sólo hombre: lo que publica la marca. */
   precioMarca: number | null;
-  /** Sólo tienda: el precio tachado. */
-  precioAnterior?: number;
+  /**
+   * El precio anterior, el que se muestra tachado. Si existe, el artículo está
+   * en oferta. Es el precio de partida del descuento.
+   */
+  antes?: number;
   /** Hombre con precio propio puesto por el local. */
   propio: boolean;
   activo: boolean;
@@ -90,7 +95,7 @@ const prendasHombre = catalog.products as PrendaHombre[];
 const POR_PAGINA = 50;
 const AVISO_RESALTADO = 1600;
 
-type EstadoFiltro = "todos" | "venta" | "fuera" | "propio" | "tocados";
+type EstadoFiltro = "todos" | "venta" | "fuera" | "propio" | "oferta" | "tocados";
 type Orden = { por: "nombre" | "marca" | "precio"; dir: 1 | -1 } | null;
 
 function articulosDe(productos: Product[], ajustes: AjustesHombre): Articulo[] {
@@ -105,7 +110,7 @@ function articulosDe(productos: Product[], ajustes: AjustesHombre): Articulo[] {
     imagen: p.image,
     precio: p.price,
     precioMarca: null,
-    precioAnterior: p.oldPrice,
+    antes: p.oldPrice && p.oldPrice > p.price ? p.oldPrice : undefined,
     propio: false,
     activo: p.active,
   }));
@@ -122,6 +127,7 @@ function articulosDe(productos: Product[], ajustes: AjustesHombre): Articulo[] {
       imagen: m.cover || m.images[0],
       precio: a?.price ?? m.priceARS,
       precioMarca: m.priceARS,
+      antes: a?.price != null && a.old && a.old > a.price ? a.old : undefined,
       propio: a?.price != null,
       activo: a?.active !== false,
     };
@@ -293,6 +299,9 @@ export default function AdminPrecios({
   const [op, setOp] = useState<Operacion>("subir");
   const [valorTxt, setValorTxt] = useState("");
   const [redondeo, setRedondeo] = useState<Redondeo>("ninguno");
+  // "poner en oferta" en una fila arma la regla y lleva el cursor al porcentaje.
+  const [pedirFoco, setPedirFoco] = useState(false);
+  const valorRef = useRef<HTMLInputElement>(null);
   const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(temporizador.current), []);
 
@@ -307,15 +316,17 @@ export default function AdminPrecios({
   const resumen = useMemo(() => {
     let venta = 0;
     let propios = 0;
+    let ofertas = 0;
     let min = Infinity;
     let max = 0;
     for (const a of articulos) {
       if (a.activo) venta++;
       if (a.propio) propios++;
+      if (a.antes) ofertas++;
       if (a.precio < min) min = a.precio;
       if (a.precio > max) max = a.precio;
     }
-    return { total: articulos.length, venta, fuera: articulos.length - venta, propios, min, max };
+    return { total: articulos.length, venta, fuera: articulos.length - venta, propios, ofertas, min, max };
   }, [articulos]);
 
   const filtradas = useMemo(() => {
@@ -329,6 +340,7 @@ export default function AdminPrecios({
       if (estado === "venta" && !a.activo) return false;
       if (estado === "fuera" && a.activo) return false;
       if (estado === "propio" && !a.propio) return false;
+      if (estado === "oferta" && !a.antes) return false;
       if (estado === "tocados" && !tocados.has(a.key)) return false;
       if (min?.ok && a.precio < min.value) return false;
       if (max?.ok && a.precio > max.value) return false;
@@ -476,7 +488,7 @@ export default function AdminPrecios({
     () =>
       regla.ok
         ? vistaPrevia(
-            seleccion.map((a) => ({ key: a.key, precio: a.precio })),
+            seleccion.map((a) => ({ key: a.key, precio: a.precio, ...(a.antes ? { base: a.antes } : {}) })),
             op,
             regla.value,
             redondeo,
@@ -485,21 +497,58 @@ export default function AdminPrecios({
     [regla, seleccion, op, redondeo],
   );
   const unidad = OPERACIONES.find((o) => o.id === op)?.unidad ?? "";
+  useEffect(() => {
+    if (pedirFoco && valorRef.current) {
+      valorRef.current.focus();
+      valorRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+      setPedirFoco(false);
+    }
+  }, [pedirFoco, seleccion.length]);
   const hayPropios = seleccion.some((a) => a.fuente === "men" && a.propio);
+  const hayOfertas = seleccion.some((a) => a.antes);
   const hayEnVenta = seleccion.some((a) => a.activo);
   const hayFuera = seleccion.some((a) => !a.activo);
 
   function aplicarRegla() {
     if (!vista || !regla.ok) return;
+    const esOferta = op === "oferta";
     const cambios = vista.filas
       .filter((f) => f.estado === "cambia")
-      .map((f) => cambioDePrecio(porClave.get(f.key)!, f.despues));
+      .map((f) => {
+        const c = cambioDePrecio(porClave.get(f.key)!, f.despues);
+        // La oferta guarda el precio de partida como el anterior: es el tachado.
+        return esOferta ? { ...c, antes: f.base } : c;
+      });
     const etiqueta = OPERACIONES.find((o) => o.id === op)!.etiqueta;
+    const n = cambios.length;
     ejecutar(
       cambios,
-      `${etiqueta} ${regla.value}${unidad} a ${cambios.length} artículos`,
-      `${cambios.length} ${cambios.length === 1 ? "precio cambiado" : "precios cambiados"}`,
+      `${etiqueta} ${regla.value}${unidad} a ${n} artículos`,
+      esOferta
+        ? `${n} ${n === 1 ? "artículo en oferta" : "artículos en oferta"}`
+        : `${n} ${n === 1 ? "precio cambiado" : "precios cambiados"}`,
     );
+  }
+
+  /** Vuelve los artículos al precio anterior y saca el tachado. */
+  function terminarOfertas(objetivo: Articulo[]) {
+    const ofertas = objetivo.filter((a) => a.antes);
+    if (!ofertas.length) return;
+    const n = ofertas.length;
+    ejecutar(
+      ofertas.map((a) => ({ ...cambioDePrecio(a, a.antes!), antes: null })),
+      n === 1 ? `Terminar la oferta: ${ofertas[0].nombre}` : `Terminar la oferta de ${n} artículos`,
+      n === 1
+        ? `${ofertas[0].nombre}: oferta terminada, vuelve a ${money(ofertas[0].antes!)}`
+        : `${n} ofertas terminadas`,
+    );
+  }
+
+  function ofertaRapida(a: Articulo) {
+    setElegidas(new Set([a.key]));
+    setOp("oferta");
+    setValorTxt("");
+    setPedirFoco(true);
   }
 
   function cambiarEstadoDeLaSeleccion(activo: boolean) {
@@ -562,7 +611,7 @@ export default function AdminPrecios({
         a.detalle,
         a.precioMarca === null ? "" : String(a.precioMarca),
         String(a.precio),
-        a.precioAnterior ? String(a.precioAnterior) : "",
+        a.antes ? String(a.antes) : "",
         a.activo ? "A la venta" : "Fuera de venta",
       ]),
     ];
@@ -595,7 +644,8 @@ export default function AdminPrecios({
           </p>
           <p className="admin-precios-resumen">
             <b>{resumen.venta}</b> a la venta · <b>{resumen.fuera}</b> fuera de
-            venta · <b>{resumen.propios}</b> con precio propio · de{" "}
+            venta · <b>{resumen.propios}</b> con precio propio ·{" "}
+            <b>{resumen.ofertas}</b> en oferta · de{" "}
             <b>{money(resumen.min)}</b> a <b>{money(resumen.max)}</b>
           </p>
         </div>
@@ -696,6 +746,7 @@ export default function AdminPrecios({
             <option value="venta">A la venta</option>
             <option value="fuera">Fuera de venta</option>
             <option value="propio">Con precio propio</option>
+            <option value="oferta">En oferta</option>
             <option value="tocados">Tocados en esta sesión</option>
           </select>
         </label>
@@ -752,6 +803,7 @@ export default function AdminPrecios({
             <label className="admin-field">
               {unidad === "%" ? "Porcentaje" : "Monto ($)"}
               <input
+                ref={valorRef}
                 aria-label="Valor de la regla"
                 inputMode="decimal"
                 placeholder={unidad === "%" ? "ej. 10" : "ej. 2000"}
@@ -783,7 +835,9 @@ export default function AdminPrecios({
             >
               <Check size={16} />
               {vista && vista.cambian
-                ? `Aplicar a ${vista.cambian}`
+                ? op === "oferta"
+                  ? `Poner en oferta ${vista.cambian}`
+                  : `Aplicar a ${vista.cambian}`
                 : "Aplicar"}
             </button>
           </div>
@@ -819,12 +873,12 @@ export default function AdminPrecios({
                     <li key={f.key} className={`is-${f.estado}`}>
                       <span>{a.nombre}</span>
                       <span>
-                        {money(f.antes)}
+                        {f.base !== undefined ? <s>{money(f.base)}</s> : money(f.antes)}
                         {f.despues !== null && (
                           <>
                             {" → "}
                             <b>{money(f.despues)}</b>{" "}
-                            <Variacion antes={f.antes} despues={f.despues} />
+                            <Variacion antes={f.base ?? f.antes} despues={f.despues} />
                           </>
                         )}
                         {f.estado === "error" && <em> {f.error}</em>}
@@ -848,6 +902,11 @@ export default function AdminPrecios({
             {hayFuera && (
               <button className="admin-button admin-button-outline" onClick={() => cambiarEstadoDeLaSeleccion(true)}>
                 Poner a la venta
+              </button>
+            )}
+            {hayOfertas && (
+              <button className="admin-button admin-button-outline" onClick={() => terminarOfertas(seleccion)}>
+                Terminar la oferta
               </button>
             )}
             {hayPropios && (
@@ -950,10 +1009,32 @@ export default function AdminPrecios({
                         aria-label={`Cambiar el precio de ${a.nombre}, ahora ${money(a.precio)}`}
                         title="Clic para cambiar el precio"
                       >
-                        {a.precioAnterior ? <s>{money(a.precioAnterior)}</s> : null}
+                        {a.antes ? <s>{money(a.antes)}</s> : null}
                         <strong>{money(a.precio)}</strong>
                         <Pencil size={12} aria-hidden />
                       </button>
+                      {a.antes ? (
+                        <span className="admin-precios-sub">
+                          <span className="admin-precios-oferta">
+                            <Tag size={11} aria-hidden /> Oferta −{descuento(a.antes, a.precio)}%
+                          </span>{" "}
+                          <button
+                            className="admin-precios-quitar"
+                            onClick={() => terminarOfertas([a])}
+                            aria-label={`Terminar la oferta de ${a.nombre}`}
+                          >
+                            terminar
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          className="admin-precios-ofertar"
+                          onClick={() => ofertaRapida(a)}
+                          aria-label={`Poner en oferta ${a.nombre}`}
+                        >
+                          <Tag size={11} aria-hidden /> poner en oferta
+                        </button>
+                      )}
                       {a.propio && a.precioMarca !== null && (
                         <span className="admin-precios-sub">
                           Marca {money(a.precioMarca)}{" "}

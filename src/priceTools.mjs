@@ -19,6 +19,7 @@ import {
 export const OPERACIONES = [
   { id: "subir", etiqueta: "Subir un porcentaje", unidad: "%" },
   { id: "bajar", etiqueta: "Bajar un porcentaje", unidad: "%" },
+  { id: "oferta", etiqueta: "Poner en oferta (descuento %)", unidad: "%" },
   { id: "sumar", etiqueta: "Sumar un monto", unidad: "$" },
   { id: "restar", etiqueta: "Restar un monto", unidad: "$" },
   { id: "fijar", etiqueta: "Fijar un precio", unidad: "$" },
@@ -67,6 +68,8 @@ export function leerRegla(op, entrada) {
   if (!(valor > 0)) return { ok: false, error: "El porcentaje tiene que ser mayor a cero." };
   if (op === "bajar" && valor >= 100)
     return { ok: false, error: "Bajar el 100% o más dejaría el precio en cero." };
+  if (op === "oferta" && valor >= 100)
+    return { ok: false, error: "Un descuento del 100% o más dejaría el precio en cero." };
   if (valor > 1000)
     return { ok: false, error: "Ese porcentaje es demasiado alto. ¿Es correcto?" };
   return { ok: true, value: valor };
@@ -86,6 +89,9 @@ export function calcularPrecio(actual, op, valor, redondeo = "ninguno") {
       crudo = actual * (1 + valor / 100);
       break;
     case "bajar":
+    case "oferta":
+      // Una oferta es una baja de precio; lo que la distingue es que además
+      // guarda el precio anterior para mostrarlo tachado (ver `vistaPrevia`).
       crudo = actual * (1 - valor / 100);
       break;
     case "sumar":
@@ -114,28 +120,57 @@ export function variacion(antes, despues) {
 }
 
 /**
+ * El descuento de una oferta, en por ciento entero positivo: de 30.000 a 24.000
+ * es 20. Es 0 si no hay oferta (sin anterior, o el anterior no es mayor).
+ */
+export function descuento(anterior, precio) {
+  if (!(anterior > 0) || !(precio > 0) || anterior <= precio) return 0;
+  return Math.round((1 - precio / anterior) * 100);
+}
+
+/**
  * Cómo quedaría cada artículo si se aplicara la regla, sin aplicarla.
- * `items` son `{ key, precio }`. Es lo que se le muestra al dueño antes de
- * confirmar un cambio que puede tocar cientos de precios.
+ * `items` son `{ key, precio, base? }`. Es lo que se le muestra al dueño antes
+ * de confirmar un cambio que puede tocar cientos de precios.
+ *
+ * Con la operación "oferta", `base` es el precio original de un artículo que ya
+ * está en oferta: el descuento se cuenta sobre ese y no sobre el rebajado, así
+ * que repetir la oferta cambia el descuento en lugar de acumularlo (20% y 20%
+ * no dan 36%). Un artículo que no está en oferta no trae `base`.
  */
 export function vistaPrevia(items, op, valor, redondeo = "ninguno") {
+  const esOferta = op === "oferta";
   const filas = [];
   let cambian = 0;
   let iguales = 0;
   let errores = 0;
   let suma = 0;
   for (const it of items) {
-    const r = calcularPrecio(it.precio, op, valor, redondeo);
+    const ref = esOferta ? (it.base ?? it.precio) : it.precio;
+    const r = calcularPrecio(ref, op, valor, redondeo);
+    const extra = esOferta ? { base: ref } : {};
     if (!r.ok) {
       errores++;
-      filas.push({ key: it.key, antes: it.precio, despues: null, estado: "error", error: r.error });
-    } else if (r.value === it.precio) {
+      filas.push({ key: it.key, antes: it.precio, despues: null, estado: "error", error: r.error, ...extra });
+    } else if (esOferta && r.value >= ref) {
+      // El redondeo puede comerse un descuento chico: una oferta que no baja el
+      // precio no es una oferta.
+      errores++;
+      filas.push({
+        key: it.key,
+        antes: it.precio,
+        despues: null,
+        estado: "error",
+        error: "El descuento, ya redondeado, no baja el precio.",
+        ...extra,
+      });
+    } else if (r.value === it.precio && (!esOferta || it.base === ref)) {
       iguales++;
-      filas.push({ key: it.key, antes: it.precio, despues: r.value, estado: "igual" });
+      filas.push({ key: it.key, antes: it.precio, despues: r.value, estado: "igual", ...extra });
     } else {
       cambian++;
-      suma += ((r.value - it.precio) / it.precio) * 100;
-      filas.push({ key: it.key, antes: it.precio, despues: r.value, estado: "cambia" });
+      suma += ((r.value - ref) / ref) * 100;
+      filas.push({ key: it.key, antes: it.precio, despues: r.value, estado: "cambia", ...extra });
     }
   }
   return {
@@ -161,16 +196,33 @@ export function precioDeProducto(producto, nuevo) {
   };
 }
 
+/**
+ * El producto con un precio y un precio anterior explícitos: una oferta. Si el
+ * anterior no es mayor al precio, no hay oferta y se saca (igual que en
+ * `precioDeProducto`).
+ */
+export function ofertaDeProducto(producto, precio, anterior) {
+  const { oldPrice, ...resto } = producto;
+  return {
+    ...resto,
+    price: precio,
+    ...(anterior && anterior > precio ? { oldPrice: anterior } : {}),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Aplicar cambios y deshacerlos
 // ---------------------------------------------------------------------------
 
 /**
  * Aplica una lista de cambios sobre el estado y devuelve el estado nuevo, sin
- * mutar nada. Cada cambio es `{ fuente, id, precio?, activo?, precioMarca? }`:
+ * mutar nada. Cada cambio es `{ fuente, id, precio?, antes?, activo?, precioMarca? }`:
  * - `precio` (tienda): el precio nuevo. (hombre): el precio propio, o `null`
  *   para volver al de la marca. Si el propio iguala al de la marca no se guarda
  *   una excepción: no sería un cambio.
+ * - `antes`: el precio anterior, el que se muestra tachado. Con un número, es una
+ *   oferta; con `null`, la termina. Sin esta clave, el anterior sólo se conserva
+ *   mientras siga siendo mayor al precio nuevo.
  * - `activo`: publicado/oculto (tienda) o a la venta/de baja (hombre).
  */
 export function aplicarCambios(ajustes, productos, cambios) {
@@ -181,6 +233,7 @@ export function aplicarCambios(ajustes, productos, cambios) {
       const parche = {};
       if ("precio" in c)
         parche.price = c.precio !== null && c.precio === c.precioMarca ? null : c.precio;
+      if ("antes" in c) parche.old = c.antes;
       if ("activo" in c) parche.active = c.activo;
       nuevosAjustes = cambiarAjuste(nuevosAjustes, c.id, parche);
     } else if (c.fuente === "db") {
@@ -192,7 +245,14 @@ export function aplicarCambios(ajustes, productos, cambios) {
         const c = porId.get(p.id);
         if (!c) return p;
         let siguiente = p;
-        if (typeof c.precio === "number") siguiente = precioDeProducto(siguiente, c.precio);
+        if ("antes" in c)
+          siguiente = ofertaDeProducto(
+            siguiente,
+            typeof c.precio === "number" ? c.precio : siguiente.price,
+            c.antes,
+          );
+        else if (typeof c.precio === "number")
+          siguiente = precioDeProducto(siguiente, c.precio);
         if ("activo" in c) siguiente = { ...siguiente, active: c.activo !== false };
         return siguiente;
       })

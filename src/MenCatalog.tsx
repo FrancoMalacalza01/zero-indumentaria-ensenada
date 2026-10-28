@@ -3,6 +3,7 @@ import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-re
 import { Link } from "./router";
 import { useStore } from "./Store";
 import { aplicarAjustes } from "./menOverrides.mjs";
+import { descuento } from "./priceTools.mjs";
 import catalog from "./men-catalog.json";
 import "./men-catalog.css";
 
@@ -20,6 +21,8 @@ type MenProduct = {
   cover?: string;
   /** true cuando el local le puso su propio precio a la prenda. */
   precioZero?: boolean;
+  /** Si está en oferta, el precio de antes (el que se muestra tachado). */
+  precioAnterior?: number;
 };
 
 const catalogo = catalog.products as MenProduct[];
@@ -53,6 +56,23 @@ function colorSwatch(name: string) {
   return colors.find(([needle]) => value.includes(needle))?.[1] || "#b8bbc1";
 }
 
+/** El precio de una prenda: con el anterior tachado y el descuento si está en oferta. */
+function Precio({ p }: { p: MenProduct }) {
+  const pct = p.precioAnterior ? descuento(p.precioAnterior, p.priceARS) : 0;
+  return (
+    <>
+      {p.precioAnterior && pct > 0 ? <del>{peso.format(p.precioAnterior)}</del> : null}
+      {peso.format(p.priceARS)}
+      {pct > 0 ? <em className="men-offer-badge">−{pct}%</em> : null}
+    </>
+  );
+}
+
+/** Cómo se llama el precio que se muestra: oferta, precio propio del local o el de la marca. */
+function etiquetaPrecio(p: MenProduct) {
+  return p.precioAnterior ? "Oferta" : p.precioZero ? "Precio Zero" : "Precio publicado por la marca";
+}
+
 function ProductGallery({ product, close }: { product: MenProduct; close: () => void }) {
   const [photo, setPhoto] = useState(0);
   useEffect(() => {
@@ -81,7 +101,7 @@ function ProductGallery({ product, close }: { product: MenProduct; close: () => 
         <div className="men-gallery-details">
           <span>{product.brand} / {product.category}</span>
           <h2>{product.name}</h2>
-          <p>{product.precioZero ? "Precio Zero" : "Precio publicado por la marca"}: {peso.format(product.priceARS)}</p>
+          <p>{etiquetaPrecio(product)}: <Precio p={product} /></p>
           <p>{photo + 1} de {product.images.length} fotos</p>
           <Link to="/sucursales">Consultar en Zero <ArrowRight size={16} /></Link>
         </div>
@@ -138,7 +158,7 @@ export function HomeBrandCatalog() {
           <div className="men-card-body">
             <span>{product.brand} / {product.category}</span>
             <button onClick={() => setSelected(product)}>{product.name}</button>
-            <p>{peso.format(product.priceARS)}</p>
+            <p><Precio p={product} /></p>
           </div>
         </article>)}
       </div>
@@ -292,7 +312,7 @@ export default function MenCatalog() {
       <section className="men-results" aria-label="Productos de hombre">
         <div className="men-section-head"><div><span className="eyebrow dark">MISTRAL + BROOKSFIELD</span><h2>{category === "Todas" ? "Todas las secciones" : category}</h2></div><Link to="/sucursales">Consultar disponibilidad <ArrowRight size={17} /></Link></div>
         <div className="men-toolbar"><span>{filtered.length} productos</span></div>
-        {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p>{peso.format(product.priceARS)}</p><small>{product.precioZero ? "Precio Zero" : "Precio publicado por la marca"}</small></div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
+        {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p><Precio p={product} /></p><small>{etiquetaPrecio(product)}</small></div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
       </section>
       <p className="men-source-note">Catálogo de marcas relevado el {new Date(`${catalog.capturedAt}T12:00:00`).toLocaleDateString("es-AR")}. Fotos publicadas por <a href="https://www.mistral.com.ar/hombre/" target="_blank" rel="noopener noreferrer">Mistral</a> y <a href="https://www.brooksfieldstore.com/3-hombre-brooksfield" target="_blank" rel="noopener noreferrer">Brooksfield</a>. Los precios son los de la marca, salvo los que Zero ajustó. Consultá la disponibilidad en Zero Indumentaria.</p>
     </div>

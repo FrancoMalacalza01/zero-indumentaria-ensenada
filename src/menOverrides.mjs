@@ -24,7 +24,18 @@ function precioValido(valor) {
 }
 
 /**
- * Lo que guardó el servidor, convertido en `{ [id]: { price, active } }`.
+ * El precio anterior (el que se muestra tachado) sólo existe si hay un precio
+ * propio y el anterior es mayor: si no, no hay oferta, y un "descuento" que
+ * sube el precio no se muestra nunca. Devuelve el precio o `null`.
+ */
+function anteriorValido(anterior, precio) {
+  return precioValido(anterior) && precioValido(precio) && anterior > precio
+    ? anterior
+    : null;
+}
+
+/**
+ * Lo que guardó el servidor, convertido en `{ [id]: { price, active, old? } }`.
  * Una fila rota se ignora en vez de romper la tienda.
  */
 export function leerAjustes(filas) {
@@ -35,7 +46,8 @@ export function leerAjustes(filas) {
     const price = precioValido(f.price) ? f.price : null;
     const active = f.active !== false;
     if (price === null && active) continue;
-    ajustes[f.product_id] = { price, active };
+    const old = anteriorValido(f.old_price, price);
+    ajustes[f.product_id] = { price, active, ...(old ? { old } : {}) };
   }
   return ajustes;
 }
@@ -45,6 +57,7 @@ export function ajusteAFila(id, ajuste) {
   return {
     product_id: id,
     price: precioValido(ajuste?.price) ? ajuste.price : null,
+    old_price: anteriorValido(ajuste?.old, ajuste?.price),
     active: ajuste?.active !== false,
   };
 }
@@ -62,40 +75,60 @@ export function cambiarAjuste(ajustes, id, cambio) {
   };
   if (siguiente.price !== null && !precioValido(siguiente.price))
     siguiente.price = null;
+  // Si cambia el precio y el anterior deja de ser mayor, la oferta termina sola.
+  const old = anteriorValido(
+    cambio && "old" in cambio ? cambio.old : actual.old,
+    siguiente.price,
+  );
   const resto = { ...ajustes };
   if (siguiente.price === null && siguiente.active) delete resto[id];
-  else resto[id] = siguiente;
+  else resto[id] = old ? { ...siguiente, old } : siguiente;
   return resto;
 }
 
 /**
  * Lo que ve el cliente: las dadas de baja desaparecen y las que tienen precio
  * propio lo muestran. `precioZero` dice de dónde salió el precio, para que la
- * tienda no le atribuya a la marca un precio que puso el local.
+ * tienda no le atribuya a la marca un precio que puso el local. Las que están
+ * en oferta traen además `precioAnterior`, el que se muestra tachado.
  */
 export function aplicarAjustes(productos, ajustes) {
   const lista = [];
   for (const p of productos) {
     const a = ajustes?.[p.id];
     if (a && a.active === false) continue;
-    if (a && precioValido(a.price))
-      lista.push({ ...p, priceARS: a.price, precioZero: true });
-    else lista.push({ ...p, precioZero: false });
+    if (a && precioValido(a.price)) {
+      const anterior = anteriorValido(a.old, a.price);
+      lista.push({
+        ...p,
+        priceARS: a.price,
+        precioZero: true,
+        ...(anterior ? { precioAnterior: anterior } : {}),
+      });
+    } else lista.push({ ...p, precioZero: false });
   }
   return lista;
 }
 
-/** Cuántas prendas están dadas de baja y cuántas tienen precio propio. */
+/** Cuántas prendas están dadas de baja, con precio propio y en oferta. */
 export function resumenAjustes(productos, ajustes) {
   let baja = 0;
   let conPrecio = 0;
+  let ofertas = 0;
   for (const p of productos) {
     const a = ajustes?.[p.id];
     if (!a) continue;
     if (a.active === false) baja++;
     if (precioValido(a.price)) conPrecio++;
+    if (anteriorValido(a.old, a.price)) ofertas++;
   }
-  return { total: productos.length, baja, conPrecio, activas: productos.length - baja };
+  return {
+    total: productos.length,
+    baja,
+    conPrecio,
+    ofertas,
+    activas: productos.length - baja,
+  };
 }
 
 /**

@@ -3451,3 +3451,46 @@
 .admin-button-danger:hover {
   background: #fbeceb;
 }
+
+/* Ofertas. */
+.admin-precios-oferta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: #fff1d6;
+  color: #9a5b00;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.admin-precios-ofertar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 10px;
+  color: #637096;
+  cursor: pointer;
+  /* Aparece al pasar por la fila, para no llenar la tabla de enlaces. */
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+tr:hover .admin-precios-ofertar,
+.admin-precios-ofertar:focus-visible {
+  opacity: 1;
+}
+.admin-precios-ofertar:hover {
+  color: #233058;
+  text-decoration: underline;
+}
+/* En el celular no hay "pasar por encima": el enlace se ve siempre. */
+@media (hover: none) {
+  .admin-precios-ofertar {
+    opacity: 1;
+  }
+}

@@ -232,6 +232,33 @@ clic. *Exportar CSV* baja lo que está filtrado, listo para Excel.
   tienda ande. Poner el precio de la marca no guarda una excepción (no sería un
   cambio). Se muestra como *Precio Zero*, y *volver* la devuelve a la marca.
 
+**Ofertas.** Una oferta es un precio rebajado con el **precio anterior tachado**
+y una etiqueta de descuento (*−20%*), tanto en los productos de la tienda como
+en las prendas de hombre. Se arma desde la misma tabla:
+
+- En cualquier fila, **poner en oferta** elige ese artículo, arma la regla y
+  deja el cursor en el porcentaje. Para varios, se eligen y se usa la operación
+  *Poner en oferta (descuento %)*, con redondeo si se quiere. La vista previa
+  muestra el precio de antes tachado y el nuevo.
+- **El descuento se cuenta siempre sobre el precio original**, no sobre el ya
+  rebajado: repetir una oferta cambia el descuento en lugar de acumularlo (un
+  20% y después un 30% dan 30% del original, no 44%).
+- La etiqueta muestra el descuento **real**: con redondeo, un 20% pedido sobre
+  $35.900 que se redondea a $28.900 es en verdad un 19,5% y dice −19%.
+- Si el redondeo se come el descuento (un 1% redondeado a los $1.000 vuelve al
+  mismo precio), no es una oferta: avisa y no se puede aplicar.
+- **Terminar la oferta** (en la fila o en bloque) vuelve al precio anterior y
+  saca el tachado. Cambiar a mano el precio de algo en oferta la termina sólo si
+  el precio nuevo alcanza o pasa al anterior; si sigue siendo menor, sigue
+  siendo una oferta.
+- Se puede deshacer y rehacer como cualquier otro cambio, y hay un filtro
+  *En oferta*.
+
+**Las ofertas no vencen solas.** Se terminan a mano. Es a propósito: el precio
+que se cobra lo calcula la base al comprar (`crear_pedido`), y un vencimiento
+automático tiene que decidirse ahí y no en la pantalla, o el cliente vería un
+precio y pagaría otro. Eso está anotado en `docs/pendientes.md`.
+
 **Sacar de la venta no borra.** La prenda o el producto deja de verse en la
 tienda y se pone a la venta de nuevo cuando vuelva, con el precio que tenía.
 Borrar de verdad un producto de la tienda se hace desde su editor, en *Productos
@@ -243,7 +270,10 @@ La lógica está en `src/priceTools.mjs` y `src/menOverrides.mjs` (probadas en
 catálogo de hombre viven en la tabla `catalog_overrides`: se lee pública, porque
 la tienda necesita saber qué ocultar, y sólo la escribe un admin. **Hay que
 crearla una vez** corriendo `db/ajustes-catalogo.sql` en el SQL Editor de
-Supabase; mientras no exista, el panel avisa que no pudo guardar. Si la tienda
+Supabase (guarda precios propios, bajas y ofertas); para comprobar que quedó bien
+se corre `db/verificar-ajustes-catalogo.sql`, que sólo lee y tiene que dar `true`
+en todas las filas. Mientras la tabla no exista, el panel avisa que no pudo
+guardar. Si la tienda
 no llega al servidor, usa lo último que supo en ese navegador antes que volver a
 mostrar lo que se sacó de la venta.
 
@@ -655,8 +685,8 @@ completar esos datos con información confirmada del local.
 | `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, y que un talle con coma no parta el filtro de borrado | 20 |
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
-| `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90% | 13 |
-| `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas | 22 |
+| `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90%; y las ofertas: el precio anterior sólo existe si es mayor al precio, terminar una oferta, que cambiar el precio la termine sólo si alcanza al anterior, y que ida y vuelta con el servidor dé lo mismo | 23 |
+| `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
