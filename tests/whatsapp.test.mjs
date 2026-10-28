@@ -61,3 +61,24 @@ test("los espacios y saltos de línea raros del nombre no ensucian el mensaje", 
   const m = mensajeConsultaPrenda({ nombre: "  Remera \n  Blank   MC ", marca: " Mistral ", precio: "$ 1" });
   assert.match(m, /• Remera Blank MC \(Mistral\) — \$ 1\n/);
 });
+
+test("una prenda en oferta dice de cuánto era, para que quien atiende vea el descuento", () => {
+  const m = mensajeConsultaPrenda({
+    nombre: "Remera Logo Mini Bordada MC - 10182",
+    marca: "Mistral",
+    precio: "$ 29.600",
+    antes: "$ 32.900",
+  });
+  assert.equal(
+    m.split("\n")[1],
+    "• Remera Logo Mini Bordada MC - 10182 (Mistral) — $ 29.600 (antes $ 32.900)",
+  );
+});
+
+test("sin oferta, o sin precio, el 'antes' no aparece ni rompe el mensaje", () => {
+  assert.doesNotMatch(mensajeConsultaPrenda({ nombre: "Buzo", precio: "$ 1", antes: "" }), /antes/);
+  assert.doesNotMatch(mensajeConsultaPrenda({ nombre: "Buzo", precio: "$ 1", antes: undefined }), /antes/);
+  // Un "antes" sin precio actual no tiene sentido: se ignora.
+  assert.doesNotMatch(mensajeConsultaPrenda({ nombre: "Buzo", antes: "$ 5" }), /antes/);
+  assert.doesNotThrow(() => mensajeConsultaPrenda({ nombre: "Buzo", precio: "$ 1", antes: 42 }));
+});

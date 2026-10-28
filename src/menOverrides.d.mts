@@ -3,11 +3,14 @@ export interface AjusteHombre {
   price: number | null;
   /** `false` = dada de baja. */
   active: boolean;
+  /** Precio anterior, el que se muestra tachado. Sólo existe si hay oferta. */
+  old?: number;
 }
 export type AjustesHombre = Record<string, AjusteHombre>;
 export interface FilaAjuste {
   product_id: string;
   price: number | null;
+  old_price: number | null;
   active: boolean;
 }
 export const PRECIO_MAXIMO: number;
@@ -21,11 +24,11 @@ export function cambiarAjuste(
 export function aplicarAjustes<T extends { id: string; priceARS: number }>(
   productos: T[],
   ajustes: AjustesHombre,
-): Array<T & { precioZero: boolean }>;
+): Array<T & { precioZero: boolean; precioAnterior?: number }>;
 export function resumenAjustes(
   productos: Array<{ id: string }>,
   ajustes: AjustesHombre,
-): { total: number; baja: number; conPrecio: number; activas: number };
+): { total: number; baja: number; conPrecio: number; ofertas: number; activas: number };
 export function leerPrecio(
   entrada: unknown,
 ): { ok: true; value: number } | { ok: false; error: string };

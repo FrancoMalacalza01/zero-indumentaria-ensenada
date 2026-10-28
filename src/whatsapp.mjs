@@ -27,13 +27,17 @@ export function enlaceWhatsapp(numero, mensaje) {
  * nombre (que en el catálogo incluye el código) y el precio que el cliente ve,
  * para que quien atiende sepa de cuál se trata sin preguntar.
  *
- * `precio` es el texto ya armado ("$ 32.900"): cómo se escribe la plata lo
- * decide la pantalla.
+ * `precio` y `antes` son textos ya armados ("$ 32.900"): cómo se escribe la
+ * plata lo decide la pantalla. `antes` es el precio de antes de una oferta; con
+ * él, el mensaje dice de cuánto era y quien atiende ve el descuento.
  */
-export function mensajeConsultaPrenda({ nombre, marca, precio }) {
+export function mensajeConsultaPrenda({ nombre, marca, precio, antes }) {
   const limpio = (v) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "");
   const prenda = limpio(nombre);
-  const detalle = [limpio(marca) && `(${limpio(marca)})`, limpio(precio) && `— ${limpio(precio)}`]
+  const detalle = [
+    limpio(marca) && `(${limpio(marca)})`,
+    limpio(precio) && `— ${limpio(precio)}${limpio(antes) && limpio(precio) ? ` (antes ${limpio(antes)})` : ""}`,
+  ]
     .filter(Boolean)
     .join(" ");
   return [

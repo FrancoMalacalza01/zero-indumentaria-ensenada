@@ -7,6 +7,8 @@ import {
   variacion,
   vistaPrevia,
   precioDeProducto,
+  ofertaDeProducto,
+  descuento,
   aplicarCambios,
   capturar,
   aplicarFoto,
@@ -276,4 +278,136 @@ test("el CSV abre bien en Excel y no deja colar fórmulas", () => {
   assert.equal(lineas[2], `"'=HYPERLINK(""http://x"")";"'+5"`);
   assert.equal(lineas[3], `"'-cmd";"'@sum"`);
   assert.equal(lineas[4], '"";""');
+});
+
+// --- ofertas ----------------------------------------------------------------
+
+test("una oferta se calcula como una baja de precio, redondeo incluido", () => {
+  assert.deepEqual(calcularPrecio(30000, "oferta", 20), { ok: true, value: 24000 });
+  assert.deepEqual(calcularPrecio(32900, "oferta", 15, "900"), { ok: true, value: 27900 });
+  assert.equal(leerRegla("oferta", "20").ok, true);
+  assert.equal(leerRegla("oferta", "100").ok, false);
+  assert.equal(leerRegla("oferta", "150").ok, false);
+  assert.equal(leerRegla("oferta", "").ok, false);
+});
+
+test("el descuento de una oferta sale en por ciento entero y es 0 si no hay oferta", () => {
+  assert.equal(descuento(30000, 24000), 20);
+  assert.equal(descuento(32900, 27500), 16);
+  for (const [a, p] of [[24000, 24000], [20000, 24000], [undefined, 100], [0, 5], [100, 0], [NaN, 5]])
+    assert.equal(descuento(a, p), 0, `descuento(${a}, ${p})`);
+});
+
+test("la vista previa de una oferta cuenta el descuento sobre el precio original", () => {
+  const v = vistaPrevia([{ key: "a", precio: 30000 }], "oferta", 20);
+  assert.equal(v.cambian, 1);
+  assert.deepEqual(v.filas[0], { key: "a", antes: 30000, despues: 24000, estado: "cambia", base: 30000 });
+  assert.equal(v.promedioPct, -20);
+});
+
+test("repetir una oferta no acumula descuentos: se cuenta siempre sobre el original", () => {
+  // Ya está en oferta: cuesta 24.000 y antes costaba 30.000.
+  const item = { key: "a", precio: 24000, base: 30000 };
+  // Otro 20% da lo mismo que ya tiene: nada que cambiar (no 19.200).
+  const igual = vistaPrevia([item], "oferta", 20);
+  assert.equal(igual.iguales, 1);
+  assert.equal(igual.cambian, 0);
+  // Un 30% pasa a 21.000 (30% de 30.000), no a 16.800.
+  const mas = vistaPrevia([item], "oferta", 30);
+  assert.equal(mas.filas[0].despues, 21000);
+  assert.equal(mas.filas[0].base, 30000);
+  assert.equal(mas.cambian, 1);
+});
+
+test("una oferta cuyo redondeo se come el descuento no es una oferta: se avisa", () => {
+  // 1% de 30.000 son 300, y al redondear a $1.000 vuelve a 30.000.
+  const v = vistaPrevia([{ key: "a", precio: 30000 }], "oferta", 1, "1000");
+  assert.equal(v.errores, 1);
+  assert.equal(v.cambian, 0);
+  assert.match(v.filas[0].error, /no baja el precio/);
+});
+
+test("un artículo sin precio válido no entra en la oferta", () => {
+  const v = vistaPrevia([{ key: "a", precio: 0 }, { key: "b", precio: 10000 }], "oferta", 10);
+  assert.equal(v.errores, 1);
+  assert.equal(v.cambian, 1);
+});
+
+test("ofertaDeProducto guarda el precio anterior sólo si es mayor", () => {
+  const p = prod("a", 30000);
+  assert.deepEqual(
+    [ofertaDeProducto(p, 24000, 30000).price, ofertaDeProducto(p, 24000, 30000).oldPrice],
+    [24000, 30000],
+  );
+  for (const anterior of [24000, 20000, null, undefined, 0])
+    assert.equal("oldPrice" in ofertaDeProducto(p, 24000, anterior), false, String(anterior));
+  assert.equal(p.price, 30000, "no muta el producto");
+});
+
+test("poner en oferta un producto de la tienda guarda el precio anterior tachado", () => {
+  const r = aplicarCambios({}, [prod("a", 30000), prod("b", 10000)], [
+    { fuente: "db", id: "a", precio: 24000, antes: 30000 },
+  ]);
+  assert.equal(r.productos[0].price, 24000);
+  assert.equal(r.productos[0].oldPrice, 30000);
+  assert.equal(r.productos[1].price, 10000);
+  assert.equal("oldPrice" in r.productos[1], false);
+});
+
+test("terminar la oferta de un producto de la tienda vuelve al precio anterior y saca el tachado", () => {
+  const enOferta = [prod("a", 24000, { oldPrice: 30000 })];
+  const r = aplicarCambios({}, enOferta, [{ fuente: "db", id: "a", precio: 30000, antes: null }]);
+  assert.equal(r.productos[0].price, 30000);
+  assert.equal("oldPrice" in r.productos[0], false);
+});
+
+test("poner en oferta una prenda de hombre sin precio propio usa el de la marca como anterior", () => {
+  const r = aplicarCambios({}, [], [
+    { fuente: "men", id: "m1", precio: 26320, antes: 32900, precioMarca: 32900 },
+  ]);
+  assert.deepEqual(r.ajustes.m1, { price: 26320, active: true, old: 32900 });
+});
+
+test("terminar la oferta de una prenda que tenía el precio de la marca borra la excepción", () => {
+  const aj = { m1: { price: 26320, active: true, old: 32900 } };
+  const r = aplicarCambios(aj, [], [
+    { fuente: "men", id: "m1", precio: 32900, antes: null, precioMarca: 32900 },
+  ]);
+  assert.equal("m1" in r.ajustes, false);
+});
+
+test("terminar la oferta de una prenda con precio propio previo vuelve a ese precio", () => {
+  const aj = { m1: { price: 24000, active: true, old: 28000 } };
+  const r = aplicarCambios(aj, [], [
+    { fuente: "men", id: "m1", precio: 28000, antes: null, precioMarca: 32900 },
+  ]);
+  assert.deepEqual(r.ajustes.m1, { price: 28000, active: true });
+});
+
+test("deshacer una oferta devuelve tienda y hombre exactamente como estaban", () => {
+  const productos = [prod("a", 30000)];
+  const ajustes = { m1: { price: 28000, active: true } };
+  const cambios = [
+    { fuente: "db", id: "a", precio: 24000, antes: 30000 },
+    { fuente: "men", id: "m1", precio: 22400, antes: 28000, precioMarca: 32900 },
+  ];
+  const antes = capturar(ajustes, productos, ["m1"], ["a"]);
+  const nuevo = aplicarCambios(ajustes, productos, cambios);
+  const despues = capturar(nuevo.ajustes, nuevo.productos, ["m1"], ["a"]);
+  assert.equal(despues.db.a.oldPrice, 30000);
+  assert.equal(despues.men.m1.old, 28000);
+  const vuelta = aplicarFoto(nuevo.ajustes, nuevo.productos, antes);
+  assert.deepEqual(vuelta.ajustes, ajustes);
+  assert.deepEqual(vuelta.productos, productos);
+  const otraVez = aplicarFoto(vuelta.ajustes, vuelta.productos, despues);
+  assert.deepEqual(otraVez.ajustes, nuevo.ajustes);
+  assert.deepEqual(otraVez.productos, nuevo.productos);
+});
+
+test("cambiar a mano el precio de un artículo en oferta la termina si alcanza al anterior", () => {
+  const productos = [prod("a", 24000, { oldPrice: 30000 })];
+  const sube = aplicarCambios({}, productos, [{ fuente: "db", id: "a", precio: 31000 }]);
+  assert.equal("oldPrice" in sube.productos[0], false);
+  const baja = aplicarCambios({}, productos, [{ fuente: "db", id: "a", precio: 22000 }]);
+  assert.equal(baja.productos[0].oldPrice, 30000);
 });

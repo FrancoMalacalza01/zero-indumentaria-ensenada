@@ -18,6 +18,10 @@ pnpm test     # pruebas (node --test)
 pnpm build    # tsc + vite build
 ```
 
+**Qué sigue:** lo pendiente, con el contexto de cada cosa y cómo pedírselo a la IA,
+está en [`docs/pendientes.md`](docs/pendientes.md). Si vas a empezar algo, mirá
+ahí primero: puede que ya esté hecho o que haya una decisión pendiente.
+
 ## Reglas de trabajo
 
 1. **`main` es lo que se publica.** Nadie escribe directo en `main`, ni una
@@ -42,6 +46,9 @@ pnpm build    # tsc + vite build
   va como archivo SQL en `db/` (y se suma a `db/esquema.sql`), y **lo corre una
   persona** en el SQL Editor de Supabase, después de revisarlo. Ninguna IA
   aplica cambios a la base sin que se lo pidan en ese momento.
+  Los SQL se prueban antes en un Postgres local (`db/probar-local.sh` y
+  `db/probar-ajustes.sh`); si agregás uno, agregá también su prueba y, si se puede,
+  un verificador de sólo lectura como `db/verificar-ajustes-catalogo.sql`.
 - **Claves.** La clave *publishable* de Supabase es pública a propósito y está
   en el código. Nunca van al repo: la `service_role`, los tokens de Mercado
   Pago, las credenciales de SMTP. Esas viven en Supabase o en Vercel.
