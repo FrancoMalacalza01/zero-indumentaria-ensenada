@@ -2583,7 +2583,7 @@
 }
 .config-zona {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1.2fr) auto;
   gap: 12px;
   align-items: end;
   padding: 13px;

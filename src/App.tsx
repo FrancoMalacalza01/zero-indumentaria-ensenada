@@ -41,7 +41,7 @@ import {
   Talles,
   Terminos,
 } from "./Legales";
-import { cuitFormateado } from "./settingsMap.mjs";
+import { cuitFormateado, textoPlazoEnvio } from "./settingsMap.mjs";
 import type { PaymentMethodId, Product, Order, Settings } from "./types";
 import { cartKey } from "./commerce.mjs";
 import { mandarConfirmacion, pedirLinkDePago } from "./funciones";
@@ -1482,6 +1482,7 @@ function Checkout() {
                         : `Envío ${money(envio)}`}
                     . Te pedimos la dirección al confirmar el pedido.
                     {zonaElegida?.nota ? ` ${zonaElegida.nota}` : ""}
+                    {textoPlazoEnvio(zonaElegida) ? ` ${textoPlazoEnvio(zonaElegida)}` : ""}
                   </>
                 ) : (
                   <>

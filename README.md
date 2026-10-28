@@ -243,6 +243,16 @@ costo y si va por reparto propio o por Correo Argentino.
   cliente y `envio` dice cuánto de eso es el envío. El navegador hace la misma
   cuenta sólo para mostrarla, y si la zona no está entre las configuradas el
   servidor rechaza el pedido.
+- **Plazo estimado de entrega.** Cada zona tiene un texto de plazo que el
+  cliente lee en el checkout al elegirla. Las zonas de Correo Argentino traen el
+  de **Paq.ar Clásico**, el servicio que usa el local: *2 a 5 días hábiles*. El
+  Correo lo cuenta desde la imposición, o sea desde que le entregan el paquete,
+  no desde la compra, así que el checkout dice "desde que despachamos tu
+  pedido". Es el rango general del servicio: la tabla del Correo da plazos más
+  finos por ciudad, pero no trae Ensenada ni Berisso, y no se inventan. Se
+  ajusta por zona desde el panel; dejarlo vacío a propósito no dice ningún
+  plazo, y una zona de reparto propio no inventa uno. No hace falta tocar la
+  base: el plazo vive dentro de la configuración que ya se guarda.
 - **Correo Argentino cotiza por peso y código postal**, así que no hay un
   precio fijo que poner en el código: conviene cotizar en el sitio del Correo y
   cargar un promedio, o dejarlo vacío y cobrarlo al coordinar.
@@ -597,7 +607,7 @@ completar esos datos con información confirmada del local.
 | `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, y que un talle con coma no parta el filtro de borrado | 20 |
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
-| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
+| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente | 33 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
 `pnpm build` comprueba TypeScript y genera el paquete de producción.

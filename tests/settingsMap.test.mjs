@@ -8,6 +8,8 @@ import {
   costoEnvio,
   faltaParaEnvioGratis,
   llegaAlEnvioGratis,
+  PLAZO_CORREO_CLASICO,
+  textoPlazoEnvio,
 } from "../src/settingsMap.mjs";
 
 test("una configuración vacía da la de fábrica, no una tienda rota", () => {
@@ -216,4 +218,91 @@ test("un mail de contacto alcanza aunque no haya WhatsApp", () => {
     faltaParaVender(conMail).some((f) => f.id === "contacto"),
     false,
   );
+});
+
+test("una zona de Correo que nunca tuvo plazo trae el de Paq.ar Clásico", () => {
+  const s = leerSettings({
+    envio: { zonas: [{ nombre: "La Plata", tipo: "correo" }] },
+  });
+  assert.equal(s.envio.zonas[0].plazo, PLAZO_CORREO_CLASICO);
+  assert.equal(PLAZO_CORREO_CLASICO, "2 a 5 días hábiles");
+});
+
+test("una zona de reparto propio no inventa un plazo", () => {
+  const s = leerSettings({
+    envio: { zonas: [{ nombre: "Ensenada", tipo: "local" }] },
+  });
+  assert.equal("plazo" in s.envio.zonas[0], false);
+});
+
+test("dejar el plazo vacío a propósito se respeta y no vuelve solo", () => {
+  // Es la única forma de no decir ningún plazo: si el vacío se confundiera con
+  // "nunca se cargó", el de fábrica reaparecería cada vez que se guarda.
+  const una = leerSettings({
+    envio: { zonas: [{ nombre: "La Plata", tipo: "correo", plazo: "" }] },
+  });
+  assert.equal(una.envio.zonas[0].plazo, "");
+  const otra = leerSettings(JSON.parse(JSON.stringify(una)));
+  assert.equal(otra.envio.zonas[0].plazo, "");
+  assert.equal(textoPlazoEnvio(otra.envio.zonas[0]), null);
+});
+
+test("el plazo cargado a mano se conserva, sin espacios de más y con tope de largo", () => {
+  const s = leerSettings({
+    envio: {
+      zonas: [
+        { nombre: "A", tipo: "correo", plazo: "  3 días hábiles  " },
+        { nombre: "B", tipo: "local", plazo: "el mismo día" },
+        { nombre: "C", tipo: "correo", plazo: "x".repeat(500) },
+      ],
+    },
+  });
+  assert.equal(s.envio.zonas[0].plazo, "3 días hábiles");
+  assert.equal(s.envio.zonas[1].plazo, "el mismo día");
+  assert.equal(s.envio.zonas[2].plazo.length, 80);
+});
+
+test("un plazo que no es texto se ignora y no rompe la zona", () => {
+  for (const basura of [42, null, {}, ["2 días"], true]) {
+    const s = leerSettings({
+      envio: { zonas: [{ nombre: "La Plata", tipo: "correo", plazo: basura }] },
+    });
+    assert.equal(s.envio.zonas[0].plazo, PLAZO_CORREO_CLASICO);
+  }
+});
+
+test("leer dos veces da lo mismo: guardar el panel no cambia los plazos", () => {
+  const uno = leerSettings({
+    envio: {
+      zonas: [
+        { nombre: "A", tipo: "correo" },
+        { nombre: "B", tipo: "correo", plazo: "" },
+        { nombre: "C", tipo: "local", plazo: "mañana" },
+        { nombre: "D", tipo: "local" },
+      ],
+    },
+  });
+  assert.deepEqual(leerSettings(JSON.parse(JSON.stringify(uno))), uno);
+});
+
+test("el cliente lee que el plazo corre desde el despacho, no desde la compra", () => {
+  assert.equal(
+    textoPlazoEnvio({ tipo: "correo", plazo: "2 a 5 días hábiles" }),
+    "Plazo estimado: 2 a 5 días hábiles desde que despachamos tu pedido.",
+  );
+  assert.equal(
+    textoPlazoEnvio({ tipo: "local", plazo: "el mismo día" }),
+    "Plazo estimado: el mismo día.",
+  );
+});
+
+test("sin plazo no hay frase, venga como venga la zona", () => {
+  for (const zona of [undefined, null, {}, { tipo: "correo" }, { tipo: "correo", plazo: "" }, { tipo: "correo", plazo: "   " }, { tipo: "local", plazo: 7 }])
+    assert.equal(textoPlazoEnvio(zona), null, JSON.stringify(zona));
+});
+
+test("la zona de Correo de fábrica ya trae el plazo", () => {
+  const correo = porDefecto().envio.zonas.filter((z) => z.tipo === "correo");
+  assert.ok(correo.length > 0);
+  for (const z of correo) assert.equal(z.plazo, PLAZO_CORREO_CLASICO);
 });
