@@ -3094,60 +3094,226 @@
   }
 }
 
-/* Catálogo de hombre: precio propio y bajas. */
-.admin-men-summary {
+/* Precios: todos los artículos en una tabla, con edición en la celda. */
+.admin-precios-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.admin-precios-acciones .admin-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.admin-precios-resumen {
   margin-top: 6px;
   color: #62719d;
 }
-.admin-men-summary b {
+.admin-precios-resumen b {
   color: #233058;
 }
-.admin-men-bulk {
+.admin-precios-rango {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 0 23px 14px;
-  padding: 10px 14px;
-  border: 1px solid #dadfed;
-  border-radius: 6px;
-  background: #eef1fa;
+  gap: 6px;
+  color: #838a9f;
+}
+.admin-precios-rango input {
+  width: 96px;
+  padding: 10px 10px;
+  border: 1px solid #dadde8;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 10px;
+}
+.admin-precios-orden {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.admin-precios-orden:hover {
   color: #233058;
 }
-.admin-men-bulk strong {
-  margin-right: auto;
+.admin-precios-marca {
+  color: #62719d;
 }
-.admin-men-price {
+/* Más específico que `.admin-product-cell span`, que fuerza todo a bloque. */
+.admin-product-cell .admin-precios-marca-movil {
+  display: none;
+}
+
+/* Cambios en bloque. */
+.admin-precios-masivo {
+  margin: 0 23px 16px;
+  padding: 14px 16px;
+  border: 1px solid #cfd6ee;
+  border-radius: 8px;
+  background: #f1f4fc;
+  color: #233058;
+}
+.admin-precios-masivo-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.admin-precios-regla {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+.admin-precios-vista {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #dfe4f3;
+}
+.admin-precios-vista p {
+  margin: 0 0 6px;
+}
+.admin-precios-vista ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 3px;
+}
+.admin-precios-vista li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+}
+.admin-precios-vista li > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-precios-vista li.is-igual {
+  color: #848b9f;
+}
+.admin-precios-vista li.is-error {
+  color: #b0342a;
+}
+.admin-precios-vista small {
+  display: block;
+  margin-top: 4px;
+  color: #848b9f;
+}
+.admin-precios-masivo-otras {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* La celda del precio. */
+.admin-precios-celda {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
-  min-width: 150px;
+  gap: 3px;
+  min-width: 170px;
 }
-.admin-men-price > strong {
+.admin-precios-valor {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: none;
+  font: inherit;
   color: #233058;
+  cursor: text;
 }
-/* Sin precio propio: se ve el de la marca, atenuado, para que se note la diferencia. */
-.admin-men-price > strong.is-brand {
+.admin-precios-valor:hover,
+.admin-precios-valor:focus-visible {
+  border-color: #b8c0da;
+  background: #fff;
+}
+.admin-precios-valor svg {
+  align-self: center;
+  opacity: 0;
+  color: #62719d;
+}
+.admin-precios-valor:hover svg,
+.admin-precios-valor:focus-visible svg {
+  opacity: 1;
+}
+.admin-precios-valor s {
+  color: #9aa1b5;
+  font-size: 10px;
+}
+/* Sin precio propio se ve el de la marca, atenuado, para que se note la diferencia. */
+.admin-precios-valor.is-marca strong {
   color: #848b9f;
   font-weight: 500;
 }
-.admin-men-price-row {
+.admin-precios-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: #848b9f;
+}
+.admin-precios-quitar {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: #637096;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.admin-precios-var {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-precios-var.is-up {
+  background: #e3f3e8;
+  color: #1f7a3d;
+}
+.admin-precios-var.is-down {
+  background: #fbe9e7;
+  color: #b0342a;
+}
+.admin-precios-celda.is-editando {
+  gap: 4px;
+}
+.admin-precios-edicion {
   display: flex;
   align-items: center;
   gap: 5px;
 }
-.admin-men-price-row input {
-  width: 110px;
+.admin-precios-edicion input {
+  width: 112px;
   padding: 7px 9px;
-  border: 1px solid #b8c0da;
+  border: 1px solid #233058;
   border-radius: 5px;
   font: inherit;
+  box-shadow: 0 0 0 3px rgba(35, 48, 88, 0.12);
 }
-.admin-men-price-row input[aria-invalid="true"] {
+.admin-precios-edicion input[aria-invalid="true"] {
   border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
 }
-.admin-men-icon {
+.admin-precios-icono {
   display: grid;
   place-items: center;
   width: 30px;
@@ -3158,31 +3324,120 @@
   color: #637096;
   cursor: pointer;
 }
-.admin-men-icon.is-ok {
+.admin-precios-icono.is-ok {
   background: #233058;
   border-color: #233058;
   color: #fff;
 }
-.admin-men-error {
+.admin-precios-ayuda,
+.admin-precios-vivo {
+  font-size: 10px;
+  color: #848b9f;
+}
+.admin-precios-error {
   color: #c0392b;
   font-size: 10px;
-  max-width: 220px;
+  max-width: 260px;
 }
-.admin-men-baja td {
+.admin-precios-fuera td {
   opacity: 0.6;
 }
-.admin-men-baja td:last-child {
+.admin-precios-fuera td:last-child {
   opacity: 1;
 }
-.admin-men-empty {
+.admin-precios-vacio {
   padding: 24px;
   text-align: center;
   color: #62719d;
 }
+/* La fila recién cambiada se ilumina un momento: confirma que pasó. */
+@keyframes admin-precios-flash {
+  from {
+    background: #fff6d6;
+  }
+  to {
+    background: transparent;
+  }
+}
+.admin-precios-flash td {
+  animation: admin-precios-flash 1.6s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-precios-flash td {
+    animation: none;
+    background: #fff6d6;
+  }
+}
 @media (max-width: 720px) {
-  .admin-men-bulk {
+  /* En el celular cada fila es una tarjeta: arriba la prenda, abajo el precio y
+     el estado. Con la tabla de siempre, el precio (lo más importante) quedaba
+     cortado a la derecha. */
+  .admin-precios .admin-table {
+    min-width: 0;
+    white-space: normal;
+  }
+  .admin-precios .admin-table thead tr {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .admin-precios .admin-table th {
+    padding: 10px 8px;
+  }
+  .admin-precios th:nth-child(3),
+  .admin-precios th:nth-child(5),
+  .admin-precios td.admin-precios-marca {
+    display: none;
+  }
+  .admin-product-cell .admin-precios-marca-movil {
+    display: inline;
+  }
+  .admin-precios .admin-table tbody tr {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    align-items: center;
+    border-bottom: 1px solid #e8ebf3;
+  }
+  .admin-precios .admin-table tbody td {
+    padding: 8px;
+    border: 0;
+  }
+  .admin-precios .admin-table tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+  .admin-precios .admin-table tbody td:nth-child(2) {
+    grid-column: 2 / 4;
+    grid-row: 1;
+  }
+  .admin-precios .admin-table tbody td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .admin-precios .admin-table tbody td:nth-child(5) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .admin-precios .admin-product-cell strong {
+    max-width: none;
+    white-space: normal;
+  }
+  .admin-precios-celda {
+    min-width: 0;
+  }
+  .admin-precios-masivo {
     margin-left: 18px;
     margin-right: 18px;
+  }
+  .admin-precios-regla {
+    grid-template-columns: 1fr;
+  }
+  .admin-precios-rango {
+    flex: 1 1 100%;
+  }
+  .admin-precios-rango input {
+    flex: 1;
+    width: auto;
   }
 }
 

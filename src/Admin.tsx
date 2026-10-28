@@ -24,10 +24,10 @@ import {
   Search,
   Receipt,
   Settings,
-  Shirt,
   ShoppingBag,
   SlidersHorizontal,
   Store,
+  Tag,
   TrendingUp,
   TriangleAlert,
   Undo2,
@@ -55,7 +55,7 @@ import { prepararImagen as prepareImage } from "./imagen";
 import AdminConfig from "./AdminConfig";
 import AdminReturns from "./AdminReturns";
 import AdminReports from "./AdminReports";
-import AdminMen from "./AdminMen";
+import AdminPrecios from "./AdminPrecios";
 import { avisoDeCambio, leerPrecio } from "./menOverrides.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
@@ -65,7 +65,7 @@ type Tab =
   | "overview"
   | "sale"
   | "inventory"
-  | "men"
+  | "precios"
   | "stock"
   | "movements"
   | "orders"
@@ -89,10 +89,10 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
       title: "Productos y stock",
       lead: "Administrá el catálogo y las unidades disponibles.",
     },
-    men: {
-      crumb: "Catálogo de hombre",
-      title: "Catálogo de hombre",
-      lead: "Tu precio y las bajas de las prendas de Mistral y Brooksfield.",
+    precios: {
+      crumb: "Precios",
+      title: "Precios de todos los artículos",
+      lead: "Cambiá un precio con un clic, o muchos de una vez con una regla.",
     },
     stock: {
       crumb: "Cargar stock",
@@ -468,12 +468,12 @@ export default function Admin({
             <span className="admin-nav-short">Productos</span>
           </button>
           <button
-            className={tab === "men" ? "is-active" : ""}
-            onClick={() => setTab("men")}
+            className={tab === "precios" ? "is-active" : ""}
+            onClick={() => setTab("precios")}
           >
-            <Shirt size={19} />
-            <span className="admin-nav-full">Catálogo de hombre</span>
-            <span className="admin-nav-short">Hombre</span>
+            <Tag size={19} />
+            <span className="admin-nav-full">Precios</span>
+            <span className="admin-nav-short">Precios</span>
           </button>
           <button
             className={tab === "stock" ? "is-active" : ""}
@@ -1040,15 +1040,28 @@ export default function Admin({
           )}
           {tab === "movements" && <MovementsView movements={movements} />}
 
-          {tab === "men" && (
-            <AdminMen
+          {tab === "precios" && (
+            <AdminPrecios
+              productos={products}
               ajustes={menOverrides}
               conectado={panel.conectado}
               notify={notify}
-              onCambiar={(ids, siguiente) => {
+              onAplicar={(siguiente, tocados) => {
                 // En pantalla primero; el servidor confirma (o avisa) después.
-                setMenOverrides(siguiente);
-                panel.publicarAjustes(ids, siguiente);
+                if (tocados.men.length) {
+                  setMenOverrides(siguiente.ajustes);
+                  panel.publicarAjustes(tocados.men, siguiente.ajustes);
+                }
+                if (tocados.db.length) {
+                  setProducts(siguiente.productos);
+                  // Sólo los que cambiaron: mandar todos es la forma más fácil
+                  // de pisar lo que hizo otra persona al mismo tiempo.
+                  for (const id of tocados.db) {
+                    const producto = siguiente.productos.find((p) => p.id === id);
+                    if (producto)
+                      panel.publicar(producto, siguiente.productos.indexOf(producto));
+                  }
+                }
               }}
             />
           )}

@@ -191,41 +191,61 @@ base y hay que acomodarlo a mano.
 
 **No factura.** Ver *Facturación* más abajo.
 
-## Precios y bajas
+## Precios
 
-**Productos de la base** (pestaña *Productos y stock*). El precio se carga en
-pesos enteros: con centavos, en cero o con letras el formulario avisa en vez de
-adivinar. El *precio anterior* es el que se muestra tachado, así que tiene que
-ser mayor al actual. Un cambio de más del doble o menos de la mitad pregunta
-antes de guardar, porque casi siempre es un cero de más o de menos.
+La pestaña **Precios** junta en una sola tabla todos los artículos: los
+productos de la tienda y las 961 prendas del catálogo de hombre, que viven en
+lugares distintos pero se cambian igual. Se trabaja como en una planilla.
 
-Hay dos formas de sacar un producto:
+**Cambiar un precio.** Clic en el precio, se escribe y **Enter guarda y baja a la
+fila de abajo** (también Tab y la flecha ↓; Mayús+Enter sube; Esc cancela; hacer
+clic afuera guarda). Mientras se escribe se ve la variación en vivo (▲ 10%). Se
+entiende como lo escribe la gente (`32900`, `32.900`, `$ 32.900`) y no se
+adivina: centavos, cero o letras se rechazan ahí mismo. Un cambio de más del
+doble o menos de la mitad pregunta antes, porque casi siempre es un cero de más
+o de menos.
 
-- **Ocultar** (el interruptor *Publicado*): deja de verse pero queda en el
-  panel, con su stock, para volver a publicarlo.
-- **Dar de baja** (en el editor): lo borra del panel y de la tienda. El stock
-  que tenía queda anotado en *Movimientos* como ajuste, y el historial y los
-  pedidos ya hechos se conservan. No se deshace.
+**Cambiar muchos de una vez.** Se eligen con las casillas (o *Elegir los N* para
+todo lo que cumple el filtro) y se aplica una regla: subir o bajar un
+porcentaje, sumar o restar un monto, o fijar un precio, con redondeo a $100,
+$500, $1.000 o *terminado en 900*. Antes de aplicar se ve cómo queda cada uno
+(antes → después, y cuántos cambian) y cuáles no se pueden: bajar el 100% o
+restar más de lo que cuesta no deja un precio en cero, avisa y no toca esa
+prenda.
 
-**Catálogo de hombre** (pestaña *Catálogo de hombre*). Viene de fábrica en
-`src/men-catalog.json` con el precio que publica cada marca, y eso no se edita.
-Lo que el local cambia se guarda aparte, como una lista de excepciones por
-prenda, así que con 961 prendas no hay que cargar nada para que la tienda ande:
+**Deshacer.** *Deshacer* y *Rehacer* (o Ctrl+Z y Ctrl+Mayús+Z) revierten el
+último cambio, aunque haya tocado 300 precios a la vez. Guarda los últimos 30.
 
-- **Precio propio**: se muestra como *Precio Zero* en lugar del de la marca.
-  *Quitar* vuelve al de la marca.
-- **Dar de baja**: la prenda deja de verse en la tienda. No se borra, se repone
-  cuando vuelva y recupera el precio que tenía. Se puede elegir una selección
-  entera, o todas las que cumplen un filtro, y darlas de baja de una vez.
+**Encontrar lo que se busca.** Búsqueda, origen (tienda u hombre), marca,
+sección, estado (a la venta, fuera de venta, con precio propio, tocados en esta
+sesión) y un rango de precios, todo combinable. Las columnas se ordenan con un
+clic. *Exportar CSV* baja lo que está filtrado, listo para Excel.
 
-La lógica está en `src/menOverrides.mjs` (probada en
-`tests/menOverrides.test.mjs`). Las excepciones viven en la tabla
-`catalog_overrides`: se lee pública, porque la tienda necesita saber qué ocultar,
-y sólo la escribe un admin. **Hay que crearla una vez** corriendo
-`db/ajustes-catalogo.sql` en el SQL Editor de Supabase; mientras no exista, el
-panel avisa que no pudo guardar. Si la tienda no llega al servidor, usa lo
-último que supo en ese navegador antes que volver a mostrar lo que se dio de
-baja.
+**Dos tipos de artículo.**
+- **Tienda**: el precio vive en el producto. El *precio anterior* es el que se
+  muestra tachado: si el precio nuevo lo alcanza o lo pasa, se saca, porque
+  si no el "descuento" subiría el precio.
+- **Hombre**: viene de fábrica en `src/men-catalog.json` con el precio que
+  publica cada marca, y eso no se edita. El precio del local se guarda aparte,
+  como una lista de excepciones por prenda: lo que no se toca sigue con el
+  precio de la marca, así que con 961 prendas no hay que cargar nada para que la
+  tienda ande. Poner el precio de la marca no guarda una excepción (no sería un
+  cambio). Se muestra como *Precio Zero*, y *volver* la devuelve a la marca.
+
+**Sacar de la venta no borra.** La prenda o el producto deja de verse en la
+tienda y se pone a la venta de nuevo cuando vuelva, con el precio que tenía.
+Borrar de verdad un producto de la tienda se hace desde su editor, en *Productos
+y stock* (*Dar de baja*): ahí el stock que tenía queda anotado como ajuste en
+*Movimientos*.
+
+La lógica está en `src/priceTools.mjs` y `src/menOverrides.mjs` (probadas en
+`tests/priceTools.test.mjs` y `tests/menOverrides.test.mjs`). Las excepciones del
+catálogo de hombre viven en la tabla `catalog_overrides`: se lee pública, porque
+la tienda necesita saber qué ocultar, y sólo la escribe un admin. **Hay que
+crearla una vez** corriendo `db/ajustes-catalogo.sql` en el SQL Editor de
+Supabase; mientras no exista, el panel avisa que no pudo guardar. Si la tienda
+no llega al servidor, usa lo último que supo en ese navegador antes que volver a
+mostrar lo que se sacó de la venta.
 
 ## Venta del mostrador
 
@@ -636,6 +656,7 @@ completar esos datos con información confirmada del local.
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
 | `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90% | 13 |
+| `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas | 22 |
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
