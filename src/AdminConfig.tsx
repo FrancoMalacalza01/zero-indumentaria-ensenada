@@ -375,7 +375,9 @@ export default function AdminConfig({
         <Ayuda>
           El WhatsApp va con el código de país y sin el "+", todo junto. Con
           esto vacío, el pedido se abre en WhatsApp con el mensaje escrito pero
-          el cliente tiene que elegir el contacto a mano.
+          el cliente tiene que elegir el contacto a mano. Tampoco se muestra el
+          botón <b>Consultar por WhatsApp</b> de las prendas de hombre: es lo que
+          le permite al cliente preguntar por una prenda sin buscar el número.
         </Ayuda>
       </div>
 

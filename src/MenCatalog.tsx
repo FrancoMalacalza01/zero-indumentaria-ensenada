@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, X } from "lucide-react";
 import { Link } from "./router";
 import { useStore } from "./Store";
 import { aplicarAjustes } from "./menOverrides.mjs";
+import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import catalog from "./men-catalog.json";
 import "./men-catalog.css";
 
@@ -53,7 +54,22 @@ function colorSwatch(name: string) {
   return colors.find(([needle]) => value.includes(needle))?.[1] || "#b8bbc1";
 }
 
-function ProductGallery({ product, close }: { product: MenProduct; close: () => void }) {
+/**
+ * El enlace de WhatsApp para consultar por una prenda, con el mensaje ya escrito
+ * (nombre, marca y el precio que ve el cliente). Es `null` mientras el local no
+ * cargó su WhatsApp, y entonces el botón no se muestra: igual que los demás
+ * botones de WhatsApp del sitio, que no se ofrecen sin un número al que escribir.
+ */
+function useConsulta() {
+  const { settings } = useStore();
+  return (p: MenProduct) =>
+    enlaceWhatsapp(
+      settings.whatsapp,
+      mensajeConsultaPrenda({ nombre: p.name, marca: p.brand, precio: peso.format(p.priceARS) }),
+    );
+}
+
+function ProductGallery({ product, close, consulta }: { product: MenProduct; close: () => void; consulta: string | null }) {
   const [photo, setPhoto] = useState(0);
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -83,7 +99,8 @@ function ProductGallery({ product, close }: { product: MenProduct; close: () => 
           <h2>{product.name}</h2>
           <p>{product.precioZero ? "Precio Zero" : "Precio publicado por la marca"}: {peso.format(product.priceARS)}</p>
           <p>{photo + 1} de {product.images.length} fotos</p>
-          <Link to="/sucursales">Consultar en Zero <ArrowRight size={16} /></Link>
+          {consulta && <a className="button button-green men-whatsapp" href={consulta} target="_blank" rel="noreferrer noopener"><MessageCircle size={18} /> Consultar por WhatsApp</a>}
+          <Link to="/sucursales">{consulta ? "Ver cómo llegar a Zero" : "Consultar en Zero"} <ArrowRight size={16} /></Link>
         </div>
         {product.images.length > 1 && <div className="men-gallery-thumbs">
           {product.images.map((src, index) => <button key={`${src}-${index}`} className={index === photo ? "active" : ""} onClick={() => setPhoto(index)} aria-label={`Ver foto ${index + 1}`}><img src={src} alt="" loading="lazy" /></button>)}
@@ -95,6 +112,7 @@ function ProductGallery({ product, close }: { product: MenProduct; close: () => 
 
 export function HomeBrandCatalog() {
   const products = useProductosVisibles();
+  const consultaDe = useConsulta();
   const [brand, setBrand] = useState("Todas");
   const [category, setCategory] = useState("Todas");
   const [visible, setVisible] = useState(12);
@@ -139,18 +157,20 @@ export function HomeBrandCatalog() {
             <span>{product.brand} / {product.category}</span>
             <button onClick={() => setSelected(product)}>{product.name}</button>
             <p>{peso.format(product.priceARS)}</p>
+            {consultaDe(product) && <a className="men-card-consult" href={consultaDe(product)!} target="_blank" rel="noreferrer noopener" aria-label={`Consultar por WhatsApp: ${product.name}`}><MessageCircle size={14} /> Consultar por WhatsApp</a>}
           </div>
         </article>)}
       </div>
       {visible < filtered.length && <button className="home-brand-more" onClick={() => setVisible((count) => count + 12)}>Mostrar más productos <span>{Math.min(12, filtered.length - visible)} más</span><ArrowRight size={17} /></button>}
       <p className="home-brand-note">Mostrando {Math.min(visible, filtered.length)} de {filtered.length} productos. Elegí una marca o sección para explorar.</p>
     </> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá con otra marca o sección.</p></div>}
-    {selected && <ProductGallery key={selected.id} product={selected} close={() => setSelected(null)} />}
+    {selected && <ProductGallery key={selected.id} product={selected} close={() => setSelected(null)} consulta={consultaDe(selected)} />}
   </section>;
 }
 
 export default function MenCatalog() {
   const products = useProductosVisibles();
+  const consultaDe = useConsulta();
   // El rango del filtro de precio sale de lo que se muestra, no del catálogo de
   // fábrica: una prenda con precio propio fuera de ese rango quedaría oculta.
   const rango = products.length ? products : catalogo;
@@ -292,10 +312,10 @@ export default function MenCatalog() {
       <section className="men-results" aria-label="Productos de hombre">
         <div className="men-section-head"><div><span className="eyebrow dark">MISTRAL + BROOKSFIELD</span><h2>{category === "Todas" ? "Todas las secciones" : category}</h2></div><Link to="/sucursales">Consultar disponibilidad <ArrowRight size={17} /></Link></div>
         <div className="men-toolbar"><span>{filtered.length} productos</span></div>
-        {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p>{peso.format(product.priceARS)}</p><small>{product.precioZero ? "Precio Zero" : "Precio publicado por la marca"}</small></div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
+        {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p>{peso.format(product.priceARS)}</p><small>{product.precioZero ? "Precio Zero" : "Precio publicado por la marca"}</small>{consultaDe(product) && <a className="men-card-consult" href={consultaDe(product)!} target="_blank" rel="noreferrer noopener" aria-label={`Consultar por WhatsApp: ${product.name}`}><MessageCircle size={14} /> Consultar por WhatsApp</a>}</div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
       </section>
       <p className="men-source-note">Catálogo de marcas relevado el {new Date(`${catalog.capturedAt}T12:00:00`).toLocaleDateString("es-AR")}. Fotos publicadas por <a href="https://www.mistral.com.ar/hombre/" target="_blank" rel="noopener noreferrer">Mistral</a> y <a href="https://www.brooksfieldstore.com/3-hombre-brooksfield" target="_blank" rel="noopener noreferrer">Brooksfield</a>. Los precios son los de la marca, salvo los que Zero ajustó. Consultá la disponibilidad en Zero Indumentaria.</p>
     </div>
-    {selected && <ProductGallery key={selected.id} product={selected} close={() => setSelected(null)} />}
+    {selected && <ProductGallery key={selected.id} product={selected} close={() => setSelected(null)} consulta={consultaDe(selected)} />}
   </main>;
 }
