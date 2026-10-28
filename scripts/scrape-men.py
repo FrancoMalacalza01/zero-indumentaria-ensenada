@@ -9,6 +9,7 @@ from __future__ import annotations
 import concurrent.futures
 import json
 import re
+import subprocess
 import time
 import urllib.request
 from datetime import date
@@ -273,6 +274,7 @@ def main():
         "sources": [MISTRAL, BROOKSFIELD],
         "products": products,
     }, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    subprocess.run(["node", str(ROOT / "scripts" / "enrich-men-facets.mjs")], cwd=ROOT, check=True)
     print("TOTAL", len(mistral), len(brooksfield), len(products), OUT.stat().st_size)
 
 
