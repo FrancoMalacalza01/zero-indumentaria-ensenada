@@ -5,6 +5,7 @@ import { useStore } from "./Store";
 import { aplicarAjustes } from "./menOverrides.mjs";
 import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import { descuento } from "./priceTools.mjs";
+import { ORDENES, ordenarProductos } from "./ordenProductos.mjs";
 import catalog from "./men-catalog.json";
 import "./men-catalog.css";
 
@@ -141,15 +142,17 @@ export function HomeBrandCatalog() {
   const consultaDe = useConsulta();
   const [brand, setBrand] = useState("Todas");
   const [category, setCategory] = useState("Todas");
+  const [orden, setOrden] = useState("destacados");
   const [visible, setVisible] = useState(12);
   const [selected, setSelected] = useState<MenProduct | null>(null);
   const categories = useMemo(() => [...new Set(products.map((product) => product.category))].sort((a, b) => a.localeCompare(b, "es-AR")), [products]);
-  const filtered = useMemo(() => products.filter((product) =>
+  const filtered = useMemo(() => ordenarProductos(products.filter((product) =>
     (brand === "Todas" || product.brand === brand) &&
     (category === "Todas" || product.category === category),
-  ), [products, brand, category]);
+  ), orden), [products, brand, category, orden]);
   const changeBrand = (next: string) => { setBrand(next); setVisible(12); };
   const changeCategory = (next: string) => { setCategory(next); setVisible(12); };
+  const changeOrden = (next: string) => { setOrden(next); setVisible(12); };
 
   return <section className="section new-section home-brand-catalog" id="novedades">
     <div className="section-heading">
@@ -168,6 +171,13 @@ export function HomeBrandCatalog() {
         <select value={category} onChange={(event) => changeCategory(event.target.value)}>
           <option value="Todas">Todas las prendas</option>
           {categories.map((name) => <option key={name} value={name}>{name}</option>)}
+        </select>
+        <ChevronDown size={15} />
+      </label>
+      <label className="home-brand-category">
+        <span>Ordenar</span>
+        <select value={orden} onChange={(event) => changeOrden(event.target.value)} aria-label="Ordenar productos">
+          {ORDENES.map((o) => <option key={o.id} value={o.id}>{o.etiqueta}</option>)}
         </select>
         <ChevronDown size={15} />
       </label>
@@ -214,6 +224,7 @@ export default function MenCatalog() {
   const maxPrice = maxPick ?? priceCeiling;
   const setMinPrice = (value: number) => setMinPick(value <= priceFloor ? null : value);
   const setMaxPrice = (value: number) => setMaxPick(value >= priceCeiling ? null : value);
+  const [orden, setOrden] = useState("destacados");
   const [visible, setVisible] = useState(pageSize);
   const [selected, setSelected] = useState<MenProduct | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -263,14 +274,14 @@ export default function MenCatalog() {
     });
   }, [facetProducts]);
   const filtered = useMemo(() => {
-    return products.filter((p) =>
+    return ordenarProductos(products.filter((p) =>
       (category === "Todas" || p.category === category) &&
       (!selectedSizes.length || selectedSizes.some((size) => (p.sizes || []).includes(size))) &&
       (!selectedColors.length || selectedColors.some((color) => (p.colors || []).includes(color))) &&
       p.priceARS >= minPrice && p.priceARS <= maxPrice,
-    );
-  }, [products, category, selectedSizes, selectedColors, minPrice, maxPrice]);
-  useEffect(() => setVisible(pageSize), [category, selectedSizes, selectedColors, minPrice, maxPrice]);
+    ), orden);
+  }, [products, category, selectedSizes, selectedColors, minPrice, maxPrice, orden]);
+  useEffect(() => setVisible(pageSize), [category, selectedSizes, selectedColors, minPrice, maxPrice, orden]);
   const chooseCategory = (next: string) => { setCategory(next); setVisible(pageSize); };
   const visibleCategories = showAllCategories ? categories : categories.slice(0, 13);
   const toggleSize = (size: string) => setSelectedSizes((current) => current.includes(size) ? current.filter((item) => item !== size) : [...current, size]);
@@ -337,7 +348,7 @@ export default function MenCatalog() {
       </aside>
       <section className="men-results" aria-label="Productos de hombre">
         <div className="men-section-head"><div><span className="eyebrow dark">MISTRAL + BROOKSFIELD</span><h2>{category === "Todas" ? "Todas las secciones" : category}</h2></div><Link to="/sucursales">Consultar disponibilidad <ArrowRight size={17} /></Link></div>
-        <div className="men-toolbar"><span>{filtered.length} productos</span></div>
+        <div className="men-toolbar"><span>{filtered.length} productos</span><label className="men-sort"><span>Ordenar</span><select value={orden} onChange={(event) => setOrden(event.target.value)} aria-label="Ordenar productos">{ORDENES.map((o) => <option key={o.id} value={o.id}>{o.etiqueta}</option>)}</select></label></div>
         {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p><Precio p={product} /></p><small>{etiquetaPrecio(product)}</small>{consultaDe(product) && <a className="men-card-consult" href={consultaDe(product)!} target="_blank" rel="noreferrer noopener" aria-label={`Consultar por WhatsApp: ${product.name}`}><MessageCircle size={14} /> Consultar por WhatsApp</a>}</div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
       </section>
       <p className="men-source-note">Catálogo de marcas relevado el {new Date(`${catalog.capturedAt}T12:00:00`).toLocaleDateString("es-AR")}. Fotos publicadas por <a href="https://www.mistral.com.ar/hombre/" target="_blank" rel="noopener noreferrer">Mistral</a> y <a href="https://www.brooksfieldstore.com/3-hombre-brooksfield" target="_blank" rel="noopener noreferrer">Brooksfield</a>. Los precios son los de la marca, salvo los que Zero ajustó. Consultá la disponibilidad en Zero Indumentaria.</p>

@@ -162,3 +162,5 @@
 /* Ofertas: el precio de antes tachado y el descuento al lado. */
 .men-card-body del, .men-gallery-details del { color: #8a8a8a; font-weight: 400; font-size: .85em; margin-right: 7px; }
 .men-offer-badge { display: inline-block; margin-left: 8px; padding: 2px 6px; border-radius: 3px; background: #c62828; color: #fff; font-size: 10px; font-style: normal; font-weight: 700; letter-spacing: .3px; vertical-align: 1px; }
+.men-toolbar .men-sort { min-width: 0; padding: 0; border: 0; gap: 8px; }
+.men-toolbar .men-sort select { min-height: 38px; padding: 8px 14px; border: 1px solid #d9d9d9; border-radius: 999px; background: #fff; color: #1f2431; font-size: 12px; font-weight: 600; }
