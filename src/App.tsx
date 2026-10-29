@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { money, useStore } from "./Store";
 import { Link, navigate, useRoute } from "./router";
+import { CATEGORIAS_EN_TIENDA, esProductoDeTienda } from "./storefront.mjs";
 import {
   Arrepentimiento,
   LegalesDelPie,
@@ -67,7 +68,7 @@ const HomeBrandCatalog = lazy(() =>
   import("./MenCatalog").then((module) => ({ default: module.HomeBrandCatalog })),
 );
 const instagram = "https://www.instagram.com/mistral.zero.indumentaria/";
-const storefrontCategories = ["Todos", "Hombre", "Accesorios"] as const;
+const storefrontCategories = ["Todos", ...CATEGORIAS_EN_TIENDA] as const;
 type StorefrontCategory = (typeof storefrontCategories)[number];
 const menSections = [
   { name: "Remeras", image: "/men-images/m-375247890.webp" },
@@ -81,8 +82,8 @@ const menSections = [
 ];
 const menSectionUrl = (name?: string) =>
   name ? `/hombre?categoria=${encodeURIComponent(name)}` : "/hombre";
-const isStorefrontProduct = (product: Product) =>
-  product.active && product.category !== "Mujer";
+// Qué se publica lo decide `storefront.mjs`: hoy, sólo prendas de hombre.
+const isStorefrontProduct = (product: Product) => esProductoDeTienda(product);
 const storefrontCategory = (value: string | null): StorefrontCategory =>
   storefrontCategories.find((category) => category === value) || "Todos";
 // El WhatsApp, la dirección, las formas de pago, las zonas de envío y la
@@ -254,7 +255,6 @@ function Header({ onCart }: { onCart: () => void }) {
   const nav = [
     ["New in", "/tienda?new=1"],
     ["Hombre", "/hombre"],
-    ["Accesorios", "/tienda?categoria=Accesorios"],
   ];
   return (
     <>
@@ -436,6 +436,9 @@ function CategoryFilters({
   products: Product[];
   label: string;
 }) {
+  // Con una sola categoría publicada, "Todos" y "Hombre" son lo mismo: no hay
+  // nada que elegir, y los dos botones sólo confundirían.
+  if (storefrontCategories.length <= 2) return null;
   return (
     <div className="category-tabs" role="group" aria-label={label}>
       {storefrontCategories.map((category) => {
@@ -534,7 +537,7 @@ function Home() {
       <Suspense fallback={<section className="section new-section" id="novedades"><span className="eyebrow dark">MISTRAL + BROOKSFIELD</span><h2 className="brand-catalog-loading">Cargando el catálogo…</h2></section>}>
         <HomeBrandCatalog />
       </Suspense>
-      <section className="collection-grid">
+      <section className="collection-grid collection-grid-single">
         <Link to="/hombre" className="collection-card">
           <img
             src="/men-images/m-375247890.webp"
@@ -546,20 +549,6 @@ function Home() {
             <h2>Hombre</h2>
             <span>
               Encontrá tu estilo <ArrowRight size={19} />
-            </span>
-          </div>
-        </Link>
-        <Link to="/tienda?categoria=Accesorios" className="collection-card">
-          <img
-            src="/men-images/b-3767.webp"
-            alt="Gorra de la colección de accesorios en Zero Indumentaria"
-            loading="lazy"
-          />
-          <div>
-            <span className="eyebrow">LOS DETALLES CUENTAN</span>
-            <h2>Accesorios</h2>
-            <span>
-              Descubrí la colección <ArrowRight size={19} />
             </span>
           </div>
         </Link>
@@ -1996,7 +1985,6 @@ function Footer() {
           <h3>EXPLORÁ</h3>
           <Link to="/tienda?new=1">New in</Link>
           <Link to="/hombre">Hombre</Link>
-          <Link to="/tienda?categoria=Accesorios">Accesorios</Link>
         </div>
         <div>
           <h3>CERCA TUYO</h3>

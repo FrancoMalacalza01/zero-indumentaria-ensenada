@@ -761,6 +761,12 @@ svg {
   max-width: 1700px;
   margin: auto;
 }
+/* Con una sola tarjeta, se queda del tamaño de siempre y se centra. A todo el
+   ancho la foto (360 px) se estiraba más de tres veces y se veía pixelada. */
+.collection-grid-single {
+  grid-template-columns: minmax(0, 600px);
+  justify-content: center;
+}
 .collection-card {
   position: relative;
   height: 490px;
