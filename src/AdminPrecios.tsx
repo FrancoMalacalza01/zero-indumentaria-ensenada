@@ -33,6 +33,7 @@ import {
   variacion,
   vistaPrevia,
 } from "./priceTools.mjs";
+import { delMismoModelo } from "./modelos.mjs";
 import type {
   CambioArticulo,
   Historial,
@@ -301,6 +302,9 @@ export default function AdminPrecios({
   const [redondeo, setRedondeo] = useState<Redondeo>("ninguno");
   // "poner en oferta" en una fila arma la regla y lleva el cursor al porcentaje.
   const [pedirFoco, setPedirFoco] = useState(false);
+  // Una prenda está en la tienda y en el catálogo de hombre (una vez por color):
+  // con esto prendido, un precio nuevo llega a todas sus versiones.
+  const [propagar, setPropagar] = useState(true);
   const valorRef = useRef<HTMLInputElement>(null);
   const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(temporizador.current), []);
@@ -381,6 +385,29 @@ export default function AdminPrecios({
   }
 
   /** Hace un cambio, lo anota para poder deshacerlo y lo manda al servidor. */
+  /**
+   * Suma a los cambios de precio las otras versiones del mismo modelo, con el
+   * mismo precio (y el mismo "antes", si es una oferta). Las que ya estaban en
+   * los cambios no se tocan dos veces.
+   */
+  function conModelo(cambios: CambioArticulo[]): CambioArticulo[] {
+    if (!propagar) return cambios;
+    const yaEstan = new Set(cambios.map((c) => `${c.fuente}:${c.id}`));
+    const extra: CambioArticulo[] = [];
+    for (const c of cambios) {
+      if (!("precio" in c)) continue;
+      const a = porClave.get(`${c.fuente}:${c.id}`);
+      if (!a) continue;
+      for (const h of delMismoModelo(a, articulos)) {
+        if (yaEstan.has(h.key)) continue;
+        yaEstan.add(h.key);
+        const hc = cambioDePrecio(h, c.precio ?? null);
+        extra.push("antes" in c ? { ...hc, antes: c.antes } : hc);
+      }
+    }
+    return [...cambios, ...extra];
+  }
+
   function ejecutar(cambios: CambioArticulo[], etiqueta: string, aviso: string) {
     if (!cambios.length) return;
     const idsMen = cambios.filter((c) => c.fuente === "men").map((c) => c.id);
@@ -459,10 +486,12 @@ export default function AdminPrecios({
     if (valor !== a.precio) {
       const aviso = avisoDeCambio(a.precio, valor);
       if (aviso && !confirm(`${a.nombre}\n\n${aviso}`)) return false;
+      const cambios = conModelo([cambioDePrecio(a, valor)]);
+      const otras = cambios.length - 1;
       ejecutar(
-        [cambioDePrecio(a, valor)],
-        `Precio de ${a.nombre}`,
-        `${a.nombre}: ${money(valor)}`,
+        cambios,
+        `Precio de ${a.nombre}${otras ? ` y ${otras} versiones` : ""}`,
+        `${a.nombre}: ${money(valor)}${otras ? ` · y ${otras} versiones más del modelo` : ""}`,
       );
     }
     setEditando(vecino ? vecino.key : null);
@@ -512,13 +541,15 @@ export default function AdminPrecios({
   function aplicarRegla() {
     if (!vista || !regla.ok) return;
     const esOferta = op === "oferta";
-    const cambios = vista.filas
-      .filter((f) => f.estado === "cambia")
-      .map((f) => {
-        const c = cambioDePrecio(porClave.get(f.key)!, f.despues);
-        // La oferta guarda el precio de partida como el anterior: es el tachado.
-        return esOferta ? { ...c, antes: f.base } : c;
-      });
+    const cambios = conModelo(
+      vista.filas
+        .filter((f) => f.estado === "cambia")
+        .map((f) => {
+          const c = cambioDePrecio(porClave.get(f.key)!, f.despues);
+          // La oferta guarda el precio de partida como el anterior: es el tachado.
+          return esOferta ? { ...c, antes: f.base } : c;
+        }),
+    );
     const etiqueta = OPERACIONES.find((o) => o.id === op)!.etiqueta;
     const n = cambios.length;
     ejecutar(
@@ -671,6 +702,18 @@ export default function AdminPrecios({
           </button>
         </div>
       </div>
+      <label className="admin-precios-propagar">
+        <input
+          type="checkbox"
+          checked={propagar}
+          onChange={(e) => setPropagar(e.target.checked)}
+        />
+        <span>
+          <b>Cambiar todas las versiones del modelo.</b> Un precio u oferta nuevo
+          se aplica también a las demás prendas con el mismo nombre (por ejemplo,
+          los colores de la <i>Remera Blank MC</i> en la tienda y en hombre).
+        </span>
+      </label>
 
       <div className="admin-filters">
         <label className="admin-search">

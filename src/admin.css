@@ -3494,3 +3494,5 @@ tr:hover .admin-precios-ofertar,
     opacity: 1;
   }
 }
+.admin-precios-propagar { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--admin-line, #e3e6ee); border-radius: 10px; background: #f7f8fc; font-size: 12.5px; line-height: 1.45; cursor: pointer; }
+.admin-precios-propagar input { margin-top: 3px; }
