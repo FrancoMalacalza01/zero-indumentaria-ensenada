@@ -83,6 +83,12 @@ export interface ZonaEnvio {
   /** Sin definir, el checkout dice que se coordina por WhatsApp. */
   costo?: number;
   nota?: string;
+  /**
+   * Cuánto tarda en llegar, en las palabras que ve el cliente ("2 a 5 días
+   * hábiles"). Vacío = no se dice nada. Las zonas de Correo Argentino traen el
+   * de Paq.ar Clásico de fábrica.
+   */
+  plazo?: string;
 }
 /**
  * La configuración del local, cargada desde el panel.

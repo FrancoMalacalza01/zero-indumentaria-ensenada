@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { Settings, ZonaEnvio } from "./types";
 import { prepararImagen } from "./imagen";
-import { faltaParaVender } from "./settingsMap.mjs";
+import { faltaParaVender, PLAZO_CORREO_CLASICO } from "./settingsMap.mjs";
 import { money } from "./Store";
 
 /**
@@ -645,15 +645,30 @@ export default function AdminConfig({
                 Cómo llega
                 <select
                   value={z.tipo}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const correo = e.target.value === "correo";
                     editarZona(i, {
-                      tipo: e.target.value === "correo" ? "correo" : "local",
-                    })
-                  }
+                      tipo: correo ? "correo" : "local",
+                      // Al pasar a Correo, si no había plazo, entra el de
+                      // fábrica: si no, quedaría sin decir nada sin que nadie
+                      // lo haya decidido.
+                      ...(correo && !z.plazo ? { plazo: PLAZO_CORREO_CLASICO } : {}),
+                    });
+                  }}
                 >
                   <option value="local">Reparto propio</option>
                   <option value="correo">Correo Argentino</option>
                 </select>
+              </label>
+              <label className="admin-field">
+                Plazo estimado
+                <input
+                  type="text"
+                  maxLength={80}
+                  placeholder="sin plazo"
+                  value={z.plazo ?? ""}
+                  onChange={(e) => editarZona(i, { plazo: e.target.value })}
+                />
               </label>
               <button
                 type="button"
@@ -711,6 +726,13 @@ export default function AdminConfig({
           Correo Argentino, el precio depende del peso y del código postal:
           cotizalo en el sitio del Correo y cargá acá un promedio, o dejalo
           vacío y cobralo al coordinar.
+          <br />
+          <b>Plazo estimado:</b> es lo que lee el cliente al elegir la zona.
+          Para Correo Argentino viene el de Paq.ar Clásico, 2 a 5 días hábiles,
+          que el Correo cuenta desde que le entregás el paquete, no desde la
+          compra; por eso el checkout dice "desde que despachamos tu pedido".
+          Es el rango general: si tu experiencia con una zona es otra, ponelo
+          acá. Vacío = no se dice ningún plazo.
         </Ayuda>
       </div>
 

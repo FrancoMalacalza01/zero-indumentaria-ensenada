@@ -67,6 +67,7 @@ export const porDefecto = () => ({
         nombre: "Resto de la Provincia de Buenos Aires",
         tipo: "correo",
         nota: "Por Correo Argentino. El costo depende del peso y del código postal.",
+        plazo: "2 a 5 días hábiles",
       },
     ],
     /** Desde este monto de prendas, el envío va sin cargo. 0 = nunca. */
@@ -130,6 +131,19 @@ function booleano(valor, porDefectoValor) {
   return typeof valor === "boolean" ? valor : porDefectoValor;
 }
 
+/**
+ * Lo que informa el Correo Argentino para Paq.ar Clásico: "2 a 5 días hábiles
+ * según origen y destino desde su día de imposición". Se cuenta desde que el
+ * paquete entra al Correo, no desde que el cliente compra: por eso el texto que
+ * ve el cliente dice "desde que despachamos tu pedido".
+ *
+ * Es el rango general del servicio. La tabla del Correo da plazos más finos por
+ * ciudad (de 1 a 5 días), pero no trae Ensenada ni Berisso, así que no se
+ * inventan: el dueño puede ajustar el plazo de cada zona desde el panel.
+ */
+export const PLAZO_CORREO_CLASICO = "2 a 5 días hábiles";
+const PLAZO_MAXIMO = 80;
+
 function zonas(valor, base) {
   if (!Array.isArray(valor)) return base;
   const limpias = [];
@@ -140,12 +154,29 @@ function zonas(valor, base) {
     // cobre la otra: la base busca por nombre.
     if (limpias.some((x) => x.nombre === nombre)) continue;
     const puesto = costo(z?.costo);
+    const tipo = TIPOS.includes(z?.tipo) ? z.tipo : "local";
+    // Si el dueño lo dejó vacío a propósito, se respeta: es la forma de no
+    // decir ningún plazo. Si nunca se cargó, las zonas de Correo traen el de
+    // fábrica y las de reparto propio no dicen nada.
+    const plazoPuesto =
+      typeof z?.plazo === "string"
+        ? z.plazo.trim().slice(0, PLAZO_MAXIMO)
+        : undefined;
+    const plazo =
+      plazoPuesto !== undefined
+        ? plazoPuesto
+        : tipo === "correo"
+          ? PLAZO_CORREO_CLASICO
+          : undefined;
     limpias.push({
       id: texto(z?.id).trim() || nombre.toLowerCase().replace(/\s+/g, "-"),
       nombre,
-      tipo: TIPOS.includes(z?.tipo) ? z.tipo : "local",
+      tipo,
       ...(puesto === undefined ? {} : { costo: puesto }),
       ...(texto(z?.nota) ? { nota: texto(z.nota) } : {}),
+      ...(plazo === undefined || (plazo === "" && tipo !== "correo")
+        ? {}
+        : { plazo }),
     });
   }
   return limpias;
@@ -276,6 +307,20 @@ export function costoEnvio(settings, nombreZona, subtotal) {
   const gratis = settings.envio.envioGratisDesde;
   if (gratis > 0 && subtotal >= gratis) return 0;
   return zona.costo === undefined ? null : zona.costo;
+}
+
+/**
+ * La frase del plazo para el checkout, o `null` si la zona no dice ninguno.
+ *
+ * En Correo el plazo corre desde que el paquete entra al Correo, no desde la
+ * compra, y el cliente tiene que poder entenderlo: por eso lo aclara.
+ */
+export function textoPlazoEnvio(zona) {
+  const plazo = texto(zona?.plazo).trim();
+  if (!plazo) return null;
+  return zona?.tipo === "correo"
+    ? `Plazo estimado: ${plazo} desde que despachamos tu pedido.`
+    : `Plazo estimado: ${plazo}.`;
 }
 
 /** true si la compra ya pasó el monto desde el que el envío va sin cargo. */
