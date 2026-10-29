@@ -341,6 +341,16 @@ costo y si va por reparto propio o por Correo Argentino.
   cliente y `envio` dice cuánto de eso es el envío. El navegador hace la misma
   cuenta sólo para mostrarla, y si la zona no está entre las configuradas el
   servidor rechaza el pedido.
+- **Plazo estimado de entrega.** Cada zona tiene un texto de plazo que el
+  cliente lee en el checkout al elegirla. Las zonas de Correo Argentino traen el
+  de **Paq.ar Clásico**, el servicio que usa el local: *2 a 5 días hábiles*. El
+  Correo lo cuenta desde la imposición, o sea desde que le entregan el paquete,
+  no desde la compra, así que el checkout dice "desde que despachamos tu
+  pedido". Es el rango general del servicio: la tabla del Correo da plazos más
+  finos por ciudad, pero no trae Ensenada ni Berisso, y no se inventan. Se
+  ajusta por zona desde el panel; dejarlo vacío a propósito no dice ningún
+  plazo, y una zona de reparto propio no inventa uno. No hace falta tocar la
+  base: el plazo vive dentro de la configuración que ya se guarda.
 - **Correo Argentino cotiza por peso y código postal**, así que no hay un
   precio fijo que poner en el código: conviene cotizar en el sitio del Correo y
   cargar un promedio, o dejarlo vacío y cobrarlo al coordinar.
@@ -698,7 +708,7 @@ completar esos datos con información confirmada del local.
 | `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90%; y las ofertas: el precio anterior sólo existe si es mayor al precio, terminar una oferta, que cambiar el precio la termine sólo si alcanza al anterior, y que ida y vuelta con el servidor dé lo mismo | 23 |
 | `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
 | `whatsapp.test.mjs` | el enlace de consulta por WhatsApp: el mensaje con tildes, saltos de línea y símbolos que romperían una URL, que un número inválido no dé enlace (no manda al cliente a un desconocido) y que falte la marca o el precio no rompa el mensaje; y que una prenda en oferta diga de cuánto era | 9 |
-| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
+| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente | 34 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Mujer, Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
