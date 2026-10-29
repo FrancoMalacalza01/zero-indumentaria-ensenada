@@ -3,7 +3,7 @@
 Esto está escrito para que lo lea una persona o una IA (Claude, ChatGPT) que llega
 sin contexto y tiene que saber **qué está hecho, qué falta y cómo pedirlo**.
 
-Estado al **28/10/2026**. Antes de actuar sobre algo, comprobalo: `git log` y los
+Estado al **29/10/2026**. Antes de actuar sobre algo, comprobalo: `git log` y los
 pull requests abiertos dicen más que este archivo si pasaron días.
 
 ## Cómo usarlo con tu IA
@@ -39,13 +39,42 @@ resuelven con código.
 | Chequeo automático en cada PR (`pnpm test` y `pnpm build`) | `.github/workflows/pruebas.yml` |
 | Prueba del SQL de ajustes en un Postgres local, y verificador de solo lectura | `db/probar-ajustes.sh`, `db/verificar-ajustes-catalogo.sql` |
 
-Los pull requests que traen esto: **#2** (Precios, ofertas, medidas, reglas),
-**#3** (plazo de envío), **#4** (botón de WhatsApp, apilado sobre el #2). Si no
-están mergeados, nada de esto está en `main` todavía.
+Además, ya en `main`:
+
+| | Dónde |
+|---|---|
+| Tienda con **solo New in y Hombre** (Mujer y Accesorios quedan en la base y el panel, pero no se publican). Para reactivar una categoría: `CATEGORIAS_EN_TIENDA` | `src/storefront.mjs` |
+| **Orden por precio** (menor a mayor, mayor a menor) en `/hombre` y en la colección de la portada | `src/ordenProductos.mjs`, `src/MenCatalog.tsx` |
+| Logo sin el texto "ENSENADA" debajo; las ofertas del catálogo de hombre conservan el precio anterior al recargar | `src/App.tsx`, `src/server.ts` |
+
+Los pull requests que traen todo esto: **#2** (Precios, ofertas, medidas, reglas),
+**#3** (plazo de envío), **#4** (botón de WhatsApp), **#5** (solo New in y
+Hombre), **#6** (logo y ofertas al recargar), **#7** (orden por precio). Franco
+los mergeó sin que los revisara la otra persona: conviene que los mires.
+
+**Falta mergear el #8** — un precio u oferta nuevo llega a todas las versiones del
+mismo modelo (la *Remera Blank MC* de la tienda y sus 14 colores en `/hombre`
+eran filas separadas y no se enteraban una de la otra). Hay una casilla en la
+pestaña Precios para apagarlo; la lógica está en `src/modelos.mjs`. Mirá la vista
+previa y mergealo si está bien.
+
+**Base de datos, hecho el 29/10/2026:**
+
+- Se aplicó `db/ajustes-catalogo.sql` (Tarea 0) y las 9 comprobaciones del
+  verificador dan `true`.
+- Se arregló el login del admin. La cuenta `admin@mistralensenada.com.ar` tenía
+  vacíos `confirmation_token`, `recovery_token`, `email_change` y
+  `email_change_token_new` en `auth.users`, y Supabase respondía **500** al
+  iniciar sesión (el panel se quedaba en modo local y los cambios no se
+  guardaban). Se completaron con texto vacío. Si se crea otro admin con SQL,
+  hay que cuidar eso: lo normal es crearlo desde *Authentication* en Supabase.
 
 ---
 
-## Tarea 0 · Aplicar el SQL del catálogo de hombre (lo primero)
+## Tarea 0 · Aplicar el SQL del catálogo de hombre — **HECHA el 29/10/2026**
+
+> Ya está aplicada y verificada (9 de 9 en `true`). Lo que sigue es por si hace
+> falta repetirla en otra base.
 
 **Por qué.** Los precios propios, las bajas y las ofertas del catálogo de hombre
 se guardan en una tabla nueva, `catalog_overrides`. Mientras no exista, el panel
@@ -270,6 +299,8 @@ imágenes que son de terceros, dentro del repo (`public/men-gallery/`,
 `public/men-images/`) y publicadas en el sitio. Es el **riesgo legal más grande**
 de la tienda hoy, y hace pesado al repo (más de 160 MB de historia).
 
+**Novedad (29/10/2026).** Franco informó que **tiene autorización de las marcas**. Falta dejarla **por escrito** (mail o documento firmado) y guardarla fuera del repo; con eso la salida de abajo queda resuelta, pero el peso del repo sigue siendo un tema.
+
 **Qué hacer.** Esto es una **decisión de Juan y del dueño** antes que una tarea.
 Las salidas posibles: fotos propias, o una autorización de las marcas (si el local
 es revendedor oficial, suelen tener material para distribuidores). **No** hacer
@@ -302,3 +333,22 @@ resolver la Tarea 4 antes.
   `zero-ajustes-hombre-v1`) además de pedirlas al servidor.
 - Pruebas: `tests/priceTools.test.mjs`, `tests/menOverrides.test.mjs`. Se corren
   con `pnpm test`.
+
+---
+
+## Para empezar (resumen del 29/10/2026)
+
+Lo que sigue, en este orden:
+
+1. **Cargar la configuración del local** en el panel (Configuración): WhatsApp
+   (con código de país y sin el "+", por ejemplo `5492211234567`), CUIT, razón
+   social, domicilio, mail, horarios, tabla de medidas y alias de pago. Sin esto
+   la tienda no puede vender legalmente y no aparece el botón de WhatsApp.
+2. **Sacar de `/hombre` la sección Accesorios** (unos 11 artículos): panel,
+   pestaña Precios, filtrar la sección Accesorios, seleccionar todo, "Sacar de la
+   venta".
+3. **Vercel:** dejar un solo proyecto apuntando al repo para producción (hoy sale
+   de `zero-indumentaria-ensenada.vercel.app`).
+4. **Tarea 3** (ofertas que vencen solas), **Tarea 5** (costo de envío real) y
+   **Tarea 7** (texto legal si el cliente no está).
+5. Guardar por escrito la autorización de las marcas (Tarea 9).
