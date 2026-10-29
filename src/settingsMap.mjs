@@ -389,7 +389,10 @@ export function faltaParaVender(settings) {
       porque:
         "La ley pide un teléfono o un medio electrónico de atención publicado en el sitio.",
     });
-  if (!(s.talles?.filas || []).length)
+  // Una fila sin ninguna medida es un talle anunciado y nada más, que es
+  // justamente lo que la ley de talles vino a evitar. Por eso no alcanza con
+  // que la tabla tenga filas: tienen que tener medidas.
+  if (!(s.talles?.filas || []).some((f) => f.pecho || f.cintura || f.cadera))
     faltan.push({
       id: "talles",
       impide: true,

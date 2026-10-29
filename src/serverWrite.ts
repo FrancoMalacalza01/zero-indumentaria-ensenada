@@ -22,6 +22,8 @@ import {
 } from "./serverSync.mjs";
 import { sesionUsable } from "./auth";
 import type { Session } from "./auth";
+import { ajusteAFila } from "./menOverrides.mjs";
+import type { AjustesHombre } from "./menOverrides.mjs";
 import type { Movement, Order, Product } from "./types";
 
 const ESPERA_MAXIMA = 15_000;
@@ -148,6 +150,47 @@ export async function borrarProducto(session: Session, id: string) {
       { method: "DELETE" },
       SILENCIO,
     );
+  });
+}
+
+/**
+ * Deja en el servidor los ajustes del catálogo de hombre de las prendas
+ * indicadas, tal como están en `ajustes`: las que tienen un cambio se guardan
+ * y las que volvieron a como vienen de fábrica se borran.
+ *
+ * Cada parte es una sola escritura aunque sean cientos de prendas (dar de baja
+ * una selección entera): o entran todas las bajas o no entra ninguna. Los ids
+ * se filtran antes de armar la consulta; vienen del catálogo, pero esto llega
+ * a una URL.
+ */
+export async function publicarAjustes(
+  session: Session,
+  ids: string[],
+  ajustes: AjustesHombre,
+) {
+  return conSesion(session, async (s) => {
+    const limpios = ids.filter((id) => /^[\w.-]+$/.test(id));
+    const filas = limpios
+      .filter((id) => ajustes[id])
+      .map((id) => ({
+        ...ajusteAFila(id, ajustes[id]),
+        updated_at: new Date().toISOString(),
+      }));
+    const quitar = limpios.filter((id) => !ajustes[id]);
+    if (filas.length)
+      await pedir(
+        s,
+        "catalog_overrides?on_conflict=product_id",
+        { method: "POST", body: JSON.stringify(filas) },
+        UPSERT,
+      );
+    if (quitar.length)
+      await pedir(
+        s,
+        `catalog_overrides?product_id=in.(${quitar.join(",")})`,
+        { method: "DELETE" },
+        SILENCIO,
+      );
   });
 }
 
