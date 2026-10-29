@@ -22,7 +22,7 @@ pnpm preview
 
 - `/`: inicio, novedades y colecciones.
 - `/hombre`: colección de Hombre de Mistral y Brooksfield, con todas las secciones, búsqueda y galerías de fotos. Los modelos, precios y talles disponibles en Zero se confirman con el local.
-- `/tienda`: catálogo público de Hombre y Accesorios, con búsqueda, filtros visuales, orden por precio, talles y disponibilidad. Las fichas antiguas de Mujer se conservan en administración para no borrar datos históricos, pero no se publican en la tienda.
+- `/tienda`: catálogo público de prendas de **Hombre**, con búsqueda, filtros visuales, orden por precio, talles y disponibilidad. `/tienda?new=1` es **New in**: lo marcado como novedad. La tienda publica sólo esas dos cosas: las fichas de Mujer y de Accesorios se conservan en administración, con sus precios y su stock, para no borrar datos, pero no se publican. Qué categorías se publican lo decide `src/storefront.mjs` (probado en `tests/storefront.test.mjs`).
 - `/producto/1`: detalle, selección de talle/cantidad y bolsa.
 - `/favoritos`: productos guardados.
 - `/checkout`: compra de demostración, con retiro en el local o envío a La Plata, Berisso o Ensenada.
@@ -598,6 +598,7 @@ completar esos datos con información confirmada del local.
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
+| `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Mujer, Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
 `pnpm build` comprueba TypeScript y genera el paquete de producción.
