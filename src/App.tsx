@@ -43,6 +43,7 @@ import {
   Terminos,
 } from "./Legales";
 import { cuitFormateado } from "./settingsMap.mjs";
+import { descuento } from "./priceTools.mjs";
 import type { PaymentMethodId, Product, Order, Settings } from "./types";
 import { cartKey } from "./commerce.mjs";
 import { mandarConfirmacion, pedirLinkDePago } from "./funciones";
@@ -232,6 +233,9 @@ function ProductCard({ product: p }: { product: Product }) {
       <p className="product-price">
         {p.oldPrice && p.oldPrice > p.price ? <del>{money(p.oldPrice)}</del> : null}
         {money(p.price)} <span>ARS</span>
+        {p.oldPrice && descuento(p.oldPrice, p.price) > 0 ? (
+          <em className="offer-badge">−{descuento(p.oldPrice, p.price)}%</em>
+        ) : null}
       </p>
     </article>
   );
@@ -815,6 +819,9 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
           <p className="detail-price">
             {p.oldPrice && p.oldPrice > p.price ? <del>{money(p.oldPrice)}</del> : null}
             {money(p.price)} <small>ARS</small>
+            {p.oldPrice && descuento(p.oldPrice, p.price) > 0 ? (
+              <em className="offer-badge">−{descuento(p.oldPrice, p.price)}%</em>
+            ) : null}
           </p>
           <p className="reference-price">
             Precio de referencia para esta demostración.
