@@ -118,7 +118,6 @@ function Brand({ light = false }: { light?: boolean }) {
   return (
     <span className={`brand ${light ? "brand-light" : ""}`}>
       <img src="/images/zero-indumentaria-logo.png" alt="Zero Indumentaria" />
-      <span>ENSENADA</span>
     </span>
   );
 }
