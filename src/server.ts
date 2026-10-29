@@ -1,4 +1,6 @@
 import { rowsToProducts } from "./catalogMap.mjs";
+import { leerAjustes } from "./menOverrides.mjs";
+import type { AjustesHombre } from "./menOverrides.mjs";
 import type { CartItem, Order, PaymentMethodId, Product } from "./types";
 
 /**
@@ -59,6 +61,29 @@ export async function fetchCatalog(): Promise<Product[] | null> {
   } catch {
     // Sin red, con el servidor caído o con una respuesta rara: no es motivo
     // para romper la tienda.
+    return null;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
+/**
+ * Trae los ajustes del local sobre el catálogo de hombre: precios propios y
+ * prendas dadas de baja.
+ *
+ * Devuelve `null` cuando no se pudo. Es distinto de `{}`: `{}` es "el servidor
+ * contestó y no hay ningún cambio", `null` es "no sé", y en ese caso conviene
+ * quedarse con lo último que se supo antes que mostrar de nuevo lo que se dio
+ * de baja.
+ */
+export async function fetchAjustes(): Promise<AjustesHombre | null> {
+  if (!serverConfigured) return null;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), ESPERA_MAXIMA);
+  try {
+    const filas = await pedir("catalog_overrides?select=product_id,price,active", corte.signal);
+    return Array.isArray(filas) ? leerAjustes(filas) : null;
+  } catch {
     return null;
   } finally {
     clearTimeout(reloj);

@@ -210,6 +210,32 @@ test("sin tabla de medidas no se puede vender ropa, aunque esté todo lo demás"
   );
 });
 
+test("una tabla de talles sin ninguna medida cargada no cuenta como tabla", () => {
+  // Es el estado en que queda la tienda con los talles precargados: S, M, L...
+  // y todas las medidas vacías. Tiene filas, pero no informa nada.
+  const vacia = leerSettings({
+    whatsapp: "5492211234567",
+    empresa: { razonSocial: "X", cuit: "30712345670", domicilioLegal: "Y" },
+    talles: {
+      filas: [
+        { talle: "S", pecho: "", cintura: "", cadera: "" },
+        { talle: "M", pecho: "", cintura: "", cadera: "" },
+      ],
+    },
+  });
+  assert.deepEqual(
+    faltaParaVender(vacia).filter((f) => f.impide).map((f) => f.id),
+    ["talles"],
+  );
+  // Con una sola medida real en alguna fila, la tabla ya informa algo.
+  const conUna = leerSettings({
+    whatsapp: "5492211234567",
+    empresa: { razonSocial: "X", cuit: "30712345670", domicilioLegal: "Y" },
+    talles: { filas: [{ talle: "S", pecho: "", cintura: "", cadera: "" }, { talle: "M", pecho: "96", cintura: "", cadera: "" }] },
+  });
+  assert.deepEqual(faltaParaVender(conUna).filter((f) => f.impide), []);
+});
+
 test("un mail de contacto alcanza aunque no haya WhatsApp", () => {
   const conMail = leerSettings({ empresa: { emailContacto: "hola@mistral.com" } });
   assert.equal(

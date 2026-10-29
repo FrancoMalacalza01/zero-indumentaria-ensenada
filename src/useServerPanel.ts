@@ -21,11 +21,13 @@ import {
   cargarPanel,
   publicarProducto,
   borrarProducto,
+  publicarAjustes,
   guardarOrden,
   guardarMovimientos,
   guardarPedido,
   SesionVencida,
 } from "./serverWrite";
+import type { AjustesHombre } from "./menOverrides.mjs";
 import type { Movement, Order, Product } from "./types";
 
 export type Estado = "cargando" | "al-dia" | "guardando" | "error";
@@ -49,6 +51,8 @@ export interface Panel {
   publicarStock: (products: Product[], movements: Movement[]) => void;
   /** Cancela el pedido en el servidor y le devuelve el stock. */
   cancelar: (id: string) => void;
+  /** Precios propios y bajas del catálogo de hombre, de las prendas indicadas. */
+  publicarAjustes: (ids: string[], ajustes: AjustesHombre) => void;
 }
 
 const SIN_SERVIDOR: Panel = {
@@ -64,6 +68,7 @@ const SIN_SERVIDOR: Panel = {
   publicarPedido: () => {},
   publicarStock: () => {},
   cancelar: () => {},
+  publicarAjustes: () => {},
 };
 
 export function useServerPanel(
@@ -188,6 +193,10 @@ export function useServerPanel(
     cancelar: (id) =>
       mandar(`No se pudo cancelar el pedido ${id}`, (s) =>
         cancelarPedido(s, id),
+      ),
+    publicarAjustes: (ids, ajustes) =>
+      mandar("No se guardaron los cambios del catálogo de hombre", (s) =>
+        publicarAjustes(s, ids, ajustes),
       ),
     publicarStock: (products, movements) =>
       mandar("No se guardó el stock", async (s) => {
