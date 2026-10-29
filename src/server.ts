@@ -81,7 +81,7 @@ export async function fetchAjustes(): Promise<AjustesHombre | null> {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), ESPERA_MAXIMA);
   try {
-    const filas = await pedir("catalog_overrides?select=product_id,price,active", corte.signal);
+    const filas = await pedir("catalog_overrides?select=product_id,price,old_price,active", corte.signal);
     return Array.isArray(filas) ? leerAjustes(filas) : null;
   } catch {
     return null;
