@@ -49,14 +49,14 @@ Además, ya en `main`:
 
 Los pull requests que traen todo esto: **#2** (Precios, ofertas, medidas, reglas),
 **#3** (plazo de envío), **#4** (botón de WhatsApp), **#5** (solo New in y
-Hombre), **#6** (logo y ofertas al recargar), **#7** (orden por precio). Franco
+Hombre), **#6** (logo y ofertas al recargar), **#7** (orden por precio) y **#8** (precio por
+modelo). Franco
 los mergeó sin que los revisara la otra persona: conviene que los mires.
 
-**Falta mergear el #8** — un precio u oferta nuevo llega a todas las versiones del
-mismo modelo (la *Remera Blank MC* de la tienda y sus 14 colores en `/hombre`
-eran filas separadas y no se enteraban una de la otra). Hay una casilla en la
-pestaña Precios para apagarlo; la lógica está en `src/modelos.mjs`. Mirá la vista
-previa y mergealo si está bien.
+**#8** (ya mergeado) — un precio u oferta nuevo llega a todas las versiones del
+mismo modelo: la *Remera Blank MC* de la tienda y sus 14 colores en `/hombre`
+eran filas separadas y no se enteraban una de la otra. Hay una casilla en la
+pestaña Precios para apagarlo; la lógica está en `src/modelos.mjs`.
 
 **Base de datos, hecho el 29/10/2026:**
 
