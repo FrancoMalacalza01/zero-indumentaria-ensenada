@@ -310,6 +310,16 @@ Si el servidor no contesta, la tienda usa los valores de fábrica. Una
 configuración a medias no puede dejar la tienda sin zonas ni sin dirección:
 lo que no se entiende se reemplaza por el valor de fábrica, prenda por prenda.
 
+**El WhatsApp activa el botón de consulta.** Cada prenda de hombre (en la
+tarjeta y en la galería) tiene un botón **Consultar por WhatsApp** que abre el
+chat del local con el mensaje ya escrito: el nombre de la prenda (que incluye el
+código), la marca y el precio que ve el cliente, incluido el *Precio Zero* y,
+si está en oferta, de cuánto era ("$ 29.600 (antes $ 32.900)"). Así
+quien atiende sabe de cuál se trata sin preguntar. El botón **sólo aparece si
+hay un WhatsApp cargado**, igual que los otros botones de WhatsApp del sitio; un
+número que no es un teléfono (vacío, "123") tampoco lo muestra, para no mandar
+al cliente a un desconocido. El armado del enlace está en `src/whatsapp.mjs`.
+
 **Nada de secretos acá.** La tabla `settings` se lee pública, porque la tienda
 tiene que mostrar los alias y las zonas. Es lo mismo que le darías a un cliente
 por WhatsApp.
@@ -687,6 +697,7 @@ completar esos datos con información confirmada del local.
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
 | `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90%; y las ofertas: el precio anterior sólo existe si es mayor al precio, terminar una oferta, que cambiar el precio la termine sólo si alcanza al anterior, y que ida y vuelta con el servidor dé lo mismo | 23 |
 | `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
+| `whatsapp.test.mjs` | el enlace de consulta por WhatsApp: el mensaje con tildes, saltos de línea y símbolos que romperían una URL, que un número inválido no dé enlace (no manda al cliente a un desconocido) y que falte la marca o el precio no rompa el mensaje; y que una prenda en oferta diga de cuánto era | 9 |
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal | 23 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
