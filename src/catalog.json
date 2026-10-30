@@ -45,51 +45,6 @@
     "source": "https://www.mistral.com.ar/productos/remera-print-mc-10205-10-8ffrj/"
   },
   {
-    "id": 6,
-    "name": "Buzo Alva - 48108",
-    "category": "Mujer",
-    "priceARS": 87900,
-    "image": "/images/product-6.webp",
-    "sizes": ["S", "M", "L", "XL"],
-    "source": "https://www.mistral.com.ar/productos/buzo-alva-48108-1rt0f/"
-  },
-  {
-    "id": 7,
-    "name": "Remera Bellagio MC - 41341",
-    "category": "Mujer",
-    "priceARS": 41900,
-    "image": "/images/product-7.webp",
-    "sizes": ["S", "M", "L", "XL", "XXL"],
-    "source": "https://www.mistral.com.ar/productos/remera-bellagio-mc-41341-1vtkh/"
-  },
-  {
-    "id": 8,
-    "name": "Musculosa Tahiti - 40138",
-    "category": "Mujer",
-    "priceARS": 35900,
-    "image": "/images/product-8.webp",
-    "sizes": ["S", "M", "L", "XL"],
-    "source": "https://www.mistral.com.ar/productos/musculosa-tahiti-40138-1eg9c/"
-  },
-  {
-    "id": 9,
-    "name": "Vestido Guyana - 45479",
-    "category": "Mujer",
-    "priceARS": 54900,
-    "image": "/images/product-9.webp",
-    "sizes": ["S", "M", "L", "XL"],
-    "source": "https://www.mistral.com.ar/productos/vestido-guyana-45479-13ke1/"
-  },
-  {
-    "id": 10,
-    "name": "Blusa Laos Embroidery - 43007",
-    "category": "Mujer",
-    "priceARS": 64900,
-    "image": "/images/product-10.webp",
-    "sizes": ["S", "M", "L", "XL"],
-    "source": "https://www.mistral.com.ar/productos/blusa-laos-embroidery-43007-rpq83/"
-  },
-  {
     "id": 11,
     "name": "Cap Gaspard - Código 90000",
     "category": "Accesorios",

@@ -6,7 +6,7 @@
  * campo en null. Acá se puede probar sin navegador ni red.
  */
 
-const CATEGORIAS = ["Hombre", "Mujer", "Accesorios"];
+const CATEGORIAS = ["Hombre", "Accesorios"];
 
 function entero(valor, porDefecto = 0) {
   const n = Math.trunc(Number(valor));

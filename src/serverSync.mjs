@@ -6,7 +6,7 @@
  * callada de perder datos, y así se puede probar sin navegador.
  */
 
-const CATEGORIAS = ["Hombre", "Mujer", "Accesorios"];
+const CATEGORIAS = ["Hombre", "Accesorios"];
 const MOTIVOS = ["Ingreso", "Venta", "Ajuste", "Rotura", "Devolución"];
 const ENTREGAS = ["pickup", "shipping"];
 const ESTADOS = [

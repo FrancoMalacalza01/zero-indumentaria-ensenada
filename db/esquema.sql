@@ -19,7 +19,7 @@ create table if not exists public.products (
   name        text not null,
   brand       text not null default '',
   source_catalog_id text,
-  category    text not null check (category in ('Hombre', 'Mujer', 'Accesorios')),
+  category    text not null check (category in ('Hombre', 'Accesorios')),
   type        text not null,
   price       integer not null check (price >= 0),
   old_price   integer check (old_price >= 0),
