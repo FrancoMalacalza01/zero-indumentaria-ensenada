@@ -232,7 +232,7 @@ export function aplicarCambios(ajustes, productos, cambios) {
     if (c.fuente === "men") {
       const parche = {};
       if ("precio" in c)
-        parche.price = c.precio !== null && c.precio === c.precioMarca ? null : c.precio;
+        parche.price = c.precio !== null && c.precio === c.precioMarca && !("antes" in c ? c.antes > c.precio : ajustes?.[c.id]?.old > c.precio) ? null : c.precio;
       if ("antes" in c) parche.old = c.antes;
       if ("activo" in c) parche.active = c.activo;
       nuevosAjustes = cambiarAjuste(nuevosAjustes, c.id, parche);

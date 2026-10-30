@@ -31,9 +31,9 @@ import {
   leerRegla,
   rehacer,
   variacion,
-  vistaPrevia,
+
 } from "./priceTools.mjs";
-import { delMismoModelo } from "./modelos.mjs";
+import { delMismoModelo, ofertasDelModelo, vistaPorModelo } from "./modelos.mjs";
 import type {
   CambioArticulo,
   Historial,
@@ -517,14 +517,9 @@ export default function AdminPrecios({
   const vista = useMemo(
     () =>
       regla.ok
-        ? vistaPrevia(
-            seleccion.map((a) => ({ key: a.key, precio: a.precio, ...(a.antes ? { base: a.antes } : {}) })),
-            op,
-            regla.value,
-            redondeo,
-          )
+        ? vistaPorModelo(seleccion, articulos, op, regla.value, redondeo, propagar)
         : null,
-    [regla, seleccion, op, redondeo],
+    [regla, seleccion, articulos, op, redondeo, propagar],
   );
   const unidad = OPERACIONES.find((o) => o.id === op)?.unidad ?? "";
   useEffect(() => {
@@ -542,15 +537,13 @@ export default function AdminPrecios({
   function aplicarRegla() {
     if (!vista || !regla.ok) return;
     const esOferta = op === "oferta";
-    const cambios = conModelo(
-      vista.filas
-        .filter((f) => f.estado === "cambia")
-        .map((f) => {
+    const cambios = vista.filas
+      .filter((f) => f.estado === "cambia")
+      .map((f) => {
           const c = cambioDePrecio(porClave.get(f.key)!, f.despues);
           // La oferta guarda el precio de partida como el anterior: es el tachado.
           return esOferta ? { ...c, antes: f.base } : c;
-        }),
-    );
+        });
     const etiqueta = OPERACIONES.find((o) => o.id === op)!.etiqueta;
     const n = cambios.length;
     ejecutar(
@@ -564,7 +557,7 @@ export default function AdminPrecios({
 
   /** Vuelve los artículos al precio anterior y saca el tachado. */
   function terminarOfertas(objetivo: Articulo[]) {
-    const ofertas = objetivo.filter((a) => a.antes);
+    const ofertas = ofertasDelModelo(objetivo, articulos, propagar);
     if (!ofertas.length) return;
     const n = ofertas.length;
     ejecutar(
@@ -712,7 +705,9 @@ export default function AdminPrecios({
         <span>
           <b>Cambiar todas las versiones del modelo.</b> Un precio u oferta nuevo
           se aplica también a las demás prendas con el mismo nombre (por ejemplo,
-          los colores de la <i>Remera Blank MC</i> en la tienda y en hombre).
+          los colores de la <i>Remera Blank MC</i> en la tienda y en hombre). En cambios
+          en bloque, si elegís varias versiones del mismo modelo, se usa como
+          referencia la primera de la lista completa.
         </span>
       </label>
 
