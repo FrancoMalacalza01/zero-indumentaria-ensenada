@@ -920,7 +920,7 @@ export default function Admin({
                 aria-label="Inventario de productos"
                 tabIndex={0}
               >
-                <table className="admin-table">
+                <table className="admin-table admin-inventario">
                   <thead>
                     <tr>
                       <th>PRODUCTO</th>

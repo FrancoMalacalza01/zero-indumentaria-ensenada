@@ -3496,3 +3496,84 @@ tr:hover .admin-precios-ofertar,
 }
 .admin-precios-propagar { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--admin-line, #e3e6ee); border-radius: 10px; background: #f7f8fc; font-size: 12.5px; line-height: 1.45; cursor: pointer; }
 .admin-precios-propagar input { margin-top: 3px; }
+
+/* Celular: Productos y stock en tarjetas. Con la tabla de siempre, el precio, el
+   stock, el estado y "Editar" quedaban fuera de la pantalla, a la derecha. */
+@media (max-width: 720px) {
+  .admin-inventario {
+    min-width: 0;
+    white-space: normal;
+  }
+  .admin-inventario thead {
+    display: none;
+  }
+  .admin-inventario tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    padding: 16px;
+    border-bottom: 1px solid #e7eaf4;
+  }
+  .admin-inventario tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .admin-inventario td,
+  .admin-inventario td:first-child,
+  .admin-inventario td:last-child {
+    padding: 0;
+    border: 0;
+  }
+  .admin-inventario td:first-child {
+    grid-column: 1 / -1;
+  }
+  .admin-inventario .admin-price-cell {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2640;
+    align-self: center;
+  }
+  .admin-inventario td:nth-child(4),
+  .admin-inventario td:nth-child(5) {
+    grid-column: auto;
+  }
+  .admin-inventario .admin-publish-status,
+  .admin-inventario .admin-edit-button {
+    min-height: 40px;
+    width: 100%;
+    justify-content: center;
+    font-size: 12px;
+  }
+  /* Los colores de una ficha importada pueden ser una lista larguísima. */
+  .admin-inventario .admin-product-cell span,
+  .admin-inventario .admin-product-cell small {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  /* Precios: el texto arriba y los botones debajo, en una fila. Al lado, el texto
+     quedaba en una columna angosta de una o dos palabras por renglón. */
+  .admin-precios .admin-inventory-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-precios .admin-inventory-heading p {
+    max-width: none;
+    font-size: 12px;
+  }
+  .admin-precios-acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .admin-precios-acciones .admin-button {
+    justify-content: center;
+    padding-inline: 8px;
+    min-height: 40px;
+    font-size: 12px;
+  }
+  .admin-precios-propagar {
+    font-size: 12px;
+  }
+}
