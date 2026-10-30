@@ -3,7 +3,7 @@
 Esto está escrito para que lo lea una persona o una IA (Claude, ChatGPT) que llega
 sin contexto y tiene que saber **qué está hecho, qué falta y cómo pedirlo**.
 
-Estado al **29/10/2026**. Antes de actuar sobre algo, comprobalo: `git log` y los
+Estado al **30/10/2026**. Antes de actuar sobre algo, comprobalo: `git log` y los
 pull requests abiertos dicen más que este archivo si pasaron días.
 
 ## Cómo usarlo con tu IA
@@ -58,10 +58,27 @@ mismo modelo: la *Remera Blank MC* de la tienda y sus 14 colores en `/hombre`
 eran filas separadas y no se enteraban una de la otra. Hay una casilla en la
 pestaña Precios para apagarlo; la lógica está en `src/modelos.mjs`.
 
+**#10 y #11 (30/10/2026, de Juan) — ya mergeados.** El #10 corrige los cambios y
+ofertas por modelo (la vista previa incluye todas las versiones y terminar una
+oferta restaura cada una). El #11 deja **administrar y vender el catálogo
+importado**: las fichas importadas aparecen en *Productos y stock* para editar
+nombre, marca, categoría, descripción, fotos, precio y stock por talle, y se
+pueden agregar productos nuevos. Una ficha importada no trae stock inventado:
+hay que cargar las unidades reales para que se pueda comprar. Guardar ficha y
+stock va en una sola transacción que rechaza un stock viejo (si alguien compró
+mientras editabas). Lógica en `src/importarCatalogo.mjs`; SQL en
+`db/catalogo-editable.sql`.
+
 **Base de datos, hecho el 29/10/2026:**
 
 - Se aplicó `db/ajustes-catalogo.sql` (Tarea 0) y las 9 comprobaciones del
   verificador dan `true`.
+- **30/10:** se aplicó `db/catalogo-editable.sql` (columnas `brand` y
+  `source_catalog_id`, índice único, `catalogo_importado_oculto()` y
+  `guardar_producto_con_stock()`); las 7 filas de
+  `db/verificar-catalogo-editable.sql` dan `true`. Antes se probó en un Postgres
+  local: diez compradores a la vez por 4 unidades dieron 4 ventas, y 40 rondas de
+  guardar una ficha mientras alguien compra no perdieron ninguna venta.
 - Se arregló el login del admin. La cuenta `admin@mistralensenada.com.ar` tenía
   vacíos `confirmation_token`, `recovery_token`, `email_change` y
   `email_change_token_new` en `auth.users`, y Supabase respondía **500** al
