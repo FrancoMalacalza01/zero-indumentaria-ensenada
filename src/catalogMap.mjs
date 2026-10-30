@@ -47,6 +47,8 @@ export function rowsToProducts(productRows, stockRows) {
     productos.push({
       id,
       name,
+      ...(typeof fila.brand === "string" && fila.brand ? { brand: fila.brand } : {}),
+      ...(typeof fila.source_catalog_id === "string" && fila.source_catalog_id ? { sourceCatalogId: fila.source_catalog_id } : {}),
       category: CATEGORIAS.includes(fila.category) ? fila.category : "Hombre",
       type: typeof fila.type === "string" && fila.type ? fila.type : "Prenda",
       price: Math.max(0, entero(fila.price)),

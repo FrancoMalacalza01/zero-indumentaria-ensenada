@@ -235,3 +235,11 @@ test("los estados nuevos del pedido no se caen a Pendiente", () => {
     assert.equal(fila.status, status);
   }
 });
+
+test("marca e identificador de origen se guardan y se leen", () => {
+  const original = producto({ brand: "Mistral", sourceCatalogId: "m-123" });
+  const fila = productToRow(original);
+  assert.equal(fila.brand, "Mistral");
+  assert.equal(fila.source_catalog_id, "m-123");
+  assert.deepEqual(rowsToProducts([fila], stockRows(original))[0], original);
+});

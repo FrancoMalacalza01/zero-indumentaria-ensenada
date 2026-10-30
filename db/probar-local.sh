@@ -48,6 +48,9 @@ echo "→ y de nuevo, para ver que se puede volver a correr"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/esquema.sql" 2>/dev/null
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/crear_pedido.sql" 2>/dev/null
 
+echo "→ comprobando catálogo editable y permisos"
+psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/probar-catalogo-editable.sql"
+
 psqlm -q <<'SQL'
 insert into public.products (id,name,category,type,price,image,color,color_hex,sizes)
 values ('a','Campera Última','Hombre','Campera',100000,'/a.webp','Azul','#132457',array['M']);

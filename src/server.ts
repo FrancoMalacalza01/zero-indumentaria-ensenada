@@ -1,3 +1,4 @@
+import { pedirTodasLasFilas } from "./paginar.mjs";
 import { rowsToProducts } from "./catalogMap.mjs";
 import { leerAjustes } from "./menOverrides.mjs";
 import type { AjustesHombre } from "./menOverrides.mjs";
@@ -25,7 +26,7 @@ export const CLAVE_PUBLICA =
 export const serverConfigured = Boolean(URL_SERVIDOR && CLAVE_PUBLICA);
 
 /** Más de esto y es mejor mostrar el catálogo viejo que una pantalla vacía. */
-const ESPERA_MAXIMA = 8000;
+const ESPERA_MAXIMA = 20000;
 
 async function pedir(ruta: string, signal: AbortSignal) {
   const respuesta = await fetch(`${URL_SERVIDOR}/rest/v1/${ruta}`, {
@@ -53,8 +54,8 @@ export async function fetchCatalog(): Promise<Product[] | null> {
   const reloj = setTimeout(() => corte.abort(), ESPERA_MAXIMA);
   try {
     const [productos, stock] = await Promise.all([
-      pedir("products?select=*&active=eq.true&order=position.asc", corte.signal),
-      pedir("stock?select=product_id,size,qty", corte.signal),
+      pedirTodasLasFilas((ruta) => pedir(ruta, corte.signal), "products?select=*&active=eq.true&order=position.asc,id.asc"),
+      pedirTodasLasFilas((ruta) => pedir(ruta, corte.signal), "stock?select=product_id,size,qty&order=product_id.asc,size.asc"),
     ]);
     const lista = rowsToProducts(productos, stock) as Product[];
     return lista.length ? lista : null;
@@ -65,6 +66,17 @@ export async function fetchCatalog(): Promise<Product[] | null> {
   } finally {
     clearTimeout(reloj);
   }
+}
+
+/** Sólo identificadores de fichas importadas que el local ocultó. */
+export async function fetchImportadosOcultos(): Promise<string[] | null> {
+  if (!serverConfigured) return null;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), ESPERA_MAXIMA);
+  try {
+    const filas = await pedirTodasLasFilas<{ source_catalog_id?: unknown }>((ruta) => pedir(ruta, corte.signal), "rpc/catalogo_importado_oculto?order=source_catalog_id.asc");
+    return filas.map((f) => f.source_catalog_id).filter((id): id is string => typeof id === "string");
+  } catch { return null; } finally { clearTimeout(reloj); }
 }
 
 /**

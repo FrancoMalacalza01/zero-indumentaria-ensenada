@@ -42,7 +42,7 @@ export interface Panel {
   olvidarError: () => void;
   /** Vuelve a traer todo del servidor. */
   recargar: () => void;
-  publicar: (product: Product, position: number) => void;
+  publicar: (product: Product, position: number, stockEsperado?: Record<string, number>) => void;
   despublicarBorrando: (id: string) => void;
   publicarOrden: (products: Product[]) => void;
   publicarMovimientos: (movements: Movement[]) => void;
@@ -172,9 +172,9 @@ export function useServerPanel(
     recargar: () => {
       traer();
     },
-    publicar: (product, position) =>
+    publicar: (product, position, stockEsperado) =>
       mandar(`No se publicó "${product.name}"`, (s) =>
-        publicarProducto(s, product, position),
+        publicarProducto(s, product, position, stockEsperado),
       ),
     despublicarBorrando: (id) =>
       mandar("No se borró el producto", (s) => borrarProducto(s, id)),
@@ -206,7 +206,10 @@ export function useServerPanel(
         let viva = s;
         for (const product of products.filter((p) => tocados.has(p.id))) {
           const posicion = products.indexOf(product);
-          ({ session: viva } = await publicarProducto(viva, product, posicion));
+          const anterior = { ...product.stock };
+          for (const movimiento of movements.filter((m) => m.productId === product.id))
+            anterior[movimiento.size] = (anterior[movimiento.size] || 0) - movimiento.delta;
+          ({ session: viva } = await publicarProducto(viva, product, posicion, anterior));
         }
         if (movements.length)
           ({ session: viva } = await guardarMovimientos(viva, movements));

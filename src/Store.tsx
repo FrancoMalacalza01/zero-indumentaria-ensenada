@@ -13,7 +13,7 @@ import type {
 import { seedProducts } from "./data";
 import { prepareOrder } from "./commerce.mjs";
 import { flattenStock, needsStockMigration } from "./migrate.mjs";
-import { fetchCatalog, fetchAjustes, crearPedido } from "./server";
+import { fetchCatalog, fetchAjustes, fetchImportadosOcultos, crearPedido } from "./server";
 import { leerAjustes, ajusteAFila } from "./menOverrides.mjs";
 import type { AjustesHombre } from "./menOverrides.mjs";
 import { fetchSettings, porDefecto } from "./settings";
@@ -92,6 +92,8 @@ export interface Asentado {
 interface Context extends StoreContextType {
   /** De dónde salió el catálogo que se está mostrando. */
   catalogSource: "servidor" | "local";
+  importadosOcultos: string[] | null;
+  ajustesHombreCargados: boolean;
   /**
    * La configuración del local: whatsapp, dirección, formas de pago, zonas de
    * envío y devoluciones. Sale del servidor; mientras no llegue, la de
@@ -194,7 +196,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     "local",
   );
   const [settings, setSettings] = useState<Settings>(porDefecto);
+  const [importadosOcultos, setImportadosOcultos] = useState<string[] | null>(null);
   const [menOverrides, setMenOverrides] = useState<AjustesHombre>(restaurarAjustes);
+  const [ajustesHombreCargados, setAjustesHombreCargados] = useState(false);
   // Espejo del estado al día, para poder leerlo en el mismo tick en que se
   // escribe. Sin esto, dos cambios seguidos (guardar un producto y asentar su
   // movimiento, por ejemplo) se pisan: el segundo parte del estado viejo.
@@ -233,11 +237,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       vigente = false;
     };
   }, []);
+  useEffect(() => {
+    let vigente = true;
+    fetchImportadosOcultos().then((ids) => { if (vigente) setImportadosOcultos(ids); });
+    return () => { vigente = false; };
+  }, []);
   // Si el servidor no contesta (`null`), se queda lo último que se supo.
   useEffect(() => {
     let vigente = true;
     fetchAjustes().then((ajustes) => {
-      if (vigente && ajustes) setMenOverrides(ajustes);
+      if (vigente && ajustes) { setMenOverrides(ajustes); setAjustesHombreCargados(true); }
     });
     return () => {
       vigente = false;
@@ -275,6 +284,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value: Context = {
     ...data,
     catalogSource,
+    importadosOcultos,
+    ajustesHombreCargados,
     settings,
     setSettings,
     menOverrides,

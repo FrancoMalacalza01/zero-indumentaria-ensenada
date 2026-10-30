@@ -1,3 +1,4 @@
+import { pedirTodasLasFilas } from "./paginar.mjs";
 /**
  * Lo que el panel escribe en el servidor.
  *
@@ -14,7 +15,6 @@ import { rowsToProducts } from "./catalogMap.mjs";
 import {
   productToRow,
   stockRows,
-  sizesFilter,
   movementToRow,
   rowToMovement,
   orderToRow,
@@ -97,39 +97,24 @@ async function conSesion<T>(
 const UPSERT = { Prefer: "resolution=merge-duplicates,return=minimal" };
 const SILENCIO = { Prefer: "return=minimal" };
 
-/**
- * Publica un producto: lo crea o lo actualiza, con su stock.
- *
- * El orden importa. Primero el producto, porque el stock lo referencia.
- * Después los talles que tiene. Y al final se borran los talles que quedaron
- * del producto de antes: sin ese barrido, sacar un talle del editor lo dejaba
- * para siempre en la base, con stock y todo.
- */
+/** Guarda la ficha y el stock en una transacción del servidor. */
 export async function publicarProducto(
   session: Session,
   product: Product,
   position = 0,
+  stockEsperado?: Record<string, number>,
 ) {
   return conSesion(session, async (s) => {
-    await pedir(
-      s,
-      "products",
-      { method: "POST", body: JSON.stringify([productToRow(product, position)]) },
-      UPSERT,
-    );
-    const filas = stockRows(product);
-    if (filas.length)
-      await pedir(
-        s,
-        "stock",
-        { method: "POST", body: JSON.stringify(filas) },
-        UPSERT,
-      );
-    const conservar = sizesFilter(product);
-    const filtro = conservar
-      ? `product_id=eq.${encodeURIComponent(product.id)}&size=not.in.${encodeURIComponent(conservar)}`
-      : `product_id=eq.${encodeURIComponent(product.id)}`;
-    await pedir(s, `stock?${filtro}`, { method: "DELETE" }, SILENCIO);
+    // El servidor bloquea el stock, comprueba que no cambió desde que se abrió
+    // el editor y guarda ficha y cantidades en una sola transacción.
+    await pedir(s, "rpc/guardar_producto_con_stock", {
+      method: "POST",
+      body: JSON.stringify({
+        p_producto: productToRow(product, position),
+        p_stock: stockEsperado === undefined ? null : Object.fromEntries(stockRows(product).map((f) => [f.size, f.qty])),
+        p_stock_esperado: stockEsperado ?? null,
+      }),
+    }, SILENCIO);
   });
 }
 
@@ -269,8 +254,8 @@ export async function cancelarPedido(
 export async function cargarPanel(session: Session) {
   return conSesion(session, async (s) => {
     const [productos, stock, movimientos, pedidos] = await Promise.all([
-      pedir(s, "products?select=*&order=position.asc"),
-      pedir(s, "stock?select=product_id,size,qty"),
+      pedirTodasLasFilas((ruta) => pedir(s, ruta), "products?select=*&order=position.asc,id.asc"),
+      pedirTodasLasFilas((ruta) => pedir(s, ruta), "stock?select=product_id,size,qty&order=product_id.asc,size.asc"),
       pedir(s, "movements?select=*&order=fecha.desc&limit=2000"),
       pedir(s, "orders?select=*&order=fecha.desc&limit=1000"),
     ]);
