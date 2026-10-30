@@ -105,7 +105,7 @@ function articulosDe(productos: Product[], ajustes: AjustesHombre): Articulo[] {
     fuente: "db",
     id: p.id,
     nombre: p.name,
-    marca: "Zero",
+    marca: p.brand || "Zero",
     seccion: p.type,
     detalle: `${p.category} · ${p.color}`,
     imagen: p.image,
@@ -115,7 +115,8 @@ function articulosDe(productos: Product[], ajustes: AjustesHombre): Articulo[] {
     propio: false,
     activo: p.active,
   }));
-  const hombre = prendasHombre.map<Articulo>((m) => {
+  const importados = new Set(productos.map((p) => p.sourceCatalogId).filter(Boolean));
+  const hombre = prendasHombre.filter((m) => !importados.has(m.id)).map<Articulo>((m) => {
     const a = ajustes[m.id];
     return {
       key: `men:${m.id}`,

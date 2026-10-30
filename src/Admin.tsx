@@ -56,6 +56,8 @@ import AdminConfig from "./AdminConfig";
 import AdminReturns from "./AdminReturns";
 import AdminReports from "./AdminReports";
 import AdminPrecios from "./AdminPrecios";
+import catalogoImportado from "./men-catalog.json";
+import { prepararFichaImportada } from "./importarCatalogo.mjs";
 import { avisoDeCambio, leerPrecio } from "./menOverrides.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
@@ -192,6 +194,7 @@ export default function Admin({
     settings,
     setSettings,
     menOverrides,
+    ajustesHombreCargados,
     setMenOverrides,
   } = useStore();
   // Todo lo que el panel manda al servidor sale por acá. Sin sesión, estas
@@ -208,21 +211,30 @@ export default function Admin({
   const [orderFilter, setOrderFilter] = useState("Todos");
   const [orderSearch, setOrderSearch] = useState("");
   const formTrigger = useRef<HTMLElement | null>(null);
+  const stockAlAbrir = useRef<Record<string, number>>({});
   const activeProducts = products.filter((p) => p.active);
   const inventoryUnits = products.reduce((sum, p) => sum + units(p), 0);
   const lowStock = products.filter((p) => p.active && units(p) <= 5);
   const pendingOrders = orders.filter((o) => o.status !== "Completado");
+  const idsGuardados = useMemo(() => new Set(products.map((p) => p.id)), [products]);
+  const inventario = useMemo(() => {
+    const existentes = new Set(products.map((p) => p.sourceCatalogId).filter(Boolean));
+    const importados = catalogoImportado.products
+      .filter((p) => !existentes.has(p.id))
+      .map((p) => prepararFichaImportada(p, menOverrides[p.id]));
+    return [...products, ...importados];
+  }, [products, menOverrides]);
   const filtered = useMemo(
     () =>
-      products.filter(
+      inventario.filter(
         (p) =>
-          `${p.name} ${p.type} ${p.color}`
+          `${p.name} ${p.brand || ""} ${p.type} ${p.color}`
             .toLowerCase()
             .includes(search.toLowerCase()) &&
           (categoryFilter === "Todas" || p.category === categoryFilter) &&
           (!lowOnly || units(p) <= 5),
       ),
-    [products, search, categoryFilter, lowOnly],
+    [inventario, search, categoryFilter, lowOnly],
   );
   const recentOrders = orders
     .slice()
@@ -234,7 +246,12 @@ export default function Admin({
   );
 
   function openEditor(product: Product | "new") {
+    if (product !== "new" && product.sourceCatalogId && !products.some((p) => p.id === product.id) && panel.conectado && !ajustesHombreCargados) {
+      notify("No se pudieron cargar los precios del catálogo. Recargá antes de editar esta prenda.");
+      return;
+    }
     formTrigger.current = document.activeElement as HTMLElement;
+    stockAlAbrir.current = product === "new" ? {} : { ...product.stock };
     setEditing(product);
   }
   function closeEditor() {
@@ -309,7 +326,7 @@ export default function Admin({
       0,
       lista.findIndex((p) => p.id === product.id),
     );
-    panel.publicar(product, posicion);
+    panel.publicar(product, posicion, stockAlAbrir.current);
     if (asentado?.movements.length) panel.publicarMovimientos(asentado.movements);
     notify(
       panel.conectado
@@ -853,7 +870,7 @@ export default function Admin({
               <div className="admin-inventory-heading">
                 <div>
                   <h2>
-                    Tu catálogo <span>{products.length}</span>
+                    Tu catálogo <span>{inventario.length}</span>
                   </h2>
                   <p>Los cambios se reflejan en la tienda al instante.</p>
                 </div>
@@ -935,12 +952,13 @@ export default function Admin({
                           <span
                             className={`admin-stock-pill ${units(p) === 0 ? "admin-stock-empty" : units(p) <= 5 ? "admin-stock-low" : ""}`}
                           >
-                            <span /> {units(p)} unidades
+                            <span /> {!idsGuardados.has(p.id) ? "Sin cargar" : `${units(p)} unidades`}
                           </span>
                         </td>
                         <td>
                           <button
                             className={`admin-publish-status ${p.active ? "is-published" : ""}`}
+                            disabled={!idsGuardados.has(p.id)}
                             onClick={() => {
                               const siguientes = products.map((product) =>
                                 product.id === p.id
@@ -962,15 +980,11 @@ export default function Admin({
                                   : "Producto publicado",
                               );
                             }}
-                            title={
-                              p.active
-                                ? "Ocultar de la tienda"
-                                : "Publicar en la tienda"
-                            }
-                            aria-label={`${p.active ? "Ocultar" : "Publicar"} ${p.name}`}
+                            title={!idsGuardados.has(p.id) ? "Editá la ficha para administrarla" : p.active ? "Ocultar de la tienda" : "Publicar en la tienda"}
+                            aria-label={`${!idsGuardados.has(p.id) ? "Editar para administrar" : p.active ? "Ocultar" : "Publicar"} ${p.name}`}
                           >
                             <span />
-                            {p.active ? "Publicado" : "Oculto"}
+                            {!idsGuardados.has(p.id) ? "Editar para administrar" : p.active ? "Publicado" : "Oculto"}
                           </button>
                         </td>
                         <td>
@@ -1007,7 +1021,7 @@ export default function Admin({
               )}
               <div className="admin-table-footer">
                 <span>
-                  {filtered.length} de {products.length} productos
+                  {filtered.length} de {inventario.length} productos
                 </span>
                 <span>
                   <span className="admin-stock-key" /> Stock bajo: hasta 5
@@ -1301,7 +1315,7 @@ export default function Admin({
         <ProductEditor
           product={editing === "new" ? undefined : editing}
           onSave={saveProduct}
-          onDelete={darDeBaja}
+          onDelete={editing !== "new" && !editing.sourceCatalogId ? darDeBaja : undefined}
           onClose={closeEditor}
           notify={notify}
         />
@@ -2191,6 +2205,10 @@ function ProductEditor({
                 onChange={(e) => set("name", e.target.value)}
                 placeholder="Ej. Remera Classic Logo"
               />
+            </label>
+            <label className="admin-field">
+              Marca
+              <input value={draft.brand || ""} onChange={(e) => set("brand", e.target.value)} placeholder="Ej. Mistral" />
             </label>
             <label className="admin-field">
               Categoría

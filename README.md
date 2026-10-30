@@ -702,10 +702,12 @@ completar esos datos con información confirmada del local.
 | Archivo | Qué cubre | |
 |---|---|---|
 | `commerce.test.mjs` | la transacción de compra: inventario por talle, duplicados, stock insuficiente, productos ocultos o eliminados, cantidades inválidas y conservación del estado al rechazar una operación | 19 |
-| `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, y que un talle con coma no parta el filtro de borrado | 20 |
+| `serverSync.test.mjs` | lo que se le manda al servidor: que un producto, un movimiento y un pedido vayan y vuelvan iguales, que los valores que la base no acepta se corten antes de salir, que un talle con coma no parta el filtro de borrado y que se guarde el origen y la marca | 21 |
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
 | `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90%; y las ofertas: el precio anterior sólo existe si es mayor al precio, terminar una oferta, que cambiar el precio la termine sólo si alcanza al anterior, y que ida y vuelta con el servidor dé lo mismo | 23 |
+| `importarCatalogo.test.mjs` | preparación de fichas importadas: fotos, ajustes, stock sin inventar unidades y visibilidad de fichas administradas y productos nuevos | 8 |
+| `paginar.test.mjs` | consulta todas las páginas de productos y stock y rechaza respuestas inválidas | 2 |
 | `modelos.test.mjs` | qué prendas son el mismo modelo: el nombre sin el código del final (`Remera Blank MC - 10206-5` es `Remera Blank MC`), sin confundir un guion del nombre, y que cuente la tienda y el catálogo de hombre | 4 |
 | `ordenProductos.test.mjs` | el orden por precio de las prendas de hombre: menor a mayor y al revés, que con precios iguales se conserve el orden del catálogo, que una prenda sin precio válido vaya al final y que no se modifique la lista original | 5 |
 | `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
@@ -802,3 +804,28 @@ conviene que las lea un abogado.
 - Tarifas de Correo Argentino: dependen del peso, las medidas y el código
   postal, así que no hay un número fijo para poner en el código. Se cotizan en
   el sitio del Correo ([encomienda clásica](https://www.correoargentino.com.ar/servicios/paqueteria/encomienda-correo-clasica)).
+
+### Catálogo importado editable
+
+Los artículos de hombre aparecen en **Productos y stock**. Al editar por primera
+vez uno importado se crea su ficha administrada: conserva su nombre, marca,
+sección, colores, fotos y ajustes de precio, pero sus cantidades empiezan en
+cero. Los talles importados sólo son sugerencias; el local debe revisarlos y
+cargar sus propias cantidades. Si una ficha no trae talles o color, el editor
+pide completarlos. La ficha importada no se puede borrar: se puede ocultar.
+Las prendas con stock tienen un enlace a la ficha de compra. Los productos
+nuevos se crean con **Nuevo producto**.
+
+Antes de publicar este cambio, una persona debe revisar y ejecutar
+`db/catalogo-editable.sql` en el SQL Editor de Supabase, y comprobar que las
+filas de `db/verificar-catalogo-editable.sql` devuelvan `true`. Sin ese paso la
+nueva consulta de prendas ocultas falla y el catálogo de hombre no se muestra,
+para no volver a publicar prendas ocultadas. El SQL no importa los productos ni
+escribe stock. Al guardar stock, el servidor comprueba que no haya cambiado
+desde que se abrió el editor; si hubo una compra, rechaza el cambio y pide
+recargar para evitar sobrescribir unidades vendidas. El ensayo de permisos está en `db/probar-catalogo-editable.sql`
+y forma parte de `db/probar-local.sh`.
+La prueba de navegador `tests/catalogo-navegador.cjs` usa una base simulada y
+bloquea las conexiones externas: levantá `pnpm dev --host 127.0.0.1 --port 5174`
+y ejecutá `node tests/catalogo-navegador.cjs`. Usa el Chromium de Playwright o,
+si hace falta, la ruta indicada en `CHROME_PATH`.

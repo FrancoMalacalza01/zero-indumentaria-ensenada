@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, X } from "lucide-react";
 import { Link } from "./router";
 import { useStore } from "./Store";
-import { aplicarAjustes } from "./menOverrides.mjs";
+import { unirCatalogo } from "./importarCatalogo.mjs";
 import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import { descuento } from "./priceTools.mjs";
 import { ORDENES, ordenarProductos } from "./ordenProductos.mjs";
@@ -11,7 +11,8 @@ import "./men-catalog.css";
 
 type MenProduct = {
   id: string;
-  brand: "Mistral" | "Brooksfield";
+  brand: string;
+  shopId?: string;
   category: string;
   name: string;
   reference?: string;
@@ -35,8 +36,8 @@ const priceStep = 5000;
  * las que tienen precio propio lo muestran en lugar del de la marca.
  */
 function useProductosVisibles() {
-  const { menOverrides } = useStore();
-  return useMemo(() => aplicarAjustes(catalogo, menOverrides) as MenProduct[], [menOverrides]);
+  const { menOverrides, products, importadosOcultos } = useStore();
+  return useMemo(() => unirCatalogo(catalogo, products, menOverrides, importadosOcultos) as MenProduct[], [products, menOverrides, importadosOcultos]);
 }
 const peso = new Intl.NumberFormat("es-AR", {
   style: "currency",
@@ -126,6 +127,7 @@ function ProductGallery({ product, close, consulta }: { product: MenProduct; clo
           <h2>{product.name}</h2>
           <p>{etiquetaPrecio(product)}: <Precio p={product} /></p>
           <p>{photo + 1} de {product.images.length} fotos</p>
+          {product.shopId && product.sizes.length > 0 && <Link className="button button-green" to={`/producto/${encodeURIComponent(product.shopId)}`}>Elegir talle y comprar</Link>}
           {consulta && <a className="button button-green men-whatsapp" href={consulta} target="_blank" rel="noreferrer noopener"><MessageCircle size={18} /> Consultar por WhatsApp</a>}
           <Link to="/sucursales">{consulta ? "Ver cómo llegar a Zero" : "Consultar en Zero"} <ArrowRight size={16} /></Link>
         </div>
@@ -141,6 +143,7 @@ export function HomeBrandCatalog() {
   const products = useProductosVisibles();
   const consultaDe = useConsulta();
   const [brand, setBrand] = useState("Todas");
+  const brands = useMemo(() => [...new Set(products.map((p) => p.brand))].filter(Boolean).sort((a, b) => a.localeCompare(b, "es-AR")), [products]);
   const [category, setCategory] = useState("Todas");
   const [orden, setOrden] = useState("destacados");
   const [visible, setVisible] = useState(12);
@@ -164,7 +167,7 @@ export function HomeBrandCatalog() {
     </div>
     <div className="home-brand-controls">
       <div className="home-brand-tabs" role="group" aria-label="Filtrar productos por marca">
-        {(["Todas", "Mistral", "Brooksfield"] as const).map((item) => <button key={item} className={brand === item ? "active" : ""} onClick={() => changeBrand(item)} aria-pressed={brand === item}>{item}<small>{item === "Todas" ? products.length : products.filter((product) => product.brand === item).length}</small></button>)}
+        {(["Todas", ...brands]).map((item) => <button key={item} className={brand === item ? "active" : ""} onClick={() => changeBrand(item)} aria-pressed={brand === item}>{item}<small>{item === "Todas" ? products.length : products.filter((product) => product.brand === item).length}</small></button>)}
       </div>
       <label className="home-brand-category">
         <span>Sección</span>

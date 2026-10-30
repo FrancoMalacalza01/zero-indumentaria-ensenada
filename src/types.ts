@@ -11,6 +11,8 @@ export type PaymentMethodId =
 export interface Product {
   id: string;
   name: string;
+  brand?: string;
+  sourceCatalogId?: string;
   category: Category;
   type: string;
   price: number;

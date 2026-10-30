@@ -55,6 +55,8 @@ export function productToRow(product, position = 0) {
   return {
     id: product.id,
     name: texto(product.name).trim(),
+    brand: texto(product.brand).trim(),
+    source_catalog_id: texto(product.sourceCatalogId) || null,
     category,
     // La base exige un tipo; la tienda a veces lo deja en blanco.
     type: texto(product.type).trim() || "Prenda",
