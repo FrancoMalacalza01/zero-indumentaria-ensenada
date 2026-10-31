@@ -2,10 +2,11 @@
  * Qué se muestra en la tienda.
  *
  * La tienda publica sólo prendas de hombre: **New in** es lo nuevo de hombre y
- * **Hombre** es todo el catálogo de hombre. Mujer y Accesorios no se muestran,
- * pero esas fichas quedan en el panel con sus precios y su stock: no se borran
- * datos, sólo se dejan de publicar. Para volver a mostrar una categoría, se
- * agrega acá.
+ * **Hombre** es todo el catálogo de hombre. Los Accesorios no se muestran, pero
+ * esas fichas quedan en el panel con sus precios y su stock: no se borran
+ * datos, sólo se dejan de publicar. Por ahora el local no vende ropa de mujer
+ * y no hay categoría para ella. Para volver a mostrar una categoría, se agrega
+ * acá.
  */
 export const CATEGORIAS_EN_TIENDA = Object.freeze(["Hombre"]);
 

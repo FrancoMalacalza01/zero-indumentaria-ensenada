@@ -129,7 +129,7 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
   };
 const addReasons: MovementReason[] = ["Ingreso", "Devolución"];
 const removeReasons: MovementReason[] = ["Rotura", "Ajuste"];
-const categories: Category[] = ["Hombre", "Mujer", "Accesorios"];
+const categories: Category[] = ["Hombre", "Accesorios"];
 const money = (value: number) =>
   new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -920,7 +920,7 @@ export default function Admin({
                 aria-label="Inventario de productos"
                 tabIndex={0}
               >
-                <table className="admin-table">
+                <table className="admin-table admin-inventario">
                   <thead>
                     <tr>
                       <th>PRODUCTO</th>

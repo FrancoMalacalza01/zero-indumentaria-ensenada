@@ -1,4 +1,4 @@
-export type Category = "Hombre" | "Mujer" | "Accesorios";
+export type Category = "Hombre" | "Accesorios";
 export type PaymentMethodId =
   | "mercadopago"
   | "cuentadni"

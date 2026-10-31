@@ -9,8 +9,7 @@ test("la tienda sólo publica prendas de hombre", () => {
   assert.equal(esProductoDeTienda(producto("Hombre")), true);
 });
 
-test("Mujer y Accesorios no se muestran, aunque estén publicados", () => {
-  assert.equal(esProductoDeTienda(producto("Mujer")), false);
+test("Accesorios no se muestra, aunque esté publicado", () => {
   assert.equal(esProductoDeTienda(producto("Accesorios")), false);
 });
 
@@ -43,7 +42,7 @@ test("la categoría tiene que coincidir exacta: no vale otra capitalización", (
 test("la lista de categorías publicadas no se puede cambiar desde afuera", () => {
   assert.throws(() => {
     "use strict";
-    CATEGORIAS_EN_TIENDA.push("Mujer");
+    CATEGORIAS_EN_TIENDA.push("Accesorios");
   });
-  assert.equal(esProductoDeTienda(producto("Mujer")), false);
+  assert.equal(esProductoDeTienda(producto("Accesorios")), false);
 });

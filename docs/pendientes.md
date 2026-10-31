@@ -43,7 +43,7 @@ Además, ya en `main`:
 
 | | Dónde |
 |---|---|
-| Tienda con **solo New in y Hombre** (Mujer y Accesorios quedan en la base y el panel, pero no se publican). Para reactivar una categoría: `CATEGORIAS_EN_TIENDA` | `src/storefront.mjs` |
+| Tienda con **solo New in y Hombre** (Accesorios queda en la base y el panel, pero no se publica; la ropa de mujer se sacó del todo, ver `db/sin-mujer.sql`). Para reactivar una categoría: `CATEGORIAS_EN_TIENDA` | `src/storefront.mjs` |
 | **Orden por precio** (menor a mayor, mayor a menor) en `/hombre` y en la colección de la portada | `src/ordenProductos.mjs`, `src/MenCatalog.tsx` |
 | Logo sin el texto "ENSENADA" debajo; las ofertas del catálogo de hombre conservan el precio anterior al recargar | `src/App.tsx`, `src/server.ts` |
 

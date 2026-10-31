@@ -24,7 +24,7 @@ Para trabajar de a dos (ramas, pull requests, qué no tocar): [`AGENTS.md`](AGEN
 
 - `/`: inicio, novedades y colecciones.
 - `/hombre`: colección de Hombre de Mistral y Brooksfield, con todas las secciones, búsqueda y galerías de fotos. Los modelos, precios y talles disponibles en Zero se confirman con el local.
-- `/tienda`: catálogo público de prendas de **Hombre**, con búsqueda, filtros visuales, orden por precio, talles y disponibilidad. `/tienda?new=1` es **New in**: lo marcado como novedad. La tienda publica sólo esas dos cosas: las fichas de Mujer y de Accesorios se conservan en administración, con sus precios y su stock, para no borrar datos, pero no se publican. Qué categorías se publican lo decide `src/storefront.mjs` (probado en `tests/storefront.test.mjs`).
+- `/tienda`: catálogo público de prendas de **Hombre**, con búsqueda, filtros visuales, orden por precio, talles y disponibilidad. `/tienda?new=1` es **New in**: lo marcado como novedad. La tienda publica sólo esas dos cosas: las fichas de Accesorios se conservan en administración, con sus precios y su stock, para no borrar datos, pero no se publican. Qué categorías se publican lo decide `src/storefront.mjs` (probado en `tests/storefront.test.mjs`).
 - `/producto/1`: detalle, selección de talle/cantidad y bolsa.
 - `/favoritos`: productos guardados.
 - `/checkout`: compra de demostración, con retiro en el local o envío a La Plata, Berisso o Ensenada.
@@ -713,7 +713,7 @@ completar esos datos con información confirmada del local.
 | `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
 | `whatsapp.test.mjs` | el enlace de consulta por WhatsApp: el mensaje con tildes, saltos de línea y símbolos que romperían una URL, que un número inválido no dé enlace (no manda al cliente a un desconocido) y que falte la marca o el precio no rompa el mensaje; y que una prenda en oferta diga de cuánto era | 9 |
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente | 34 |
-| `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Mujer, Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
+| `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
 `pnpm build` comprueba TypeScript y genera el paquete de producción.
