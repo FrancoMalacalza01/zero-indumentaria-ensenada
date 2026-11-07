@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, Ruler, X } from "lucide-react";
 import { Link } from "./router";
 import { useStore } from "./Store";
 import { unirCatalogo } from "./importarCatalogo.mjs";
@@ -7,6 +7,8 @@ import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import { descuento } from "./priceTools.mjs";
 import { ORDENES, ordenarProductos } from "./ordenProductos.mjs";
 import catalog from "./men-catalog.json";
+import medidasMistral from "./men-medidas.json";
+import { tablaDeTalles } from "./tablasTalle.mjs";
 import "./men-catalog.css";
 
 type MenProduct = {
@@ -97,6 +99,32 @@ function etiquetaPrecio(p: MenProduct) {
   return p.precioAnterior ? "Oferta" : p.precioZero ? "Precio Zero" : "Precio publicado por la marca";
 }
 
+/** La tabla de talles que publica la marca para esta prenda, si la publicó. */
+function TablaDeTalles({ product }: { product: MenProduct }) {
+  const tabla = tablaDeTalles(product, medidasMistral as Record<string, { nota?: string; filas?: { talle: string; medidas: string }[] }>);
+  if (!tabla) return null;
+  return (
+    <details className="men-talles">
+      <summary><Ruler size={16} /> Tabla de talles</summary>
+      {tabla.tipo === "filas" ? (
+        <>
+          <p>Medidas en cm{tabla.nota ? ` (${tabla.nota.toLowerCase()})` : ""}. Pueden variar mínimamente según la producción.</p>
+          <table>
+            <tbody>
+              {tabla.filas.map((f) => <tr key={f.talle}><th scope="row">{f.talle}</th><td>{f.medidas}</td></tr>)}
+            </tbody>
+          </table>
+        </>
+      ) : (
+        <a href={tabla.src} target="_blank" rel="noreferrer noopener" title="Abrir la tabla en grande">
+          <img src={tabla.src} alt={tabla.alt} loading="lazy" />
+        </a>
+      )}
+      <small>Tabla de {tabla.marca}.</small>
+    </details>
+  );
+}
+
 function ProductGallery({ product, close, consulta }: { product: MenProduct; close: () => void; consulta: string | null }) {
   const [photo, setPhoto] = useState(0);
   useEffect(() => {
@@ -127,6 +155,7 @@ function ProductGallery({ product, close, consulta }: { product: MenProduct; clo
           <h2>{product.name}</h2>
           <p>{etiquetaPrecio(product)}: <Precio p={product} /></p>
           <p>{photo + 1} de {product.images.length} fotos</p>
+          <TablaDeTalles product={product} />
           {product.shopId && product.sizes.length > 0 && <Link className="button button-green" to={`/producto/${encodeURIComponent(product.shopId)}`}>Elegir talle y comprar</Link>}
           {consulta && <a className="button button-green men-whatsapp" href={consulta} target="_blank" rel="noreferrer noopener"><MessageCircle size={18} /> Consultar por WhatsApp</a>}
           <Link to="/sucursales">{consulta ? "Ver cómo llegar a Zero" : "Consultar en Zero"} <ArrowRight size={16} /></Link>
