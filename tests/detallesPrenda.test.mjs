@@ -37,3 +37,10 @@ test("textos vacíos o que no son texto se descartan, y un id raro no trae nada 
   assert.deepEqual(d.cuidados, []);
   assert.equal(detallesDePrenda({ id: "constructor", colors: [] }, raro), null);
 });
+
+test("los renglones repetidos de la ficha se muestran una sola vez", () => {
+  const d = detallesDePrenda({ id: "r", colors: ["Azul", "Azul"] }, { r: { caracteristicas: ["Forrada", "Forrada", "Cuello"], cuidados: ["Lavar", "Lavar"] } });
+  assert.deepEqual(d.caracteristicas, ["Forrada", "Cuello"]);
+  assert.deepEqual(d.cuidados, ["Lavar"]);
+  assert.deepEqual(d.colores, ["Azul"]);
+});

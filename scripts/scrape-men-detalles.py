@@ -39,6 +39,20 @@ MATERIAL = r"\d{1,3}\s*%\s*[A-Za-zÁÉÍÓÚáéíóúñÑ]+"
 COMPOSICION = re.compile(rf"({MATERIAL}(?:[\s,/y]+{MATERIAL})*)")
 
 
+def normalizar_composicion(c):
+    """Deja sólo el material ("60% algodón, 40% poliéster"), sin la frase que lo rodea."""
+    if not c:
+        return None
+    if len(c) > 45 or "." in c.rstrip("."):
+        m = COMPOSICION.search(c)
+        if not m:
+            return None
+        c = m.group(1)
+    c = re.sub(rf"({MATERIAL})\s+(?={MATERIAL})", r"\1, ", c)  # "55% lino 45% algodón" -> con coma
+    c = re.sub(r"\s+,", ",", c).strip(" ,.;")
+    return c[:1].upper() + c[1:] if c else None
+
+
 def bajar(url):
     for intento in range(3):
         try:
@@ -84,9 +98,9 @@ def clasificar(lineas):
     comp, carac, cuid = None, [], []
     for raw in lineas:
         l = re.sub(r"^[\s•\-–·*]+", "", raw).strip(" .;")
-        if not l or len(l) < 3 or len(l) > 140:
+        if not l or len(l) < 3 or len(l) > 110:
             continue
-        if l.endswith(":") or re.match(r"(medidas|las medidas|nota|talle\b|código|disponible en talles)", l, re.I) or "Código" in l:
+        if l.endswith(":") or re.match(r"(medidas|las medidas|nota|importante|talle\b|código|disponible en talles)", l, re.I) or "Código" in l:
             continue
         m = re.match(r"composici[oó]n\s*:?\s*(.+)", l, re.I)
         if m:
@@ -98,7 +112,7 @@ def clasificar(lineas):
             carac.append(l[:1].upper() + l[1:])
         else:
             carac.append(l[:1].upper() + l[1:])
-    return comp, carac, cuid
+    return normalizar_composicion(comp), carac, cuid
 
 
 def mistral(pagina):

@@ -3,8 +3,11 @@
 // (`scripts/scrape-men-detalles.py` → `men-detalles.json`) y del color del
 // catálogo. Lo que la ficha no dice, no se muestra ni se inventa.
 
+// Sin textos vacíos ni repetidos: las fichas de las marcas repiten renglones.
 const textos = (lista) =>
-  Array.isArray(lista) ? lista.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()) : [];
+  Array.isArray(lista)
+    ? [...new Set(lista.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))]
+    : [];
 
 /**
  * @param prenda    { id, colors }
