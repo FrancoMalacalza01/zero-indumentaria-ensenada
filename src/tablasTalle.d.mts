@@ -4,5 +4,5 @@ export type TablaDeTalles =
   | { tipo: "imagen"; marca: string; src: string; alt: string };
 export function tablaDeTalles(
   prenda: { id?: string; brand?: string; category?: string; name?: string } | null | undefined,
-  medidas: Record<string, { nota?: string; filas?: FilaMedidas[] }> | null | undefined,
+  detalles: Record<string, { medidas?: { nota?: string; filas?: FilaMedidas[] } | null }> | null | undefined,
 ): TablaDeTalles | null;
