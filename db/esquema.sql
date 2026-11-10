@@ -356,6 +356,53 @@ begin
   end if;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Ofertas con fecha de fin
+--
+-- Una oferta es un precio bajo (price) con el de antes (old_price, que la tienda
+-- muestra tachado). `offer_until` dice hasta cuándo: pasado ese momento vale el
+-- precio de antes. No hay un proceso que "termine" la oferta ni hay que acordarse
+-- de nada: el precio que vale se calcula en el momento, con precio_vigente().
+--
+-- OJO: esta regla también está escrita en src/ofertas.mjs (lo que ve el cliente).
+-- Si se cambia una, se cambia la otra: la tienda no puede mostrar un precio y la
+-- base cobrar otro. tests/ofertas.test.mjs y db/probar-local.sh fijan las dos.
+-- ---------------------------------------------------------------------------
+alter table public.products add column if not exists offer_until timestamptz;
+alter table public.catalog_overrides add column if not exists offer_until timestamptz;
+
+do $$
+begin
+  -- Un vencimiento sin precio anterior no es una oferta: no habría a qué volver.
+  if not exists (select 1 from pg_constraint
+                  where conname = 'products_vencimiento_con_oferta'
+                    and conrelid = 'public.products'::regclass) then
+    alter table public.products add constraint products_vencimiento_con_oferta
+      check (offer_until is null or (old_price is not null and old_price > price));
+  end if;
+  if not exists (select 1 from pg_constraint
+                  where conname = 'catalog_overrides_vencimiento_con_oferta'
+                    and conrelid = 'public.catalog_overrides'::regclass) then
+    alter table public.catalog_overrides add constraint catalog_overrides_vencimiento_con_oferta
+      check (offer_until is null or old_price is not null);
+  end if;
+end $$;
+
+-- El precio que vale ahora. Con oferta vencida es el de antes; en cualquier otro
+-- caso, el precio guardado. `stable` y no `immutable`: depende de la hora.
+create or replace function public.precio_vigente(p_price integer, p_old_price integer, p_offer_until timestamptz)
+returns integer
+language sql stable set search_path = ''
+as $$
+  select case
+    when p_old_price is not null and p_old_price > p_price
+         and p_offer_until is not null and p_offer_until <= pg_catalog.now()
+    then p_old_price
+    else p_price
+  end
+$$;
+grant execute on function public.precio_vigente(integer, integer, timestamptz) to anon, authenticated;
+
 alter table public.catalog_overrides enable row level security;
 
 -- La tienda necesita leerla para saber qué ocultar y qué precio mostrar.
@@ -419,10 +466,10 @@ begin
       ) claves where coalesce((v_actual ->> key)::integer, 0) <> coalesce((p_stock_esperado ->> key)::integer, 0)
     ) then raise exception 'El stock cambió mientras editabas. Recargá y revisá las cantidades antes de guardar.'; end if;
   end if;
-  insert into public.products (id,name,brand,source_catalog_id,category,type,price,old_price,image,images,color,color_hex,sizes,is_new,active,description,position,updated_at)
-  values (v.id,v.name,coalesce(v.brand,''),v.source_catalog_id,v.category,v.type,v.price,v.old_price,v.image,coalesce(v.images,'{}'),v.color,v.color_hex,coalesce(v.sizes,'{}'),v.is_new,v.active,coalesce(v.description,''),v.position,now())
+  insert into public.products (id,name,brand,source_catalog_id,category,type,price,old_price,offer_until,image,images,color,color_hex,sizes,is_new,active,description,position,updated_at)
+  values (v.id,v.name,coalesce(v.brand,''),v.source_catalog_id,v.category,v.type,v.price,v.old_price,v.offer_until,v.image,coalesce(v.images,'{}'),v.color,v.color_hex,coalesce(v.sizes,'{}'),v.is_new,v.active,coalesce(v.description,''),v.position,now())
   on conflict (id) do update set name=excluded.name, brand=excluded.brand, source_catalog_id=excluded.source_catalog_id,
-    category=excluded.category, type=excluded.type, price=excluded.price, old_price=excluded.old_price,
+    category=excluded.category, type=excluded.type, price=excluded.price, old_price=excluded.old_price, offer_until=excluded.offer_until,
     image=excluded.image, images=excluded.images, color=excluded.color, color_hex=excluded.color_hex,
     sizes=excluded.sizes, is_new=excluded.is_new, active=excluded.active, description=excluded.description,
     position=excluded.position, updated_at=excluded.updated_at;

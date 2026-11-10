@@ -17,6 +17,8 @@
 /** Más que esto casi seguro es un cero de más. */
 export const PRECIO_MAXIMO = 10_000_000;
 
+import { hastaValido, precioVigente } from "./ofertas.mjs";
+
 const SIN_AJUSTE = { price: null, active: true };
 
 function precioValido(valor) {
@@ -35,10 +37,11 @@ function anteriorValido(anterior, precio) {
 }
 
 /**
- * Lo que guardó el servidor, convertido en `{ [id]: { price, active, old? } }`.
+ * Lo que guardó el servidor, convertido en `{ [id]: { price, active, old?, hasta? } }`.
+ * `hasta` es cuándo termina la oferta; las ya vencidas vuelven al precio de antes.
  * Una fila rota se ignora en vez de romper la tienda.
  */
-export function leerAjustes(filas) {
+export function leerAjustes(filas, ahora = Date.now()) {
   const ajustes = {};
   if (!Array.isArray(filas)) return ajustes;
   for (const f of filas) {
@@ -46,10 +49,22 @@ export function leerAjustes(filas) {
     const price = precioValido(f.price) ? f.price : null;
     const active = f.active !== false;
     if (price === null && active) continue;
-    const old = anteriorValido(f.old_price, price);
-    ajustes[f.product_id] = { price, active, ...(old ? { old } : {}) };
+    // Una oferta vencida ya es el precio de antes (igual que `precio_vigente` en la base).
+    // Se resuelve acá, al leer, para que el resto de la app no tenga que acordarse.
+    const oferta = price === null ? { price, old: null, hasta: null } : precioVigente({ price, old: anteriorValido(f.old_price, price), hasta: f.offer_until }, ahora);
+    if (oferta.price === null && active) continue;
+    ajustes[f.product_id] = {
+      price: oferta.price, active,
+      ...(oferta.old ? { old: oferta.old } : {}),
+      ...(oferta.old && oferta.hasta ? { hasta: oferta.hasta } : {}),
+    };
   }
   return ajustes;
+}
+
+/** El vencimiento que se guarda: sólo tiene sentido si hay oferta. */
+function ajusteHasta(ajuste) {
+  return anteriorValido(ajuste?.old, ajuste?.price) ? hastaValido(ajuste.hasta) : null;
 }
 
 /** La fila que se manda al servidor para una excepción. */
@@ -58,6 +73,9 @@ export function ajusteAFila(id, ajuste) {
     product_id: id,
     price: precioValido(ajuste?.price) ? ajuste.price : null,
     old_price: anteriorValido(ajuste?.old, ajuste?.price),
+    // `null` borra el vencimiento; sin la clave no se toca la columna, así una base
+    // a la que todavía no se le agregó `offer_until` sigue andando mientras nadie lo use.
+    ...(ajuste?.hasta !== undefined ? { offer_until: ajusteHasta(ajuste) } : {}),
     active: ajuste?.active !== false,
   };
 }
@@ -80,9 +98,17 @@ export function cambiarAjuste(ajustes, id, cambio) {
     cambio && "old" in cambio ? cambio.old : actual.old,
     siguiente.price,
   );
+  // El vencimiento sigue a la oferta: se puede cambiar junto con ella, y si la oferta
+  // termina el vencimiento también. Si antes había uno, queda `null` (no ausente) para
+  // que al guardar se borre de la base.
+  let hasta;
+  if (old) {
+    hasta = cambio && "hasta" in cambio ? hastaValido(cambio.hasta) : actual.hasta ?? null;
+    if (hasta === null && actual.hasta === undefined) hasta = undefined; // nunca hubo: nada que borrar
+  } else hasta = actual.hasta !== undefined ? null : undefined;
   const resto = { ...ajustes };
   if (siguiente.price === null && siguiente.active) delete resto[id];
-  else resto[id] = old ? { ...siguiente, old } : siguiente;
+  else resto[id] = { ...siguiente, ...(old ? { old } : {}), ...(hasta !== undefined ? { hasta } : {}) };
   return resto;
 }
 

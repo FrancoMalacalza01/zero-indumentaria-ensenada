@@ -5,16 +5,19 @@ export interface AjusteHombre {
   active: boolean;
   /** Precio anterior, el que se muestra tachado. Sólo existe si hay oferta. */
   old?: number;
+  /** Cuándo termina la oferta (ISO). `null` = había una fecha y se borra al guardar. */
+  hasta?: string | null;
 }
 export type AjustesHombre = Record<string, AjusteHombre>;
 export interface FilaAjuste {
   product_id: string;
   price: number | null;
   old_price: number | null;
+  offer_until?: string | null;
   active: boolean;
 }
 export const PRECIO_MAXIMO: number;
-export function leerAjustes(filas: unknown): AjustesHombre;
+export function leerAjustes(filas: unknown, ahora?: number): AjustesHombre;
 export function ajusteAFila(id: string, ajuste: AjusteHombre): FilaAjuste;
 export function cambiarAjuste(
   ajustes: AjustesHombre,

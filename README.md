@@ -360,6 +360,31 @@ guardar. Si la tienda
 no llega al servidor, usa lo último que supo en ese navegador antes que volver a
 mostrar lo que se sacó de la venta.
 
+### Ofertas con fecha de fin
+
+Una oferta es un precio bajo con el de antes tachado. Si además tiene **fecha de fin**,
+el día elegido (hasta las 23:59, hora de Argentina) la oferta termina sola y vuelve a
+valer el precio de antes: nadie tiene que acordarse. Se carga en la ficha del producto
+(*La oferta termina el*) o en *Precios*, al poner en oferta varias prendas a la vez. Sin
+fecha, la oferta dura hasta que se termine a mano, como antes.
+
+- **Quién decide lo que se cobra es la base.** `public.precio_vigente(price, old_price,
+  offer_until)` devuelve el precio de antes si la oferta venció, y `crear_pedido` cobra
+  ese. La misma regla está en `src/ofertas.mjs` para lo que ve el cliente. Si una se
+  cambia, hay que cambiar la otra: `tests/ofertas.test.mjs` y `db/probar-local.sh`
+  fijan las dos con los mismos casos.
+- **No hay un proceso que "termine" la oferta.** El precio vigente se calcula en el
+  momento, así que no hay nada que pueda fallar a las 00:00. La fila guarda lo que se
+  cargó; la que venció se ve y se cobra como precio común, y al guardarla otra vez el
+  panel la deja limpia.
+- **Una página ya abierta** puede seguir mostrando la oferta un rato después de vencer;
+  al comprar, la base cobra el precio de antes, y el carrito se actualiza al recargar.
+- Un vencimiento sin precio anterior no se guarda (no habría a qué volver).
+- **Para activarlo** hay que correr, en este orden, `db/ofertas-con-vencimiento.sql`,
+  `db/catalogo-editable.sql` y `db/crear_pedido.sql` en el SQL Editor, y mirar que
+  `db/verificar-ofertas-con-vencimiento.sql` dé todo en `true`. Hasta entonces el sitio
+  anda como antes (la tienda tolera que falte la columna), pero no hay que usar fechas.
+
 ## Venta del mostrador
 
 La pantalla **Venta del día** del panel es para descontar lo que se vende en el
@@ -780,7 +805,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 105 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 269 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -799,6 +824,7 @@ completar esos datos con información confirmada del local.
 | `tablasTalle.test.mjs` | qué tabla de talles se muestra en cada prenda de hombre: las medidas de la ficha de esa prenda (Mistral o Brooksfield), la imagen general de Brooksfield por tipo de prenda (y la de jeans por nombre) cuando la ficha no trae medidas, que sin tabla publicada no se invente una, y que las imágenes existan | 7 |
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los párrafos de la marca salgan tal cual, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 6 |
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
+| `ofertas.test.mjs` | las ofertas con fecha de fin: el último segundo del día elegido en hora de Argentina, qué fechas se rechazan, que una oferta vencida vuelva al precio de antes (en la tienda, en los precios propios de hombre y en los precios en masa), que una sin fecha o con fecha ilegible nunca venza, y que el vencimiento se guarde, se borre y se restaure al deshacer | 17 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 

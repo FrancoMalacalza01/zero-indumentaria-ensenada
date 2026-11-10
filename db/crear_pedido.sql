@@ -139,7 +139,10 @@ begin
       v_unidades := v_unidades + l.cantidad;
 
       -- El precio sale de la base, nunca de lo que mandó el navegador.
-      select p.id, p.name, p.price, p.image, p.sizes, p.active
+      -- precio_vigente: una oferta con fecha de fin que ya pasó cobra el precio de antes.
+      -- Es la misma regla con la que la tienda muestra el precio (src/ofertas.mjs).
+      select p.id, p.name, public.precio_vigente(p.price, p.old_price, p.offer_until) as price,
+             p.image, p.sizes, p.active
         into v_p
         from public.products p
        where p.id = l.product_id;

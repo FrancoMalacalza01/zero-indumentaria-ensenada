@@ -6,6 +6,8 @@
  * callada de perder datos, y así se puede probar sin navegador.
  */
 
+import { hastaValido } from "./ofertas.mjs";
+
 const CATEGORIAS = ["Hombre", "Accesorios"];
 const MOTIVOS = ["Ingreso", "Venta", "Ajuste", "Rotura", "Devolución"];
 const ENTREGAS = ["pickup", "shipping"];
@@ -64,6 +66,8 @@ export function productToRow(product, position = 0) {
     // null y no `undefined`: así el servidor lo borra cuando se saca el
     // precio viejo, en vez de dejar el anterior.
     old_price: product.oldPrice ? Math.max(0, entero(product.oldPrice)) : null,
+    // Sin precio anterior no hay oferta, y entonces tampoco vencimiento.
+    offer_until: product.oldPrice && hastaValido(product.offerUntil) ? hastaValido(product.offerUntil) : null,
     image: texto(product.image),
     images: lista(product.images),
     color: texto(product.color),

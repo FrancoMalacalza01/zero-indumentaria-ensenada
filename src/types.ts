@@ -17,6 +17,8 @@ export interface Product {
   type: string;
   price: number;
   oldPrice?: number;
+  /** Hasta cuándo dura la oferta (ISO). Sin esto la oferta no vence sola. */
+  offerUntil?: string;
   image: string;
   images?: string[];
   color: string;
