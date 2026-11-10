@@ -245,7 +245,7 @@ la oferta vencida. **Ojo:** `crear_pedido` es la parte más delicada del sistema
 
 ### Tarea 4 · Comprar prendas de hombre online
 
-**Por qué.** Las 961 prendas son hoy una vidriera: se consulta por WhatsApp. Para
+**Por qué.** Las 950 prendas son hoy una vidriera: se consulta por WhatsApp. Para
 venderlas online hacen falta **stock por talle** y precio propio confirmado.
 
 **Qué hacer.** Decidir primero el modelo (cargar el stock de las que el local
@@ -361,9 +361,8 @@ Lo que sigue, en este orden:
    (con código de país y sin el "+", por ejemplo `5492211234567`), CUIT, razón
    social, domicilio, mail, horarios, tabla de medidas y alias de pago. Sin esto
    la tienda no puede vender legalmente y no aparece el botón de WhatsApp.
-2. **Sacar de `/hombre` la sección Accesorios** (unos 11 artículos): panel,
-   pestaña Precios, filtrar la sección Accesorios, seleccionar todo, "Sacar de la
-   venta".
+2. ~~Sacar de `/hombre` la sección Accesorios~~ — hecho: los 11 artículos ya no están
+   en el catálogo (ni en `scripts/scrape-men.py`, que los descarta).
 3. **Vercel:** dejar un solo proyecto apuntando al repo para producción (hoy sale
    de `zero-indumentaria-ensenada.vercel.app`).
 4. **Tarea 3** (ofertas que vencen solas), **Tarea 5** (costo de envío real) y

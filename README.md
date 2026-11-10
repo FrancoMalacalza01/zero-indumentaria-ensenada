@@ -175,7 +175,7 @@ Cuatro decisiones que importan:
 
 ### Habilitar la compra online de todo el catálogo
 
-Las 961 prendas de Mistral y Brooksfield se ven en `/hombre`, pero **no se pueden comprar hasta que
+Las 950 prendas de Mistral y Brooksfield se ven en `/hombre`, pero **no se pueden comprar hasta que
 tengan stock**: el sistema no inventa stock. En *Productos y stock* hay un cuadro, **Habilitar la
 compra online de todo el catálogo**, para hacerlo de una vez:
 
@@ -277,7 +277,7 @@ base y hay que acomodarlo a mano.
 ## Precios
 
 La pestaña **Precios** junta en una sola tabla todos los artículos: los
-productos de la tienda y las 961 prendas del catálogo de hombre, que viven en
+productos de la tienda y las 950 prendas del catálogo de hombre, que viven en
 lugares distintos pero se cambian igual. Se trabaja como en una planilla.
 
 **Cambiar un precio.** Clic en el precio, se escribe y **Enter guarda y baja a la
@@ -311,7 +311,7 @@ clic. *Exportar CSV* baja lo que está filtrado, listo para Excel.
 - **Hombre**: viene de fábrica en `src/men-catalog.json` con el precio que
   publica cada marca, y eso no se edita. El precio del local se guarda aparte,
   como una lista de excepciones por prenda: lo que no se toca sigue con el
-  precio de la marca, así que con 961 prendas no hay que cargar nada para que la
+  precio de la marca, así que con 950 prendas no hay que cargar nada para que la
   tienda ande. Poner el precio de la marca no guarda una excepción (no sería un
   cambio). Se muestra como *Precio Zero*, y *volver* la devuelve a la marca.
 
