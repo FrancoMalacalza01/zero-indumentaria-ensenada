@@ -47,6 +47,7 @@ import { descuento } from "./priceTools.mjs";
 import type { PaymentMethodId, Product, Order, Settings } from "./types";
 import { cartKey } from "./commerce.mjs";
 import { mandarConfirmacion, pedirLinkDePago } from "./funciones";
+import { PagoPayway } from "./PagoPayway";
 import {
   chargesRealMoney,
   conDescuento,
@@ -1243,6 +1244,9 @@ function Checkout() {
     // Sólo si el local lo prendió Y hay servidor: sin las dos cosas, el botón
     // llevaría a un error.
     const cobroOnline = enVivo && settings.pago.mercadoPagoOnline;
+    // Payway: además del interruptor, tiene que haber una clave pública cargada.
+    const cobroPayway =
+      enVivo && settings.pago.paywayOnline && Boolean(settings.pago.paywayClavePublica);
     return (
       <main className="checkout-success section">
         <CheckCircle2 size={58} />
@@ -1313,6 +1317,15 @@ function Checkout() {
               </p>
             )}
           </div>
+        )}
+        {cobroPayway && (
+          <PagoPayway
+            pedido={order.id}
+            total={order.total}
+            url={settings.pago.paywayUrl}
+            clavePublica={settings.pago.paywayClavePublica}
+            money={money}
+          />
         )}
         {email && (
           <p className="reference-price">

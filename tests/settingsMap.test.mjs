@@ -332,3 +332,31 @@ test("la zona de Correo de fábrica ya trae el plazo", () => {
   assert.ok(correo.length > 0);
   for (const z of correo) assert.equal(z.plazo, PLAZO_CORREO_CLASICO);
 });
+
+test("Payway: apagado de fábrica, en Sandbox y sin clave", () => {
+  const p = leerSettings({}).pago;
+  assert.equal(p.paywayOnline, false);
+  assert.equal(p.paywayClavePublica, "");
+  assert.equal(p.paywayUrl, "https://developers-ventasonline.payway.com.ar/api/v2");
+});
+
+test("Payway: la clave pública sólo es letras y números; un texto raro se descarta", () => {
+  const clave = "A".repeat(32);
+  assert.equal(leerSettings({ pago: { paywayClavePublica: ` ${clave} ` } }).pago.paywayClavePublica, clave);
+  assert.equal(leerSettings({ pago: { paywayClavePublica: "corta" } }).pago.paywayClavePublica, "");
+  assert.equal(leerSettings({ pago: { paywayClavePublica: "https://x.com/" + clave } }).pago.paywayClavePublica, "");
+  assert.equal(leerSettings({ pago: { paywayClavePublica: 12345 } }).pago.paywayClavePublica, "");
+});
+
+test("Payway: la tarjeta sólo viaja a una dirección https de Payway", () => {
+  const prod = "https://ventasonline.payway.com.ar/api/v2";
+  assert.equal(leerSettings({ pago: { paywayUrl: prod + "/" } }).pago.paywayUrl, prod);
+  const sandbox = "https://developers-ventasonline.payway.com.ar/api/v2";
+  for (const mala of ["http://ventasonline.payway.com.ar/api/v2", "https://evil.com/api/v2", "https://payway.com.ar.evil.com", "basura", "", null])
+    assert.equal(leerSettings({ pago: { paywayUrl: mala } }).pago.paywayUrl, sandbox);
+});
+
+test("Payway: prenderlo exige un booleano de verdad", () => {
+  assert.equal(leerSettings({ pago: { paywayOnline: true } }).pago.paywayOnline, true);
+  assert.equal(leerSettings({ pago: { paywayOnline: "true" } }).pago.paywayOnline, false);
+});

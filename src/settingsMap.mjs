@@ -13,6 +13,8 @@
  *    los dos diciendo lo mismo.
  */
 
+import { ENTORNO_SANDBOX, urlPaywayValida } from "../supabase/functions/_shared/payway.mjs";
+
 /** Lo que trae el sitio cuando el dueño todavía no cargó nada. */
 export const porDefecto = () => ({
   // Formato internacional sin el "+", por ejemplo "5492211234567". Vacío, el
@@ -40,6 +42,13 @@ export const porDefecto = () => ({
      * tienda avisa que no está configurado y sigue con el alias de siempre.
      */
     mercadoPagoOnline: false,
+    /**
+     * Cobrar con tarjeta por Payway. Apagado de fábrica: necesita las claves de Payway
+     * (la pública acá, la privada como secreto en Supabase) y casos de prueba aprobados.
+     */
+    paywayOnline: false,
+    paywayClavePublica: "",
+    paywayUrl: ENTORNO_SANDBOX,
     banco: { nombre: "", titular: "", alias: "", cbu: "" },
     efectivo: true,
     debito: true,
@@ -245,6 +254,14 @@ export function leerSettings(datos) {
         pago.mercadoPagoOnline,
         base.pago.mercadoPagoOnline,
       ),
+      paywayOnline: booleano(pago.paywayOnline, base.pago.paywayOnline),
+      // Una clave son letras y números. Cualquier otra cosa (un espacio, una URL
+      // pegada por error) se descarta: sin clave válida, Payway no se ofrece.
+      paywayClavePublica: /^[A-Za-z0-9]{16,64}$/.test(texto(pago.paywayClavePublica).trim())
+        ? texto(pago.paywayClavePublica).trim()
+        : "",
+      // A esta dirección viajan los datos de la tarjeta: sólo Payway, sólo https.
+      paywayUrl: urlPaywayValida(pago.paywayUrl) || base.pago.paywayUrl,
       banco: {
         nombre: texto(banco.nombre),
         titular: texto(banco.titular),

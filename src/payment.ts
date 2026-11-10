@@ -160,7 +160,8 @@ export function paymentOptions(settings: Settings): PaymentOption[] {
 export function chargesRealMoney(settings: Settings) {
   const p = settings.pago;
   return Boolean(
-    p.mercadoPagoUrl ||
+    (p.paywayOnline && p.paywayClavePublica) ||
+      p.mercadoPagoUrl ||
       p.mercadoPagoAlias ||
       p.cuentaDniAlias ||
       p.cuentaDniQr ||

@@ -118,6 +118,15 @@ export interface Settings {
      * token de la cuenta cargado como secreto en el servidor.
      */
     mercadoPagoOnline: boolean;
+    /**
+     * Cobrar con tarjeta por Payway, dentro de la tienda. Además de prenderlo hay
+     * que cargar la clave PRIVADA como secreto en el servidor (PAYWAY_PRIVATE_API_KEY).
+     */
+    paywayOnline: boolean;
+    /** La clave PÚBLICA de Payway: es pública a propósito, con ella el navegador sólo puede sacar tokens. */
+    paywayClavePublica: string;
+    /** Dirección de la API de Payway (Sandbox o producción). Sólo se aceptan las de payway.com.ar. */
+    paywayUrl: string;
     banco: { nombre: string; titular: string; alias: string; cbu: string };
     efectivo: boolean;
     debito: boolean;

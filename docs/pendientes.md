@@ -369,3 +369,38 @@ Lo que sigue, en este orden:
 4. **Tarea 3** (ofertas que vencen solas), **Tarea 5** (costo de envío real) y
    **Tarea 7** (texto legal si el cliente no está).
 5. Guardar por escrito la autorización de las marcas (Tarea 9).
+
+---
+
+## Payway (cobro con tarjeta) — hecho en Sandbox, falta probarlo de verdad
+
+Está programado y probado **con Payway simulado** (`tests/payway.test.mjs` y
+`supabase/functions/payway-pagar/prueba.ts`). **No se probó contra el Sandbox real de
+Payway**: no teníamos claves. Cómo está armado y cómo se prende: README, *Cobro con
+tarjeta por Payway*. Lo que falta, en orden:
+
+1. **Desplegar** `payway-pagar` (`supabase functions deploy payway-pagar --no-verify-jwt`)
+   y cargar `PAYWAY_PRIVATE_API_KEY`. Hoy no está desplegada.
+2. **Probar en Sandbox** con las claves reales. Dudas que sólo el Sandbox responde:
+   - La respuesta de `POST /tokens`: se lee el campo `id` (lo que dice la documentación
+     de `/payments` sobre el token de 36 caracteres). Si viene con otro nombre, es un
+     cambio de una línea en `src/PagoPayway.tsx`.
+   - Si `/tokens` exige más datos que los que mandamos (la documentación de ejemplo
+     manda también fecha de nacimiento y número de puerta; no los pedimos).
+   - Un rechazo, ¿llega como HTTP 402 o como 200 con `status: rejected`? Está
+     contemplado de las dos formas.
+3. **Casos de prueba de Payway**: aprobado ($10.000 en 1 cuota y $30.000 en 3), rechazo
+   05 y 51, débito (id 31) y **anulación**. Payway no habilita producción hasta aprobarlos.
+4. **Anulación y devoluciones**: no están hechas. Hace falta una función más (con la
+   clave privada y el `payment_id` guardado en `pago_ref`) y un botón en el panel de
+   pedidos. Es un caso de prueba obligatorio de Payway.
+5. **Consulta de estado** (`GET /payments` con `siteOperationId`): para resolver los
+   pedidos que quedan *pendientes* por falta de respuesta o por `review`. Hoy se revisan
+   a mano en el backoffice de Payway. No se programó porque no tenemos la forma exacta de
+   la respuesta.
+6. **Más medios de pago y cuotas**: hoy Visa crédito y débito, una cuota. Los ids de los
+   otros medios están en "Medios de pago disponibles" de Payway: se suman en `MEDIOS`.
+7. **Producción**: claves nuevas, dirección `https://ventasonline.payway.com.ar/api/v2`
+   (panel y secreto `PAYWAY_URL`) y un primer pago real de monto mínimo.
+8. **Cierre de lote** (conciliación): lo hace Payway solo cada noche; el archivo llega por
+   mail o FTP si se coordina con el focal técnico. No requiere código de la tienda.
