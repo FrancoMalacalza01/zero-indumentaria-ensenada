@@ -173,6 +173,51 @@ Cuatro decisiones que importan:
   cobro online no está disponible y la tienda sigue con el alias y el link de
   siempre. Lo mismo con el mail.
 
+### Cobro con tarjeta por Payway
+
+Además de Mercado Pago, la tienda puede cobrar con tarjeta (Visa crédito y débito)
+por **Payway**, dentro de la misma pantalla de "pedido tomado". Viene **apagado**:
+se prende desde *Configuración → Cobrar antes de entregar → Cobrar con tarjeta por
+Payway*, y no se ve nada hasta que haya una clave pública cargada.
+
+Es el modelo **NO PCI** de Payway: los datos de la tarjeta salen del navegador
+**directo a Payway** (`POST /tokens`, con la clave pública) y vuelve un token. A
+nuestro servidor llegan sólo el pedido, el token, los 6 primeros dígitos y el medio
+de pago: nunca el número, el vencimiento ni el código. La función `payway-pagar`
+(`supabase/functions/payway-pagar`) cobra con ese token (`POST /payments`, con la
+clave **privada**).
+
+| Qué | Cómo |
+|---|---|
+| **El monto** | Sale del pedido guardado en la base, no del navegador. |
+| **Doble cobro** | El pedido se reserva con una sola escritura condicional (sólo pasa si estaba *sin pago* o *rechazado*) antes de llamar a Payway: dos cobros a la vez no pueden seguir los dos. |
+| **Cada intento** | Lleva su propio `site_transaction_id` (alfanumérico, hasta 40). Un pago rechazado se reintenta con uno nuevo. |
+| **Estados** | `approved` → el pedido queda *pagado* y pasa a *Preparando*; `rejected` → *rechazado* y se puede reintentar con otra tarjeta; **cualquier otra cosa (`review`, `preapproved`, un error) NO se da por pagada**. |
+| **Sin respuesta** | Si Payway no contesta, el pedido queda *pendiente* y se le dice al cliente que no repita el pago: puede haber cobrado. Se revisa en el backoffice de Payway por el `site_transaction_id`. |
+| **Qué se guarda** | `payment_status` y, en `pago_ref`, `payway:<id del pago>` (hace falta para consultar, anular o devolver). No se toca la base: son columnas que ya existían. |
+| **Dónde viaja la tarjeta** | La dirección de la API sólo puede ser `https://…payway.com.ar` (el panel y la función lo exigen), así que los datos de la tarjeta no pueden ir a otro lado aunque alguien cambie la configuración. |
+
+**Cómo se prende (Sandbox primero):**
+
+1. Payway da las claves de **Sandbox** (pública y privada) y el acceso al backoffice de Pagos Online.
+2. En Supabase: *Edge Functions → Secrets → `PAYWAY_PRIVATE_API_KEY`* con la clave **privada**.
+3. Desplegar la función: `supabase functions deploy payway-pagar --no-verify-jwt` (la llama la tienda, donde el cliente no tiene cuenta, igual que `crear-pago`).
+4. En el panel: la clave **pública** y la dirección (viene la de Sandbox), y prender el interruptor.
+5. Correr los casos de prueba de Payway (aprobado, rechazado 05 y 51, anulación). **Sin eso no habilitan producción.**
+6. Producción: Payway da claves nuevas. Cambian dos cosas: las claves y la dirección
+   (`https://ventasonline.payway.com.ar/api/v2`; para la función, el secreto `PAYWAY_URL`).
+   Antes de abrirlo a todos, un pago real de monto mínimo.
+
+**Medios de pago:** sólo los dos ids confirmados en la documentación (Visa crédito `1`,
+Visa débito `31`). Para sumar otro se agrega en `MEDIOS` de
+`supabase/functions/_shared/payway.mjs` con el id de la tabla "Medios de pago
+disponibles" de Payway; no se adivinan. Pago simple, **una cuota**.
+
+**Se prueba sin Payway:** `tests/payway.test.mjs` cubre las cuentas y las reglas, y
+`supabase/functions/payway-pagar/prueba.ts` (con Deno) corre la función entera contra
+una base y un Payway simulados: aprobado, rechazado, doble cobro, estados raros,
+credenciales mal, falta de respuesta y entradas inválidas.
+
 ### Cancelar un pedido devuelve el stock
 
 La compra descuenta el stock al crearse, que es lo que evita sobrevender. El
@@ -712,9 +757,10 @@ completar esos datos con información confirmada del local.
 | `ordenProductos.test.mjs` | el orden por precio de las prendas de hombre: menor a mayor y al revés, que con precios iguales se conserve el orden del catálogo, que una prenda sin precio válido vaya al final y que no se modifique la lista original | 5 |
 | `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
 | `whatsapp.test.mjs` | el enlace de consulta por WhatsApp: el mensaje con tildes, saltos de línea y símbolos que romperían una URL, que un número inválido no dé enlace (no manda al cliente a un desconocido) y que falte la marca o el precio no rompa el mensaje; y que una prenda en oferta diga de cuánto era | 9 |
-| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente | 34 |
+| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente | 38 |
 | `tablasTalle.test.mjs` | qué tabla de talles se muestra en cada prenda de hombre: las medidas de la ficha de esa prenda (Mistral o Brooksfield), la imagen general de Brooksfield por tipo de prenda (y la de jeans por nombre) cuando la ficha no trae medidas, que sin tabla publicada no se invente una, y que las imágenes existan | 7 |
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 5 |
+| `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos y cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) | 13 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 

@@ -435,6 +435,57 @@ export default function AdminConfig({
           cobro online no está configurado y no se rompe nada.
         </Ojo>
 
+        <label className="config-switch">
+          <input
+            type="checkbox"
+            checked={draft.pago.paywayOnline}
+            onChange={(e) => setPago("paywayOnline", e.target.checked)}
+          />
+          <span>Cobrar con tarjeta por Payway, dentro de la tienda</span>
+        </label>
+        <div className="config-grid">
+          <label className="admin-field">
+            Clave pública de Payway
+            <input
+              type="text"
+              autoComplete="off"
+              placeholder="La clave PÚBLICA (la privada no va acá)"
+              value={draft.pago.paywayClavePublica}
+              onChange={(e) => setPago("paywayClavePublica", e.target.value.trim())}
+            />
+          </label>
+          <label className="admin-field">
+            Dirección de la API de Payway
+            <input
+              type="url"
+              value={draft.pago.paywayUrl}
+              onChange={(e) => setPago("paywayUrl", e.target.value.trim())}
+            />
+          </label>
+        </div>
+        <Ayuda>
+          <b>Payway.</b> Con esto prendido y la clave pública cargada, al cerrar
+          la compra el cliente ve un formulario para pagar con tarjeta (Visa
+          crédito o débito). Los datos de la tarjeta van{" "}
+          <b>directo a Payway</b>: la tienda no los ve ni los guarda. El servidor
+          cobra el monto exacto del pedido y, si el pago sale aprobado, el pedido
+          queda pagado y pasa a <i>Preparando</i>. Mercado Pago sigue
+          funcionando igual; podés tener los dos.
+        </Ayuda>
+        <Ojo>
+          <b>Antes de prenderlo, falta lo que no se hace desde acá.</b> (1) La
+          clave <b>privada</b> de Payway se carga como secreto en Supabase (Edge
+          Functions → Secrets → <code>PAYWAY_PRIVATE_API_KEY</code>): con ella se
+          cobra, así que no puede vivir en el sitio. (2) Empezá en{" "}
+          <b>Sandbox</b> (la dirección que viene cargada): son claves de prueba
+          y no se cobra de verdad. (3) Payway no habilita producción hasta
+          aprobar los casos de prueba: pago aprobado, rechazado (códigos 05 y 51)
+          y anulación. Al pasar, te dan las claves de producción y cambiás la
+          dirección por <code>https://ventasonline.payway.com.ar/api/v2</code> y
+          la clave privada del secreto. (4) Hacé primero un pago real de monto
+          mínimo antes de abrirlo a todos.
+        </Ojo>
+
         <div className="config-grid">
           <label className="admin-field">
             Alias o CVU de Cuenta DNI

@@ -75,3 +75,26 @@ export async function mandarConfirmacion(pedido: string, email: string) {
   const r = await llamar("enviar-mail", { pedido, email });
   if (r?.error) console.warn("no salió el mail de confirmación:", r.error);
 }
+
+/**
+ * Le pide al servidor que cobre el pedido con el token que Payway le dio al navegador.
+ *
+ * Al servidor viajan sólo el pedido, el token, los 6 primeros dígitos y el medio de
+ * pago: nunca el número de tarjeta. Devuelve el resultado ya traducido para el cliente
+ * (`estado` y `mensaje`); el navegador no interpreta nada de Payway.
+ */
+export async function pagarConPayway(datos: {
+  pedido: string;
+  token: string;
+  bin: string;
+  medio: number;
+}): Promise<{ estado: "aprobado" | "rechazado" | "pendiente" | "error"; mensaje: string }> {
+  const r = await llamar("payway-pagar", datos);
+  const estado = r.estado;
+  if (estado === "aprobado" || estado === "rechazado" || estado === "pendiente" || estado === "error")
+    return { estado, mensaje: typeof r.mensaje === "string" ? r.mensaje : "" };
+  return {
+    estado: "error",
+    mensaje: typeof r.error === "string" ? r.error : "No pudimos procesar el pago. Escribinos por WhatsApp.",
+  };
+}
