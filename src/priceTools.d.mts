@@ -56,6 +56,8 @@ export interface CambioArticulo {
   precio?: number | null;
   /** Precio anterior (tachado). Un número es una oferta; `null` la termina. */
   antes?: number | null;
+  /** Cuándo termina la oferta (ISO). Sin esta clave, la oferta nueva no vence sola. */
+  hasta?: string | null;
   activo?: boolean;
   /** Sólo hombre: el precio de la marca, para no guardar una excepción igual. */
   precioMarca?: number;

@@ -97,7 +97,14 @@ export async function fetchAjustes(): Promise<AjustesHombre | null> {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), ESPERA_MAXIMA);
   try {
-    const filas = await pedir("catalog_overrides?select=product_id,price,old_price,active", corte.signal);
+    // Con el vencimiento de la oferta; si la base todavía no tiene esa columna (falta correr
+    // db/ofertas-con-vencimiento.sql) se pide como antes, para no dejar la tienda sin precios.
+    let filas;
+    try {
+      filas = await pedir("catalog_overrides?select=product_id,price,old_price,offer_until,active", corte.signal);
+    } catch {
+      filas = await pedir("catalog_overrides?select=product_id,price,old_price,active", corte.signal);
+    }
     return Array.isArray(filas) ? leerAjustes(filas) : null;
   } catch {
     return null;

@@ -39,10 +39,10 @@ begin
       ) claves where coalesce((v_actual ->> key)::integer, 0) <> coalesce((p_stock_esperado ->> key)::integer, 0)
     ) then raise exception 'El stock cambió mientras editabas. Recargá y revisá las cantidades antes de guardar.'; end if;
   end if;
-  insert into public.products (id,name,brand,source_catalog_id,category,type,price,old_price,image,images,color,color_hex,sizes,is_new,active,description,position,updated_at)
-  values (v.id,v.name,coalesce(v.brand,''),v.source_catalog_id,v.category,v.type,v.price,v.old_price,v.image,coalesce(v.images,'{}'),v.color,v.color_hex,coalesce(v.sizes,'{}'),v.is_new,v.active,coalesce(v.description,''),v.position,now())
+  insert into public.products (id,name,brand,source_catalog_id,category,type,price,old_price,offer_until,image,images,color,color_hex,sizes,is_new,active,description,position,updated_at)
+  values (v.id,v.name,coalesce(v.brand,''),v.source_catalog_id,v.category,v.type,v.price,v.old_price,v.offer_until,v.image,coalesce(v.images,'{}'),v.color,v.color_hex,coalesce(v.sizes,'{}'),v.is_new,v.active,coalesce(v.description,''),v.position,now())
   on conflict (id) do update set name=excluded.name, brand=excluded.brand, source_catalog_id=excluded.source_catalog_id,
-    category=excluded.category, type=excluded.type, price=excluded.price, old_price=excluded.old_price,
+    category=excluded.category, type=excluded.type, price=excluded.price, old_price=excluded.old_price, offer_until=excluded.offer_until,
     image=excluded.image, images=excluded.images, color=excluded.color, color_hex=excluded.color_hex,
     sizes=excluded.sizes, is_new=excluded.is_new, active=excluded.active, description=excluded.description,
     position=excluded.position, updated_at=excluded.updated_at;

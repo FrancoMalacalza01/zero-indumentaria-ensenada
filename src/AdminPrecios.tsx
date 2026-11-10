@@ -34,6 +34,7 @@ import {
 
 } from "./priceTools.mjs";
 import { delMismoModelo, ofertasDelModelo, vistaPorModelo } from "./modelos.mjs";
+import { diaDe, finDelDia, vencida } from "./ofertas.mjs";
 import type {
   CambioArticulo,
   Historial,
@@ -76,6 +77,8 @@ type Articulo = {
    * en oferta. Es el precio de partida del descuento.
    */
   antes?: number;
+  /** Cuándo termina la oferta (ISO), si tiene fecha de fin. */
+  hasta?: string;
   /** Hombre con precio propio puesto por el local. */
   propio: boolean;
   activo: boolean;
@@ -112,6 +115,7 @@ function articulosDe(productos: Product[], ajustes: AjustesHombre): Articulo[] {
     precio: p.price,
     precioMarca: null,
     antes: p.oldPrice && p.oldPrice > p.price ? p.oldPrice : undefined,
+    hasta: p.oldPrice && p.oldPrice > p.price ? p.offerUntil : undefined,
     propio: false,
     activo: p.active,
   }));
@@ -130,6 +134,7 @@ function articulosDe(productos: Product[], ajustes: AjustesHombre): Articulo[] {
       precio: a?.price ?? m.priceARS,
       precioMarca: m.priceARS,
       antes: a?.price != null && a.old && a.old > a.price ? a.old : undefined,
+      hasta: a?.price != null && a.old && a.old > a.price ? a.hasta ?? undefined : undefined,
       propio: a?.price != null,
       activo: a?.active !== false,
     };
@@ -301,6 +306,10 @@ export default function AdminPrecios({
   const [op, setOp] = useState<Operacion>("subir");
   const [valorTxt, setValorTxt] = useState("");
   const [redondeo, setRedondeo] = useState<Redondeo>("ninguno");
+  // Hasta qué día dura la oferta que se está armando ("" = hasta que se termine a mano).
+  const [finOferta, setFinOferta] = useState("");
+  const finElegido = op === "oferta" && finOferta ? finDelDia(finOferta) : null;
+  const finInvalido = op === "oferta" && !!finOferta && (finElegido === null || vencida(finElegido));
   // "poner en oferta" en una fila arma la regla y lleva el cursor al porcentaje.
   const [pedirFoco, setPedirFoco] = useState(false);
   // Una prenda está en la tienda y en el catálogo de hombre (una vez por color):
@@ -403,7 +412,7 @@ export default function AdminPrecios({
         if (yaEstan.has(h.key)) continue;
         yaEstan.add(h.key);
         const hc = cambioDePrecio(h, c.precio ?? null);
-        extra.push("antes" in c ? { ...hc, antes: c.antes } : hc);
+        extra.push("antes" in c ? { ...hc, antes: c.antes, ..."hasta" in c ? { hasta: c.hasta } : {} } : hc);
       }
     }
     return [...cambios, ...extra];
@@ -542,7 +551,7 @@ export default function AdminPrecios({
       .map((f) => {
           const c = cambioDePrecio(porClave.get(f.key)!, f.despues);
           // La oferta guarda el precio de partida como el anterior: es el tachado.
-          return esOferta ? { ...c, antes: f.base } : c;
+          return esOferta ? { ...c, antes: f.base, ...(finElegido ? { hasta: finElegido } : {}) } : c;
         });
     const etiqueta = OPERACIONES.find((o) => o.id === op)!.etiqueta;
     const n = cambios.length;
@@ -550,7 +559,7 @@ export default function AdminPrecios({
       cambios,
       `${etiqueta} ${regla.value}${unidad} a ${n} artículos`,
       esOferta
-        ? `${n} ${n === 1 ? "artículo en oferta" : "artículos en oferta"}`
+        ? `${n} ${n === 1 ? "artículo en oferta" : "artículos en oferta"}${finElegido ? ` hasta el ${diaDe(finElegido).split("-").reverse().join("/")}` : ""}`
         : `${n} ${n === 1 ? "precio cambiado" : "precios cambiados"}`,
     );
   }
@@ -853,6 +862,24 @@ export default function AdminPrecios({
                 }}
               />
             </label>
+            {op === "oferta" && (
+              <label className="admin-field">
+                La oferta termina el (opcional)
+                <input
+                  type="date"
+                  aria-label="Fecha de fin de la oferta"
+                  value={finOferta}
+                  onChange={(e) => setFinOferta(e.target.value)}
+                />
+                <small>
+                  {finInvalido
+                    ? "Elegí un día que no haya pasado."
+                    : finOferta
+                      ? "Ese día a las 23:59 vuelve solo al precio anterior."
+                      : "Vacío: dura hasta que la termines a mano."}
+                </small>
+              </label>
+            )}
             <label className="admin-field">
               Redondeo
               <select
@@ -869,7 +896,7 @@ export default function AdminPrecios({
             </label>
             <button
               className="admin-button admin-button-primary"
-              disabled={!vista || vista.cambian === 0}
+              disabled={!vista || vista.cambian === 0 || finInvalido}
               onClick={aplicarRegla}
             >
               <Check size={16} />
@@ -1056,6 +1083,7 @@ export default function AdminPrecios({
                         <span className="admin-precios-sub">
                           <span className="admin-precios-oferta">
                             <Tag size={11} aria-hidden /> Oferta −{descuento(a.antes, a.precio)}%
+                            {a.hasta ? ` · hasta el ${diaDe(a.hasta).split("-").reverse().join("/")}` : ""}
                           </span>{" "}
                           <button
                             className="admin-precios-quitar"

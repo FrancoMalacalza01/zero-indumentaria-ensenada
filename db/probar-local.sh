@@ -44,10 +44,15 @@ SQL
 echo "→ aplicando esquema.sql y crear_pedido.sql"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/esquema.sql" 2>/dev/null
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/crear_pedido.sql" 2>/dev/null
+echo "→ aplicando ofertas-con-vencimiento.sql (también sobre una base que ya lo tiene)"
+psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/ofertas-con-vencimiento.sql" 2>/dev/null
 echo "→ y de nuevo, para ver que se puede volver a correr"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/esquema.sql" 2>/dev/null
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/crear_pedido.sql" 2>/dev/null
 
+echo "→ el verificador de ofertas con vencimiento: todo en true"
+falla=$(psqlm -F '|' -f "$AQUI/verificar-ofertas-con-vencimiento.sql" | grep -c '|f$' || true)
+if [ "$falla" != "0" ]; then echo "✘ el verificador de ofertas marca $falla chequeos en false"; exit 1; fi
 echo "→ comprobando catálogo editable y permisos"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/probar-catalogo-editable.sql"
 
@@ -109,6 +114,48 @@ else
   echo "✘ el envío no está saliendo como debería"
   exit 1
 fi
+
+echo
+echo "→ ofertas con fecha de fin: lo que se cobra"
+# El freno de diez pedidos por minuto no tiene que cortar esta prueba: se "envejecen" los de antes.
+psqlm -q -c "update public.orders set fecha = fecha - interval '10 minutes'"
+psqlm -q <<'SQL'
+insert into public.products (id,name,category,type,price,old_price,offer_until,image,color,color_hex,sizes)
+values ('of1','Oferta vigente','Hombre','Remera',8000,10000, now() + interval '2 days','/o.webp','Azul','#132457',array['M']),
+       ('of2','Oferta vencida','Hombre','Remera',8000,10000, now() - interval '1 minute','/o.webp','Azul','#132457',array['M']),
+       ('of3','Oferta sin fecha','Hombre','Remera',8000,10000, null,'/o.webp','Azul','#132457',array['M']),
+       ('of4','Sin oferta','Hombre','Remera',8000,null, null,'/o.webp','Azul','#132457',array['M']);
+insert into public.stock (product_id,size,qty) values ('of1','M',9),('of2','M',9),('of3','M',9),('of4','M',9);
+SQL
+cobra() { psqlm -c "select (public.crear_pedido(
+  '[{\"productId\":\"$1\",\"size\":\"M\",\"quantity\":1}]'::jsonb,
+  'Oferta $1','pickup')->'order'->'items'->0->>'price')"; }
+c1=$(cobra of1); c2=$(cobra of2); c3=$(cobra of3); c4=$(cobra of4)
+echo "vigente: \$$c1 · vencida: \$$c2 · sin fecha: \$$c3 · sin oferta: \$$c4"
+if [ "$c1" = "8000" ] && [ "$c2" = "10000" ] && [ "$c3" = "8000" ] && [ "$c4" = "8000" ]; then
+  echo "✔ la oferta vencida cobra el precio de antes; las demás, lo que dicen"
+else
+  echo "✘ el precio cobrado no coincide con la regla de las ofertas"
+  exit 1
+fi
+total_vencida=$(psqlm -c "select total from public.orders where customer='Oferta of2'")
+if [ "$total_vencida" != "10000" ]; then echo "✘ el total del pedido no usa el precio vigente: $total_vencida"; exit 1; fi
+# La base y la tienda tienen que decir lo mismo: los mismos casos que tests/ofertas.test.mjs.
+casos=$(psqlm -c "select concat_ws(',',
+  public.precio_vigente(80,100, now() + interval '1 day')::text,
+  public.precio_vigente(80,100, now() - interval '1 day')::text,
+  public.precio_vigente(80,100,null)::text,
+  public.precio_vigente(80,null, now() - interval '1 day')::text,
+  public.precio_vigente(80,80, now() - interval '1 day')::text,
+  public.precio_vigente(80,50,null)::text)")
+if [ "$casos" = "80,100,80,80,80,80" ]; then
+  echo "✔ precio_vigente coincide con la regla de la tienda en los casos de borde"
+else
+  echo "✘ precio_vigente difiere de src/ofertas.mjs: $casos"
+  exit 1
+fi
+rechaza_venc=$(psqlm -c "insert into public.products (id,name,category,type,price,offer_until,image,color,color_hex,sizes) values ('z','Z','Hombre','Remera',100,now(),'/z','a','#000',array['M'])" 2>&1 || true)
+case "$rechaza_venc" in *products_vencimiento_con_oferta*) echo "✔ no se guarda un vencimiento sin precio anterior";; *) echo "✘ aceptó un vencimiento sin oferta: $rechaza_venc"; exit 1;; esac
 
 echo
 compraron=$(psqlm -c "select count(*) from public.orders where customer like 'Comprador%'")

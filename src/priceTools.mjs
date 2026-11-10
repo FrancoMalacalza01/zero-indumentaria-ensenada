@@ -15,6 +15,7 @@ import {
   cambiarAjuste,
   leerPrecio,
 } from "./menOverrides.mjs";
+import { hastaValido } from "./ofertas.mjs";
 
 export const OPERACIONES = [
   { id: "subir", etiqueta: "Subir un porcentaje", unidad: "%" },
@@ -188,11 +189,14 @@ export function vistaPrevia(items, op, valor, redondeo = "ninguno") {
  * precio, así que se saca.
  */
 export function precioDeProducto(producto, nuevo) {
-  const { oldPrice, ...resto } = producto;
+  const { oldPrice, offerUntil, ...resto } = producto;
+  const sigueOferta = oldPrice && oldPrice > nuevo;
   return {
     ...resto,
     price: nuevo,
-    ...(oldPrice && oldPrice > nuevo ? { oldPrice } : {}),
+    ...(sigueOferta ? { oldPrice } : {}),
+    // El vencimiento acompaña a la oferta: si ésta termina, él también.
+    ...(sigueOferta && offerUntil ? { offerUntil } : {}),
   };
 }
 
@@ -201,12 +205,15 @@ export function precioDeProducto(producto, nuevo) {
  * anterior no es mayor al precio, no hay oferta y se saca (igual que en
  * `precioDeProducto`).
  */
-export function ofertaDeProducto(producto, precio, anterior) {
-  const { oldPrice, ...resto } = producto;
+export function ofertaDeProducto(producto, precio, anterior, hasta) {
+  const { oldPrice, offerUntil, ...resto } = producto;
+  const hayOferta = anterior && anterior > precio;
   return {
     ...resto,
     price: precio,
-    ...(anterior && anterior > precio ? { oldPrice: anterior } : {}),
+    ...(hayOferta ? { oldPrice: anterior } : {}),
+    // Una oferta nueva sin fecha no hereda la de la anterior: dura hasta que se termine a mano.
+    ...(hayOferta && hastaValido(hasta) ? { offerUntil: hastaValido(hasta) } : {}),
   };
 }
 
@@ -234,6 +241,9 @@ export function aplicarCambios(ajustes, productos, cambios) {
       if ("precio" in c)
         parche.price = c.precio !== null && c.precio === c.precioMarca && !("antes" in c ? c.antes > c.precio : ajustes?.[c.id]?.old > c.precio) ? null : c.precio;
       if ("antes" in c) parche.old = c.antes;
+      if ("hasta" in c) parche.hasta = c.hasta;
+      // Una oferta nueva sin fecha no hereda la de la anterior.
+      else if ("antes" in c && c.antes) parche.hasta = null;
       if ("activo" in c) parche.active = c.activo;
       nuevosAjustes = cambiarAjuste(nuevosAjustes, c.id, parche);
     } else if (c.fuente === "db") {
@@ -250,6 +260,7 @@ export function aplicarCambios(ajustes, productos, cambios) {
             siguiente,
             typeof c.precio === "number" ? c.precio : siguiente.price,
             c.antes,
+            c.hasta,
           );
         else if (typeof c.precio === "number")
           siguiente = precioDeProducto(siguiente, c.precio);
@@ -274,6 +285,7 @@ export function capturar(ajustes, productos, idsMen, idsDb) {
       db[p.id] = {
         price: p.price,
         ...(p.oldPrice ? { oldPrice: p.oldPrice } : {}),
+        ...(p.oldPrice && p.offerUntil ? { offerUntil: p.offerUntil } : {}),
         active: p.active,
       };
   return { men, db };
@@ -290,12 +302,13 @@ export function aplicarFoto(ajustes, productos, foto) {
   const nuevosProductos = productos.map((p) => {
     const f = idsDb[p.id];
     if (!f) return p;
-    const { oldPrice, ...resto } = p;
+    const { oldPrice, offerUntil, ...resto } = p;
     return {
       ...resto,
       price: f.price,
       active: f.active,
       ...(f.oldPrice ? { oldPrice: f.oldPrice } : {}),
+      ...(f.oldPrice && f.offerUntil ? { offerUntil: f.offerUntil } : {}),
     };
   });
   return { ajustes: nuevosAjustes, productos: nuevosProductos };

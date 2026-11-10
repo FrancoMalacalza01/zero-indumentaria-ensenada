@@ -60,6 +60,7 @@ import catalogoImportado from "./men-catalog.json";
 import { prepararFichaImportada } from "./importarCatalogo.mjs";
 import { AdminHabilitar } from "./AdminHabilitar";
 import { avisoDeCambio, leerPrecio } from "./menOverrides.mjs";
+import { diaDe, finDelDia, vencida } from "./ofertas.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
 import "./admin.css";
@@ -2159,6 +2160,18 @@ function ProductEditor({
         return;
       }
     }
+    // La fecha de fin de la oferta: sin precio anterior no hay a qué volver, y una fecha
+    // que ya pasó terminaría la oferta en el mismo momento de guardarla.
+    if (draft.offerUntil) {
+      if (!draft.oldPrice) {
+        setError("La fecha de fin necesita el precio anterior: es el precio al que vuelve cuando termina la oferta.");
+        return;
+      }
+      if (vencida(draft.offerUntil)) {
+        setError("La fecha de fin de la oferta ya pasó. Elegí un día que no haya pasado o dejala vacía.");
+        return;
+      }
+    }
     // Un cambio enorme casi siempre es un cero de más o de menos.
     const aviso = product ? avisoDeCambio(product.price, precio.value) : null;
     if (aviso && !confirm(aviso)) return;
@@ -2288,6 +2301,20 @@ function ProductEditor({
                 }
                 placeholder="Precio sin descuento"
               />
+            </label>
+            <label className="admin-field">
+              La oferta termina el (opcional)
+              <input
+                type="date"
+                value={diaDe(draft.offerUntil)}
+                disabled={!draft.oldPrice}
+                onChange={(e) => set("offerUntil", finDelDia(e.target.value) ?? undefined)}
+              />
+              <small>
+                {draft.oldPrice
+                  ? "Ese día, a las 23:59, el precio vuelve solo al anterior. Vacío: dura hasta que la termines a mano."
+                  : "Se usa junto con el precio anterior."}
+              </small>
             </label>
             <label className="admin-field">
               Nombre del color

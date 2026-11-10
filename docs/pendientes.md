@@ -220,28 +220,12 @@ de políticas que `catalog_overrides`, con `private.es_admin()`).
 dejan filas; el SQL se verifica con un script como
 `db/verificar-ajustes-catalogo.sql`. **Ojo:** el SQL lo aplica una persona.
 
-### Tarea 3 · Ofertas que vencen solas
+### Tarea 3 · Ofertas que vencen solas — hecho
 
-**Por qué.** Hoy una oferta se termina a mano. Una oferta con fecha de fin es
-lo que se espera de una tienda.
-
-**Qué hacer, y el cuidado que tiene.** **No se puede resolver solo en la
-pantalla.** El precio que se cobra lo calcula la base al comprar, en la función
-`crear_pedido`, leyendo `products.price`. Si la pantalla "venciera" una oferta
-pero la base siguiera cobrando el precio rebajado, el cliente vería un precio y
-pagaría otro. El vencimiento tiene que decidirse **en la base**:
-- Una columna `offer_until` en `products` (y en `catalog_overrides` para
-  hombre), y que `crear_pedido` use `old_price` cuando la oferta venció.
-- La pantalla usa la misma regla para mostrar el precio.
-
-**Dónde.** `db/crear_pedido.sql` (la función vive sólo ahí), `src/catalogMap.mjs`,
-`src/serverSync.mjs`, `src/priceTools.mjs`, `src/AdminPrecios.tsx`.
-
-**Cuándo está lista.** Una oferta vencida cobra el precio anterior **en el
-checkout real**, y esto está probado en la base: `db/probar-local.sh` arma un
-Postgres de juguete y ya prueba compras simultáneas; hay que sumarle el caso de
-la oferta vencida. **Ojo:** `crear_pedido` es la parte más delicada del sistema
-(cobra y descuenta stock). No se toca sin esa prueba.
+Una oferta puede tener fecha de fin (`offer_until`): ese día a las 23:59 vuelve sola
+al precio de antes, y `crear_pedido` cobra lo mismo que muestra la tienda. Cómo
+funciona y cómo activarlo (3 archivos SQL, en orden, y un verificador): README,
+*Precios → Ofertas con fecha de fin*. **Falta que una persona corra esos SQL.**
 
 ### Tarea 4 · Comprar prendas de hombre online
 
@@ -365,7 +349,7 @@ Lo que sigue, en este orden:
    en el catálogo (ni en `scripts/scrape-men.py`, que los descarta).
 3. **Vercel:** dejar un solo proyecto apuntando al repo para producción (hoy sale
    de `zero-indumentaria-ensenada.vercel.app`).
-4. **Tarea 3** (ofertas que vencen solas), **Tarea 5** (costo de envío real) y
+4. **Tarea 5** (costo de envío real) y
    **Tarea 7** (texto legal si el cliente no está).
 5. Guardar por escrito la autorización de las marcas (Tarea 9).
 

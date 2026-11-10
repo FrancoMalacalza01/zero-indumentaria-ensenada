@@ -6,6 +6,8 @@
  * campo en null. Acá se puede probar sin navegador ni red.
  */
 
+import { precioVigente } from "./ofertas.mjs";
+
 const CATEGORIAS = ["Hombre", "Accesorios"];
 
 function entero(valor, porDefecto = 0) {
@@ -20,9 +22,10 @@ function lista(valor) {
 /**
  * @param productRows filas de `products`, ya ordenadas por `position`
  * @param stockRows   filas de `stock`
+ * @param ahora       la hora, para resolver las ofertas que ya vencieron
  * @returns los productos listos para la tienda; descarta los que no sirven
  */
-export function rowsToProducts(productRows, stockRows) {
+export function rowsToProducts(productRows, stockRows, ahora = Date.now()) {
   if (!Array.isArray(productRows)) return [];
   // El stock llega suelto: se agrupa por producto antes de armar nada.
   const porProducto = new Map();
@@ -44,6 +47,8 @@ export function rowsToProducts(productRows, stockRows) {
     const sizes = lista(fila.sizes);
     if (!sizes.length) continue;
     const stockGuardado = porProducto.get(id) || {};
+    // Una oferta vencida ya es el precio de antes: la base cobra lo mismo (`precio_vigente`).
+    const precio = precioVigente({ price: Math.max(0, entero(fila.price)), old: fila.old_price ? Math.max(0, entero(fila.old_price)) : null, hasta: fila.offer_until }, ahora);
     productos.push({
       id,
       name,
@@ -51,8 +56,9 @@ export function rowsToProducts(productRows, stockRows) {
       ...(typeof fila.source_catalog_id === "string" && fila.source_catalog_id ? { sourceCatalogId: fila.source_catalog_id } : {}),
       category: CATEGORIAS.includes(fila.category) ? fila.category : "Hombre",
       type: typeof fila.type === "string" && fila.type ? fila.type : "Prenda",
-      price: Math.max(0, entero(fila.price)),
-      ...(fila.old_price ? { oldPrice: Math.max(0, entero(fila.old_price)) } : {}),
+      price: precio.price,
+      ...(precio.old ? { oldPrice: precio.old } : {}),
+      ...(precio.old && precio.hasta ? { offerUntil: precio.hasta } : {}),
       image: typeof fila.image === "string" ? fila.image : "",
       ...(lista(fila.images).length ? { images: lista(fila.images) } : {}),
       color: typeof fila.color === "string" ? fila.color : "",
