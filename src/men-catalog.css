@@ -176,3 +176,15 @@
 .men-talles a { display: block; padding: 10px; }
 .men-talles img { display: block; width: 100%; height: auto; border-radius: 6px; background: #fff; }
 .men-talles small { display: block; padding: 0 14px 12px; font-size: 11px; color: #8a8c92; }
+
+/* Material, color y características de la prenda, dentro de la ficha. */
+.men-detalles { margin: 8px 0 6px; font-size: 13px; line-height: 1.45; }
+.men-detalles h3 { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.02em; }
+.men-detalles dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 8px; }
+.men-detalles dt { color: #6b6d73; }
+.men-detalles dd { margin: 0; font-weight: 600; }
+.men-detalles ul { margin: 0 0 8px; padding-left: 18px; }
+.men-detalles li { margin: 2px 0; }
+.men-detalles details { margin: 0 0 8px; }
+.men-detalles summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.men-detalles small { display: block; font-size: 11px; color: #8a8c92; }

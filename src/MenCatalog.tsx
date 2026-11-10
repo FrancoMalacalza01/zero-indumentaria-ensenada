@@ -7,8 +7,8 @@ import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import { descuento } from "./priceTools.mjs";
 import { ORDENES, ordenarProductos } from "./ordenProductos.mjs";
 import catalog from "./men-catalog.json";
-import medidasMistral from "./men-medidas.json";
 import { tablaDeTalles } from "./tablasTalle.mjs";
+import { detallesDePrenda } from "./detallesPrenda.mjs";
 import "./men-catalog.css";
 
 type MenProduct = {
@@ -99,9 +99,47 @@ function etiquetaPrecio(p: MenProduct) {
   return p.precioAnterior ? "Oferta" : p.precioZero ? "Precio Zero" : "Precio publicado por la marca";
 }
 
+type FichasDeMarca = Record<string, { composicion?: string | null; caracteristicas?: string[]; cuidados?: string[]; medidas?: { nota?: string; filas?: { talle: string; medidas: string }[] } | null }>;
+let fichasEnMemoria: FichasDeMarca | null = null;
+/**
+ * Lo que cada marca cuenta de sus prendas (material, características, medidas).
+ * Pesa más de un mega: se baja recién cuando alguien abre una prenda, no con la página.
+ */
+function useFichasDeMarca() {
+  const [fichas, setFichas] = useState<FichasDeMarca | null>(fichasEnMemoria);
+  useEffect(() => {
+    if (fichasEnMemoria) return;
+    let vigente = true;
+    import("./men-detalles.json").then((m) => {
+      fichasEnMemoria = (m.default || m) as unknown as FichasDeMarca;
+      if (vigente) setFichas(fichasEnMemoria);
+    }).catch(() => { /* sin la ficha, la galería sigue andando: sólo no muestra detalles */ });
+    return () => { vigente = false; };
+  }, []);
+  return fichas;
+}
+
+/** Material, color y características de la prenda, como los cuenta su marca. */
+function DetallesDePrenda({ product, fichas }: { product: MenProduct; fichas: FichasDeMarca | null }) {
+  const d = detallesDePrenda(product, fichas);
+  if (!d) return null;
+  return (
+    <section className="men-detalles" aria-label="Detalles de la prenda">
+      <h3>Detalles de la prenda</h3>
+      <dl>
+        {d.composicion && <><dt>Material</dt><dd>{d.composicion}</dd></>}
+        {d.colores.length > 0 && <><dt>{d.colores.length > 1 ? "Colores" : "Color"}</dt><dd>{d.colores.join(", ")}</dd></>}
+      </dl>
+      {d.caracteristicas.length > 0 && <ul>{d.caracteristicas.map((c) => <li key={c}>{c}</li>)}</ul>}
+      {d.cuidados.length > 0 && <details><summary>Cuidados</summary><ul>{d.cuidados.map((c) => <li key={c}>{c}</li>)}</ul></details>}
+      <small>Información de {product.brand}.</small>
+    </section>
+  );
+}
+
 /** La tabla de talles que publica la marca para esta prenda, si la publicó. */
-function TablaDeTalles({ product }: { product: MenProduct }) {
-  const tabla = tablaDeTalles(product, medidasMistral as Record<string, { nota?: string; filas?: { talle: string; medidas: string }[] }>);
+function TablaDeTalles({ product, fichas }: { product: MenProduct; fichas: FichasDeMarca | null }) {
+  const tabla = tablaDeTalles(product, fichas);
   if (!tabla) return null;
   return (
     <details className="men-talles">
@@ -127,6 +165,7 @@ function TablaDeTalles({ product }: { product: MenProduct }) {
 
 function ProductGallery({ product, close, consulta }: { product: MenProduct; close: () => void; consulta: string | null }) {
   const [photo, setPhoto] = useState(0);
+  const fichas = useFichasDeMarca();
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -155,7 +194,8 @@ function ProductGallery({ product, close, consulta }: { product: MenProduct; clo
           <h2>{product.name}</h2>
           <p>{etiquetaPrecio(product)}: <Precio p={product} /></p>
           <p>{photo + 1} de {product.images.length} fotos</p>
-          <TablaDeTalles product={product} />
+          <DetallesDePrenda product={product} fichas={fichas} />
+          <TablaDeTalles product={product} fichas={fichas} />
           {product.shopId && product.sizes.length > 0 && <Link className="button button-green" to={`/producto/${encodeURIComponent(product.shopId)}`}>Elegir talle y comprar</Link>}
           {consulta && <a className="button button-green men-whatsapp" href={consulta} target="_blank" rel="noreferrer noopener"><MessageCircle size={18} /> Consultar por WhatsApp</a>}
           <Link to="/sucursales">{consulta ? "Ver cómo llegar a Zero" : "Consultar en Zero"} <ArrowRight size={16} /></Link>

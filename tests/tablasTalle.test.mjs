@@ -4,8 +4,9 @@ import { existsSync } from "node:fs";
 import { tablaDeTalles } from "../src/tablasTalle.mjs";
 
 const medidas = {
-  "m-1": { nota: "Prenda en plano", filas: [{ talle: "M", medidas: "Ancho de pecho 54 cm" }, { talle: "L", medidas: "Ancho de pecho 56 cm" }] },
-  "m-2": { nota: "", filas: [] },
+  "m-1": { medidas: { nota: "Prenda en plano", filas: [{ talle: "M", medidas: "Ancho de pecho 54 cm" }, { talle: "L", medidas: "Ancho de pecho 56 cm" }] } },
+  "m-2": { medidas: { nota: "", filas: [] } },
+  "b-7": { medidas: { nota: "", filas: [{ talle: "S/38", medidas: "Ancho de pecho 54cm" }] } },
 };
 
 test("Mistral: la tabla sale de las medidas de su ficha", () => {
@@ -23,7 +24,13 @@ test("Mistral: sin medidas publicadas no hay tabla, ni se inventa una", () => {
   assert.equal(tablaDeTalles({ id: "constructor", brand: "Mistral" }, medidas), null);
 });
 
-test("Brooksfield: una imagen por tipo de prenda, y los jeans la suya", () => {
+test("Brooksfield: si la ficha trae las medidas de esa prenda, se usan esas y no la imagen general", () => {
+  const t = tablaDeTalles({ id: "b-7", brand: "Brooksfield", category: "Camisas", name: "Camisa" }, medidas);
+  assert.equal(t.tipo, "filas");
+  assert.equal(t.filas[0].talle, "S/38");
+});
+
+test("Brooksfield: sin medidas en la ficha, la imagen por tipo de prenda, y los jeans la suya", () => {
   const img = (category, name = "Algo") => tablaDeTalles({ id: "b-1", brand: "Brooksfield", category, name }, medidas);
   assert.equal(img("Remeras").src, "/men-medidas/brooksfield-remeras.jpg");
   assert.equal(img("Camperas").src, "/men-medidas/brooksfield-camperas.jpg");
