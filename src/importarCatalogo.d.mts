@@ -6,3 +6,4 @@ export interface FichaImportada {
 }
 export function prepararFichaImportada(prenda: FichaImportada, ajuste?: Partial<AjusteHombre>): Product;
 export function unirCatalogo<T extends FichaImportada>(importados: T[], productos: Product[], ajustes: Record<string, AjusteHombre>, ocultos: string[] | null): Array<FichaImportada & { precioZero?: boolean; precioAnterior?: number; shopId?: string }>;
+export function ocultosParaMostrar(respuesta: unknown, guardados: unknown): string[];

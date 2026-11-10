@@ -76,7 +76,11 @@ export async function fetchImportadosOcultos(): Promise<string[] | null> {
   try {
     const filas = await pedirTodasLasFilas<{ source_catalog_id?: unknown }>((ruta) => pedir(ruta, corte.signal), "rpc/catalogo_importado_oculto?order=source_catalog_id.asc");
     return filas.map((f) => f.source_catalog_id).filter((id): id is string => typeof id === "string");
-  } catch { return null; } finally { clearTimeout(reloj); }
+  } catch (err) {
+    // Queda en la consola del navegador para poder ver por qué falló (permiso, función que no existe, red).
+    console.warn("no se pudo leer la lista de fichas ocultas:", err instanceof Error ? err.message : err);
+    return null;
+  } finally { clearTimeout(reloj); }
 }
 
 /**
