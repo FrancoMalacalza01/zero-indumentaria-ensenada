@@ -72,3 +72,17 @@ export function unirCatalogo(importados, productos, ajustes, ocultos) {
   }
   return [...propios, ...fichas];
 }
+
+/**
+ * Qué fichas importadas están ocultas, para decidir qué mostrar.
+ *
+ * Si el servidor contestó (`respuesta` es una lista, aunque esté vacía), manda eso. Si no
+ * contestó (`null`: sin red, caído, error), se usa lo último que se supo (`guardados`), y si
+ * tampoco hay nada, se muestra el catálogo entero. La alternativa, no mostrar nada, dejaba la
+ * tienda vacía ante cualquier falla de una consulta que sólo sirve para esconder unas pocas fichas.
+ */
+export function ocultosParaMostrar(respuesta, guardados) {
+  if (Array.isArray(respuesta)) return respuesta.filter((id) => typeof id === "string");
+  if (Array.isArray(guardados)) return guardados.filter((id) => typeof id === "string");
+  return [];
+}

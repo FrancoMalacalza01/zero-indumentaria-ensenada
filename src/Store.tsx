@@ -15,6 +15,7 @@ import { prepareOrder } from "./commerce.mjs";
 import { flattenStock, needsStockMigration } from "./migrate.mjs";
 import { fetchCatalog, fetchAjustes, fetchImportadosOcultos, crearPedido } from "./server";
 import { leerAjustes, ajusteAFila } from "./menOverrides.mjs";
+import { ocultosParaMostrar } from "./importarCatalogo.mjs";
 import type { AjustesHombre } from "./menOverrides.mjs";
 import { fetchSettings, porDefecto } from "./settings";
 import { costoEnvio } from "./settingsMap.mjs";
@@ -26,6 +27,17 @@ const KEY = "mistral-local-demo-v1";
  * llega al servidor no vuelva a mostrar lo que el local ya dio de baja.
  */
 const KEY_AJUSTES = "zero-ajustes-hombre-v1";
+/** Lo último que se supo de las fichas importadas ocultas: si el servidor no contesta, se usa esto. */
+const KEY_OCULTOS = "zero-ocultos-hombre-v1";
+function ocultosGuardados(): string[] | null {
+  try {
+    const crudo = localStorage.getItem(KEY_OCULTOS);
+    const lista = crudo ? JSON.parse(crudo) : null;
+    return Array.isArray(lista) ? lista : null;
+  } catch {
+    return null;
+  }
+}
 function restaurarAjustes(): AjustesHombre {
   try {
     const filas = JSON.parse(localStorage.getItem(KEY_AJUSTES) || "null");
@@ -196,7 +208,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     "local",
   );
   const [settings, setSettings] = useState<Settings>(porDefecto);
-  const [importadosOcultos, setImportadosOcultos] = useState<string[] | null>(null);
+  // Nunca arranca en `null`: con eso la colección de hombre quedaba vacía hasta que el servidor
+  // contestara, y para siempre si no contestaba.
+  const [importadosOcultos, setImportadosOcultos] = useState<string[] | null>(() => ocultosParaMostrar(null, ocultosGuardados()));
   const [menOverrides, setMenOverrides] = useState<AjustesHombre>(restaurarAjustes);
   const [ajustesHombreCargados, setAjustesHombreCargados] = useState(false);
   // Espejo del estado al día, para poder leerlo en el mismo tick en que se
@@ -239,8 +253,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => {
     let vigente = true;
-    fetchImportadosOcultos().then((ids) => { if (vigente) setImportadosOcultos(ids); });
-    return () => { vigente = false; };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Si no contesta, se reintenta un par de veces; si sigue sin contestar, queda lo último que se supo.
+    const intentar = (n: number) => {
+      fetchImportadosOcultos().then((ids) => {
+        if (!vigente) return;
+        if (ids) {
+          setImportadosOcultos(ids);
+          try { localStorage.setItem(KEY_OCULTOS, JSON.stringify(ids)); } catch { /* sin almacenamiento sigue andando */ }
+        } else if (n < 2) {
+          timer = setTimeout(() => intentar(n + 1), 2000 * (n + 1));
+        } else {
+          setImportadosOcultos(ocultosParaMostrar(null, ocultosGuardados()));
+        }
+      });
+    };
+    intentar(0);
+    return () => { vigente = false; if (timer) clearTimeout(timer); };
   }, []);
   // Si el servidor no contesta (`null`), se queda lo último que se supo.
   useEffect(() => {

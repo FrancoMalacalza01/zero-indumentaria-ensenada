@@ -30,7 +30,7 @@ test("sin identificador no genera una ficha que pueda duplicarse", () => {
   assert.throws(() => prepararFichaImportada({ ...prenda, id: "" }));
 });
 
-import { unirCatalogo } from "../src/importarCatalogo.mjs";
+import { unirCatalogo, ocultosParaMostrar } from "../src/importarCatalogo.mjs";
 test("la ficha administrada reemplaza a la importada y muestra sólo talles con stock", () => {
   const ficha = { ...prepararFichaImportada(prenda), name: "Nombre nuevo", brand: "Otra", price: 7000, stock: { M: 2, L: 0 } };
   const r = unirCatalogo([prenda], [ficha], {}, []);
@@ -59,4 +59,15 @@ test("un producto nuevo creado por el local también aparece en hombre", () => {
   assert.equal(r.length, 1);
   assert.equal(r[0].shopId, "local-1");
   assert.deepEqual(r[0].sizes, ["M"]);
+});
+
+test("las fichas ocultas: manda el servidor; si no contesta, lo último que se supo; y si no hay nada, no se vacía la tienda", () => {
+  assert.deepEqual(ocultosParaMostrar(["a"], ["b"]), ["a"]);
+  assert.deepEqual(ocultosParaMostrar([], ["b"]), []); // el servidor dice que no hay ninguna oculta
+  assert.deepEqual(ocultosParaMostrar(null, ["b"]), ["b"]);
+  assert.deepEqual(ocultosParaMostrar(null, null), []);
+  assert.deepEqual(ocultosParaMostrar(undefined, "basura"), []);
+  assert.deepEqual(ocultosParaMostrar(["a", 5, null], null), ["a"]);
+  // con la lista vacía, el catálogo se muestra entero: nunca queda en cero por una falla
+  assert.equal(unirCatalogo([prenda], [], {}, ocultosParaMostrar(null, null)).length, 1);
 });
