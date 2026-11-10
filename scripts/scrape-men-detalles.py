@@ -4,6 +4,7 @@
 Por prenda deja en `src/men-detalles.json`, por id del catálogo:
 
   composicion      "55% lino, 45% algodón" (el material), o null si la ficha no lo dice
+  descripcion      ["Descubrí la chomba premium…", ...] los párrafos que escribe la marca (sólo Mistral)
   caracteristicas  ["Corte regular fit", "Cuello italiano", ...]
   cuidados         ["Lavar con agua tibia", ...]
   medidas          { nota, filas: [{ talle, medidas }] }, con las medidas de ESA prenda
@@ -11,7 +12,8 @@ Por prenda deja en `src/men-detalles.json`, por id del catálogo:
 No se inventa nada: lo que la ficha no trae, queda vacío. Los textos son de las
 marcas. El color no se baja acá: ya está en `men-catalog.json`.
 
-    python3 scripts/scrape-men-detalles.py
+    python3 scripts/scrape-men-detalles.py              # todas las marcas
+    python3 scripts/scrape-men-detalles.py --solo Mistral   # sólo una; el resto del archivo no se toca
 
 Necesita red hacia www.mistral.com.ar y www.brooksfieldstore.com. Baja unas 960
 páginas con 4 pedidos a la vez: tarda varios minutos.
@@ -115,6 +117,20 @@ def clasificar(lineas):
     return normalizar_composicion(comp), carac, cuid
 
 
+def parrafos(cabeza):
+    """Los párrafos de texto corrido de la ficha, sin las listas de características ni de medidas."""
+    salida = []
+    for l in cabeza.split("\n"):
+        l = re.sub(r"\s+([,.;:])", r"\1", re.sub(r"\s+", " ", l)).strip()  # "MC , una" -> "MC, una"
+        # Una lista en una sola línea ("Características: - Jersey - Importado") no es un párrafo.
+        if len(l) < 60 or re.search(r"\s-\s", l) or l.endswith(":"):
+            continue
+        if re.match(r"(medidas|las medidas|nota|importante)", l, re.I):
+            continue
+        salida.append(l)
+    return salida
+
+
 def mistral(pagina):
     t = sacar_json(pagina)
     m = re.search(r'"description": \{ "es": "(.*?)" \}', t, re.S)
@@ -133,7 +149,13 @@ def mistral(pagina):
     if comp is None:
         f = COMPOSICION.search(desc)
         comp = f.group(1).strip() if f else None
-    return {"composicion": comp, "caracteristicas": carac, "cuidados": cuid, "medidas": medidas_de(desc)}
+    return {
+        "composicion": comp,
+        "descripcion": parrafos(cabeza),
+        "caracteristicas": carac,
+        "cuidados": cuid,
+        "medidas": medidas_de(desc),
+    }
 
 
 def brooksfield(pagina):
@@ -156,11 +178,22 @@ def uno(p):
 
 if __name__ == "__main__":
     cat = json.load(open(f"{RAIZ}/src/men-catalog.json"))["products"]
-    lista = [(p["id"], p["brand"], p["url"]) for p in cat if p["brand"] in ("Mistral", "Brooksfield") and p.get("url")]
-    salida, vacias = {}, 0
+    marcas = ("Mistral", "Brooksfield")
+    if "--solo" in sys.argv:
+        marcas = (sys.argv[sys.argv.index("--solo") + 1],)
+    lista = [(p["id"], p["brand"], p["url"]) for p in cat if p["brand"] in marcas and p.get("url")]
+    # Con --solo se parte de lo que ya hay y sólo se reemplazan las prendas de esa marca.
+    ids_marca = {p["id"] for p in cat if p["brand"] in marcas}
+    previo = {}
+    if len(marcas) == 1:
+        try:
+            previo = {k: v for k, v in json.load(open(f"{RAIZ}/src/men-detalles.json")).items() if k not in ids_marca}
+        except OSError:
+            previo = {}
+    salida, vacias = dict(previo), 0
     with ThreadPoolExecutor(max_workers=4) as pool:
         for n, (pid, d) in enumerate(pool.map(uno, lista), 1):
-            if d and (d["composicion"] or d["caracteristicas"] or d["cuidados"] or d["medidas"]):
+            if d and (d["composicion"] or d.get("descripcion") or d["caracteristicas"] or d["cuidados"] or d["medidas"]):
                 salida[pid] = d
             else:
                 vacias += 1

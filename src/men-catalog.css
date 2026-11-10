@@ -188,3 +188,4 @@
 .men-detalles details { margin: 0 0 8px; }
 .men-detalles summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
 .men-detalles small { display: block; font-size: 11px; color: #8a8c92; }
+.men-descripcion p { margin: 0 0 8px; color: #3b3d44; }

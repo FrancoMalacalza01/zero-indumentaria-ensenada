@@ -11,8 +11,8 @@ const textos = (lista) =>
 
 /**
  * @param prenda    { id, colors }
- * @param detalles  { [id]: { composicion, caracteristicas, cuidados } }
- * @returns { composicion, colores, caracteristicas, cuidados } o `null` si no hay nada para mostrar
+ * @param detalles  { [id]: { composicion, descripcion, caracteristicas, cuidados } }
+ * @returns { composicion, colores, descripcion, caracteristicas, cuidados } o `null` si no hay nada para mostrar
  */
 export function detallesDePrenda(prenda, detalles) {
   if (!prenda || typeof prenda !== "object") return null;
@@ -20,7 +20,9 @@ export function detallesDePrenda(prenda, detalles) {
   const composicion = typeof d?.composicion === "string" && d.composicion.trim() ? d.composicion.trim() : "";
   const colores = textos(prenda.colors);
   const caracteristicas = textos(d?.caracteristicas).filter((c) => c !== composicion);
+  // Los párrafos que escribe la marca, tal cual. Si uno repite una característica, no se muestra dos veces.
+  const descripcion = textos(d?.descripcion).filter((p) => !caracteristicas.includes(p));
   const cuidados = textos(d?.cuidados);
-  if (!composicion && !colores.length && !caracteristicas.length && !cuidados.length) return null;
-  return { composicion, colores, caracteristicas, cuidados };
+  if (!composicion && !colores.length && !descripcion.length && !caracteristicas.length && !cuidados.length) return null;
+  return { composicion, colores, descripcion, caracteristicas, cuidados };
 }
