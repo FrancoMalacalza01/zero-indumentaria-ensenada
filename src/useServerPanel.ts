@@ -52,6 +52,16 @@ export interface Panel {
   publicarStock: (products: Product[], movements: Movement[]) => void;
   /** Cancela el pedido en el servidor y le devuelve el stock. */
   cancelar: (id: string) => void;
+  /**
+   * Habilita la compra de muchas fichas importadas de una vez: las guarda una por una (cada una
+   * en su transacción) con el stock que traen, mostrando el avance. Se puede cortar con `detener`.
+   */
+  habilitarEnBloque: (
+    fichas: Product[],
+    posicionInicial: number,
+    avance: (hechas: number, total: number) => void,
+    detener: { current: boolean },
+  ) => Promise<{ hechas: number; fallidas: { nombre: string; motivo: string }[]; detenido: boolean }>;
   /** Anula en Payway el pago de un pedido. Sólo `anulado` quiere decir que la plata volvió. */
   anularPagoPayway: (id: string) => Promise<{
     estado: "anulado" | "rechazado" | "incierto" | "error";
@@ -74,6 +84,7 @@ const SIN_SERVIDOR: Panel = {
   publicarPedido: () => {},
   publicarStock: () => {},
   cancelar: () => {},
+  habilitarEnBloque: async () => ({ hechas: 0, fallidas: [{ nombre: "", motivo: "No hay servidor conectado." }], detenido: false }),
   anularPagoPayway: async () => ({ estado: "error", mensaje: "No hay servidor conectado." }),
   publicarAjustes: () => {},
 };
@@ -197,6 +208,40 @@ export function useServerPanel(
       mandar(`No se guardó el pedido ${order.id}`, (s) =>
         guardarPedido(s, order),
       ),
+    habilitarEnBloque: async (fichas, posicionInicial, avance, detener) => {
+      const fallidas: { nombre: string; motivo: string }[] = [];
+      let hechas = 0;
+      let siguiente = 0;
+      let sesionVencida = false;
+      // Tres a la vez: son cientos de llamadas y una por una tardaría mucho.
+      const trabajar = async () => {
+        while (!detener.current && !sesionVencida) {
+          const i = siguiente++;
+          if (i >= fichas.length) return;
+          const ficha = fichas[i];
+          const viva = vivaRef.current;
+          if (!viva) return;
+          try {
+            const esperado = Object.fromEntries(ficha.sizes.map((t) => [t, 0]));
+            const { session: renovada } = await publicarProducto(viva, ficha, posicionInicial + i, esperado);
+            vivaRef.current = renovada;
+            hechas++;
+          } catch (err) {
+            if (err instanceof SesionVencida) {
+              sesionVencida = true;
+              vencidaRef.current();
+              return;
+            }
+            fallidas.push({ nombre: ficha.name, motivo: err instanceof Error ? err.message : "no se pudo guardar" });
+          }
+          avance(hechas + fallidas.length, fichas.length);
+        }
+      };
+      await Promise.all([trabajar(), trabajar(), trabajar()]);
+      // Recargar es lo que confirma lo que quedó guardado de verdad.
+      await traer();
+      return { hechas, fallidas, detenido: detener.current || sesionVencida };
+    },
     anularPagoPayway: async (id) => {
       const viva = vivaRef.current;
       if (!viva) return { estado: "error", mensaje: "No hay sesión abierta." };

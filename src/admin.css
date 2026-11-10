@@ -3577,3 +3577,16 @@ tr:hover .admin-precios-ofertar,
     font-size: 12px;
   }
 }
+
+/* Habilitar la compra online de todo el catálogo importado. */
+.admin-habilitar { margin: 0 0 16px; padding: 0; }
+.admin-habilitar summary { display: flex; align-items: center; gap: 8px; padding: 16px 20px; min-height: 48px; font-weight: 600; cursor: pointer; flex-wrap: wrap; }
+.admin-habilitar summary span { margin-left: auto; font-size: 12px; font-weight: 500; color: #62719d; }
+.admin-habilitar-cuerpo { display: grid; gap: 12px; padding: 0 20px 20px; font-size: 13px; line-height: 1.5; }
+.admin-habilitar-cuerpo p { margin: 0; }
+.admin-habilitar-aviso { padding: 10px 12px; border: 1px solid #e6c46a; border-radius: 8px; background: #fff8e1; color: #5c4400; }
+.admin-habilitar-detalle { color: #3f4766; }
+.admin-habilitar-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-habilitar-acciones .admin-button { min-height: 44px; }
+.admin-habilitar-resultado { padding: 10px 12px; border-radius: 8px; background: #eef5ee; }
+.admin-habilitar-resultado ul { margin: 6px 0 0; padding-left: 18px; }

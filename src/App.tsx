@@ -591,9 +591,12 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
     setCategory(storefrontCategory(params.get("categoria")));
     setQuery(params.get("q") || "");
   }, [location.search]);
+  // Las prendas importadas del catálogo de marcas se ven y se compran desde /hombre: acá, sin
+  // paginar, serían cientos de tarjetas.
   const availableProducts = products.filter(
     (p) =>
       isStorefrontProduct(p) &&
+      !p.sourceCatalogId &&
       (!favorites || saved.includes(p.id)) &&
       (!onlyNew || p.isNew),
   );

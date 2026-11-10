@@ -173,6 +173,24 @@ Cuatro decisiones que importan:
   cobro online no está disponible y la tienda sigue con el alias y el link de
   siempre. Lo mismo con el mail.
 
+### Habilitar la compra online de todo el catálogo
+
+Las 961 prendas de Mistral y Brooksfield se ven en `/hombre`, pero **no se pueden comprar hasta que
+tengan stock**: el sistema no inventa stock. En *Productos y stock* hay un cuadro, **Habilitar la
+compra online de todo el catálogo**, para hacerlo de una vez:
+
+1. El local escribe **cuántas unidades por talle** (de 1 a 999).
+2. Marca que entiende que se van a poder comprar online. Sin eso, el botón no se enciende.
+3. Se guardan las prendas de a una (cada una en su transacción, 3 a la vez), con el avance a la
+   vista y un botón **Detener**. Quedan afuera las que ya están administradas, las dadas de baja y
+   las sin talles. Se respeta el precio propio que el local ya puso.
+4. Después, lo que no se tenga se saca de la venta desde *Precios* o editando la prenda.
+
+**Ojo:** mientras estén así, cualquier cliente puede comprar esas unidades. Si no las hay, se vende
+lo que no existe. Las prendas importadas se compran desde `/hombre` y **no aparecen en `/tienda`**
+(sin paginación, serían cientos de tarjetas). La lógica está en `fichasParaHabilitar()`
+(`src/importarCatalogo.mjs`, con pruebas) y el cuadro en `src/AdminHabilitar.tsx`.
+
 ### Cobro con tarjeta por Payway
 
 Además de Mercado Pago, la tienda puede cobrar con tarjeta (Visa crédito y débito)
@@ -771,7 +789,7 @@ completar esos datos con información confirmada del local.
 | `reportes.test.mjs` | las cuentas de los reportes: los días en hora argentina (una venta de las 22 es de hoy, no de mañana), lo que volvió descontado de lo vendido, los cancelados fuera de la facturación, y qué conviene reponer | 17 |
 | `catalogMap.test.mjs` | lo que llega del servidor: filas incompletas, columnas en `null`, cantidades basura | 10 |
 | `menOverrides.test.mjs` | precios propios y bajas del catálogo de hombre: una baja conserva el precio puesto, una prenda vuelta a fábrica pierde su excepción, el precio se lee como se escribe (`32.900`) pero no se adivina (centavos, ceros, basura), y avisa un cambio de -90%; y las ofertas: el precio anterior sólo existe si es mayor al precio, terminar una oferta, que cambiar el precio la termine sólo si alcanza al anterior, y que ida y vuelta con el servidor dé lo mismo | 23 |
-| `importarCatalogo.test.mjs` | preparación de fichas importadas: fotos, ajustes, stock sin inventar unidades y visibilidad de fichas administradas y productos nuevos | 9 |
+| `importarCatalogo.test.mjs` | preparación de fichas importadas: fotos, ajustes, stock sin inventar unidades y visibilidad de fichas administradas y productos nuevos | 12 |
 | `paginar.test.mjs` | consulta todas las páginas de productos y stock y rechaza respuestas inválidas | 2 |
 | `modelos.test.mjs` | qué prendas son el mismo modelo: el nombre sin el código del final (`Remera Blank MC - 10206-5` es `Remera Blank MC`), sin confundir un guion del nombre, que cuente la tienda y el catálogo de hombre, la vista previa de todas las versiones, fin de ofertas y coincidencia con el precio de marca | 9 |
 | `ordenProductos.test.mjs` | el orden por precio de las prendas de hombre: menor a mayor y al revés, que con precios iguales se conserve el orden del catálogo, que una prenda sin precio válido vaya al final y que no se modifique la lista original | 5 |
