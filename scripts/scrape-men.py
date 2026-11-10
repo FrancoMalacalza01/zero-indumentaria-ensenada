@@ -266,9 +266,11 @@ def main():
             if product["brand"] == "Mistral" and product["name"].startswith("Parfum"):
                 product["category"] = "Fragancias"
             elif product["brand"] == "Mistral" and product["name"].startswith(("Gorro", "Cap ")):
-                product["category"] = "Accesorios"
+                product["category"] = "Accesorios"  # se descarta abajo: el local no vende Accesorios
             else:
                 product["category"] = "Otros"
+    # El local no vende la sección Accesorios: no entra al catálogo.
+    products = [p for p in products if p["category"] != "Accesorios"]
     OUT.write_text(json.dumps({
         "capturedAt": date.today().isoformat(),
         "sources": [MISTRAL, BROOKSFIELD],
