@@ -177,3 +177,59 @@ export function interpretarPago(httpStatus, cuerpo) {
     mensaje: "No pudimos procesar el pago. Revisá los datos de la tarjeta, o escribinos por WhatsApp.",
   };
 }
+
+/**
+ * El id del pago de Payway que guardamos en `pago_ref` ("payway:15523975"), o "" si el
+ * pedido no se pagó por Payway. Es lo que se usa para anular: sólo dígitos, porque va
+ * dentro de la dirección.
+ */
+export const idDePagoDe = (pagoRef) => /^payway:(\d{1,20})$/.exec(String(pagoRef || ""))?.[1] ?? "";
+
+/** La dirección para anular un pago: `/payments/{payment_id}/refunds`. "" si algo no sirve. */
+export function urlDeAnulacion(base, paymentId) {
+  const url = urlPaywayValida(base);
+  return url && /^\d{1,20}$/.test(String(paymentId)) ? `${url}/payments/${paymentId}/refunds` : "";
+}
+
+// Estados con los que Payway describe un pago que ya no está vigente. "approved" NO está:
+// un pago anulado que sigue diciendo "approved" es justo lo que no hay que dar por hecho.
+const ANULADOS = new Set([
+  "annulled",
+  "annulment_approved",
+  "cancelled",
+  "canceled",
+  "refunded",
+  "refunded_approved",
+  "approved_with_refund",
+]);
+
+/**
+ * Lo que dijo Payway al anular un pago, para el panel.
+ *  - anulado: Payway lo confirma con un estado de pago anulado/devuelto.
+ *  - rechazado: Payway contestó que no (por ejemplo, ya se cerró el lote).
+ *  - incierto: contestó bien pero sin un estado que confirme la anulación. NO se da por
+ *    anulado: se revisa en el backoffice de Payway antes de repetir.
+ *  - error: no se pudo ni preguntar (credenciales, caída).
+ * Esto lo ve el dueño, no el cliente.
+ */
+export function interpretarAnulacion(httpStatus, cuerpo) {
+  const c = cuerpo && typeof cuerpo === "object" ? cuerpo : {};
+  const status = String(c.status || "").toLowerCase();
+  if (httpStatus >= 200 && httpStatus < 300) {
+    if (ANULADOS.has(status)) return { estado: "anulado", mensaje: "Pago anulado en Payway." };
+    return {
+      estado: "incierto",
+      mensaje:
+        "Payway contestó, pero no pudimos confirmar que el pago quedó anulado. Revisalo en el backoffice de Payway antes de repetir.",
+    };
+  }
+  if (httpStatus === 401 || httpStatus === 403)
+    return { estado: "error", mensaje: "Payway no aceptó la clave. Revisá las credenciales cargadas en Supabase." };
+  if (httpStatus >= 400 && httpStatus < 500)
+    return {
+      estado: "rechazado",
+      mensaje:
+        "Payway no pudo anular el pago (puede ser que ya se haya cerrado el lote). La devolución se hace desde el backoffice de Payway.",
+    };
+  return { estado: "error", mensaje: "Payway no respondió bien. Probá de nuevo en un momento." };
+}

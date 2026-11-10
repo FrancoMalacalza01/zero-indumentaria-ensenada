@@ -246,6 +246,37 @@ export async function cancelarPedido(
 }
 
 /**
+ * Anula en Payway el pago de un pedido (la plata vuelve a la tarjeta del cliente).
+ *
+ * Es la función del servidor `payway-anular`, que exige una sesión de admin: va con el
+ * permiso de quien está en el panel, no con la clave pública. Devuelve lo que pasó en
+ * palabras para el dueño; sólo `anulado` quiere decir que el pago quedó anulado.
+ */
+export async function anularPagoPayway(session: Session, pedido: string) {
+  return conSesion(session, async (s) => {
+    try {
+      const r = await fetch(`${URL_SERVIDOR}/functions/v1/payway-anular`, {
+        method: "POST",
+        headers: {
+          apikey: CLAVE_PUBLICA,
+          Authorization: `Bearer ${s.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pedido }),
+      });
+      const d = await r.json().catch(() => ({}));
+      const estado = ["anulado", "rechazado", "incierto", "error"].includes(d?.estado) ? d.estado : "error";
+      return {
+        estado: estado as "anulado" | "rechazado" | "incierto" | "error",
+        mensaje: typeof d?.mensaje === "string" && d.mensaje ? d.mensaje : "No pudimos anular el pago.",
+      };
+    } catch {
+      return { estado: "error" as const, mensaje: "No pudimos llegar al servidor para anular el pago." };
+    }
+  });
+}
+
+/**
  * Trae todo lo que el panel necesita, incluido lo que la tienda no muestra.
  *
  * La tienda pide solo lo publicado; el panel tiene que ver también lo

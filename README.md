@@ -201,12 +201,32 @@ clave **privada**).
 
 1. Payway da las claves de **Sandbox** (pública y privada) y el acceso al backoffice de Pagos Online.
 2. En Supabase: *Edge Functions → Secrets → `PAYWAY_PRIVATE_API_KEY`* con la clave **privada**.
-3. Desplegar la función: `supabase functions deploy payway-pagar --no-verify-jwt` (la llama la tienda, donde el cliente no tiene cuenta, igual que `crear-pago`).
+3. Desplegar las funciones: `supabase functions deploy payway-pagar --no-verify-jwt` (la llama la tienda, donde el cliente no tiene cuenta, igual que `crear-pago`) y `supabase functions deploy payway-anular` (**sin** `--no-verify-jwt`: sólo la llama el panel, con sesión de admin).
 4. En el panel: la clave **pública** y la dirección (viene la de Sandbox), y prender el interruptor.
 5. Correr los casos de prueba de Payway (aprobado, rechazado 05 y 51, anulación). **Sin eso no habilitan producción.**
 6. Producción: Payway da claves nuevas. Cambian dos cosas: las claves y la dirección
    (`https://ventasonline.payway.com.ar/api/v2`; para la función, el secreto `PAYWAY_URL`).
    Antes de abrirlo a todos, un pago real de monto mínimo.
+
+**Anular un pago (cancelar un pedido pagado por Payway).** Cancelar un pedido devuelve el
+stock pero no la plata, y un pago de tarjeta hay que anularlo en Payway. Por eso, en el panel,
+**Cancelar** sobre un pedido pagado por Payway primero llama a la función `payway-anular`
+(`POST /payments/{payment_id}/refunds`, cuerpo vacío) y **sólo si Payway confirma la anulación**
+cancela el pedido y devuelve el stock:
+
+- **Sólo un admin puede anular.** La función exige una sesión válida y que el usuario esté en
+  `admins`; la clave pública de la tienda no alcanza. Se despliega con la verificación de JWT
+  prendida (la de fábrica), a diferencia de `payway-pagar`.
+- El id del pago sale de la base (`pago_ref`), no del panel. Se marca *devuelto* con una escritura
+  condicional **antes** de llamar a Payway (dos anulaciones a la vez no pasan las dos) y **vuelve a
+  *aprobado*** si Payway no lo confirma, no se entiende o no contesta: no se da por devuelta una
+  plata que no sabemos si volvió.
+- Si Payway **rechaza** (por ejemplo, ya se cerró el lote), el panel le pregunta al dueño si cancela
+  el pedido igual y devuelve la plata a mano desde el backoffice de Payway. Si no está claro qué
+  pasó (incierto o error), **no cancela nada**.
+- **Sólo anulación total.** La devolución parcial, o la posterior al cierre de lote, no está hecha:
+  la documentación no aclara si el monto va en centavos o en pesos, y equivocarse devolvería una
+  fracción. Se hace desde el backoffice de Payway.
 
 **Medios de pago:** sólo los dos ids confirmados en la documentación (Visa crédito `1`,
 Visa débito `31`). Para sumar otro se agrega en `MEDIOS` de
@@ -214,9 +234,9 @@ Visa débito `31`). Para sumar otro se agrega en `MEDIOS` de
 disponibles" de Payway; no se adivinan. Pago simple, **una cuota**.
 
 **Se prueba sin Payway:** `tests/payway.test.mjs` cubre las cuentas y las reglas, y
-`supabase/functions/payway-pagar/prueba.ts` (con Deno) corre la función entera contra
-una base y un Payway simulados: aprobado, rechazado, doble cobro, estados raros,
-credenciales mal, falta de respuesta y entradas inválidas.
+`supabase/functions/payway-pagar/prueba.ts` y `supabase/functions/payway-anular/prueba.ts` (con Deno)
+corren las funciones enteras contra una base y un Payway simulados: aprobado, rechazado, doble cobro,
+estados raros, credenciales mal, falta de respuesta, entradas inválidas y, en la anulación, que sólo un admin pueda.
 
 ### Cancelar un pedido devuelve el stock
 
@@ -760,7 +780,7 @@ completar esos datos con información confirmada del local.
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente | 38 |
 | `tablasTalle.test.mjs` | qué tabla de talles se muestra en cada prenda de hombre: las medidas de la ficha de esa prenda (Mistral o Brooksfield), la imagen general de Brooksfield por tipo de prenda (y la de jeans por nombre) cuando la ficha no trae medidas, que sin tabla publicada no se invente una, y que las imágenes existan | 7 |
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 5 |
-| `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos y cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) | 13 |
+| `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
