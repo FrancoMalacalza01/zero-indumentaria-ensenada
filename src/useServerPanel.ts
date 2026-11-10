@@ -18,6 +18,7 @@ import { useStore } from "./Store";
 import type { Session } from "./auth";
 import {
   cancelarPedido,
+  anularPagoPayway,
   cargarPanel,
   publicarProducto,
   borrarProducto,
@@ -51,6 +52,11 @@ export interface Panel {
   publicarStock: (products: Product[], movements: Movement[]) => void;
   /** Cancela el pedido en el servidor y le devuelve el stock. */
   cancelar: (id: string) => void;
+  /** Anula en Payway el pago de un pedido. Sólo `anulado` quiere decir que la plata volvió. */
+  anularPagoPayway: (id: string) => Promise<{
+    estado: "anulado" | "rechazado" | "incierto" | "error";
+    mensaje: string;
+  }>;
   /** Precios propios y bajas del catálogo de hombre, de las prendas indicadas. */
   publicarAjustes: (ids: string[], ajustes: AjustesHombre) => void;
 }
@@ -68,6 +74,7 @@ const SIN_SERVIDOR: Panel = {
   publicarPedido: () => {},
   publicarStock: () => {},
   cancelar: () => {},
+  anularPagoPayway: async () => ({ estado: "error", mensaje: "No hay servidor conectado." }),
   publicarAjustes: () => {},
 };
 
@@ -190,6 +197,18 @@ export function useServerPanel(
       mandar(`No se guardó el pedido ${order.id}`, (s) =>
         guardarPedido(s, order),
       ),
+    anularPagoPayway: async (id) => {
+      const viva = vivaRef.current;
+      if (!viva) return { estado: "error", mensaje: "No hay sesión abierta." };
+      try {
+        const { session: renovada, valor } = await anularPagoPayway(viva, id);
+        vivaRef.current = renovada;
+        return valor;
+      } catch (err) {
+        if (err instanceof SesionVencida) vencidaRef.current();
+        return { estado: "error", mensaje: "No pudimos anular el pago. Probá de nuevo." };
+      }
+    },
     cancelar: (id) =>
       mandar(`No se pudo cancelar el pedido ${id}`, (s) =>
         cancelarPedido(s, id),

@@ -30,3 +30,9 @@ export function interpretarPago(
   httpStatus: number,
   cuerpo: unknown,
 ): { estado: "aprobado" | "rechazado" | "pendiente" | "error"; paymentId: string; codigo: number | null; mensaje: string };
+export function idDePagoDe(pagoRef: unknown): string;
+export function urlDeAnulacion(base: unknown, paymentId: unknown): string;
+export function interpretarAnulacion(
+  httpStatus: number,
+  cuerpo: unknown,
+): { estado: "anulado" | "rechazado" | "incierto" | "error"; mensaje: string };

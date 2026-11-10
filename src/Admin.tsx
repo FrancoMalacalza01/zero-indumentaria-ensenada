@@ -346,25 +346,52 @@ export default function Admin({
    * hace acá, que es lo que se puede: se repone el stock, queda el movimiento
    * y el pedido pasa a Cancelado.
    */
-  function cancelar(order: Order) {
+  async function cancelar(order: Order) {
     const unidades = order.items.reduce((s, i) => s + i.quantity, 0);
+    // Un pedido pagado por Payway se cancela DEVOLVIENDO la plata: cancelar sólo el pedido
+    // dejaría el stock repuesto y el pago de la tarjeta en pie.
+    const pagoPayway =
+      panel.conectado && order.paymentStatus === "aprobado" && /^payway:\d+$/.test(order.pagoRef || "");
     if (
       !confirm(
-        `¿Cancelar el pedido ${order.id}?\n\nVuelven ${unidades} ${unidades === 1 ? "unidad" : "unidades"} al stock. Esto no se puede deshacer.`,
+        pagoPayway
+          ? `¿Cancelar el pedido ${order.id}?\n\nEstá pagado con tarjeta por Payway: primero se anula el pago (la plata vuelve a la tarjeta del cliente) y después vuelven ${unidades} ${unidades === 1 ? "unidad" : "unidades"} al stock. Esto no se puede deshacer.`
+          : `¿Cancelar el pedido ${order.id}?\n\nVuelven ${unidades} ${unidades === 1 ? "unidad" : "unidades"} al stock. Esto no se puede deshacer.`,
       )
     )
       return;
+    if (pagoPayway) {
+      const r = await panel.anularPagoPayway(order.id);
+      if (r.estado === "rechazado") {
+        // Payway dijo que no (por ejemplo, el lote ya se cerró): el dueño decide si cancela
+        // igual y devuelve la plata a mano desde el backoffice de Payway.
+        if (
+          !confirm(
+            `${r.mensaje}\n\n¿Cancelás el pedido igual y devolvés la plata a mano desde el backoffice de Payway?`,
+          )
+        )
+          return;
+      } else if (r.estado !== "anulado") {
+        // Incierto o error: no se cancela nada hasta saber qué pasó con la plata.
+        alert(`${r.mensaje}\n\nEl pedido NO se canceló.`);
+        return;
+      }
+    }
     if (panel.conectado) {
       panel.cancelar(order.id);
       // En pantalla se adelanta; la recarga que viene después confirma.
       setOrders(
         orders.map((o) =>
           o.id === order.id
-            ? { ...o, status: "Cancelado", paymentStatus: "rechazado" }
+            ? { ...o, status: "Cancelado", paymentStatus: pagoPayway ? "devuelto" : "rechazado" }
             : o,
         ),
       );
-      notify("Pedido cancelado y stock devuelto");
+      notify(
+        pagoPayway
+          ? "Pago anulado en Payway, pedido cancelado y stock devuelto"
+          : "Pedido cancelado y stock devuelto",
+      );
       return;
     }
     applyStock(

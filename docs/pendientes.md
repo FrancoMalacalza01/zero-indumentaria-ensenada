@@ -379,8 +379,9 @@ Está programado y probado **con Payway simulado** (`tests/payway.test.mjs` y
 Payway**: no teníamos claves. Cómo está armado y cómo se prende: README, *Cobro con
 tarjeta por Payway*. Lo que falta, en orden:
 
-1. **Desplegar** `payway-pagar` (`supabase functions deploy payway-pagar --no-verify-jwt`)
-   y cargar `PAYWAY_PRIVATE_API_KEY`. Hoy no está desplegada.
+1. **Desplegar** `payway-pagar` (`supabase functions deploy payway-pagar --no-verify-jwt`) y
+   `payway-anular` (`supabase functions deploy payway-anular`, **sin** `--no-verify-jwt`) y cargar
+   `PAYWAY_PRIVATE_API_KEY`. Hoy no están desplegadas.
 2. **Probar en Sandbox** con las claves reales. Dudas que sólo el Sandbox responde:
    - La respuesta de `POST /tokens`: se lee el campo `id` (lo que dice la documentación
      de `/payments` sobre el token de 36 caracteres). Si viene con otro nombre, es un
@@ -391,9 +392,13 @@ tarjeta por Payway*. Lo que falta, en orden:
      contemplado de las dos formas.
 3. **Casos de prueba de Payway**: aprobado ($10.000 en 1 cuota y $30.000 en 3), rechazo
    05 y 51, débito (id 31) y **anulación**. Payway no habilita producción hasta aprobarlos.
-4. **Anulación y devoluciones**: no están hechas. Hace falta una función más (con la
-   clave privada y el `payment_id` guardado en `pago_ref`) y un botón en el panel de
-   pedidos. Es un caso de prueba obligatorio de Payway.
+4. **Anulación: hecha** (`payway-anular`, enganchada al botón *Cancelar* de un pedido pagado por
+   Payway; probada con Payway simulado). Dudas para el Sandbox: qué `status` devuelve Payway al
+   anular (se da por anulado sólo con `annulled`, `cancelled`, `refunded` y parecidos; con otro
+   estado el panel dice "incierto" y no cancela). **Falta la devolución parcial o posterior al
+   cierre de lote** (mismo endpoint con `{"amount": N}`): no se programó porque la documentación no
+   dice si el monto va en centavos o en pesos, y equivocarse devolvería una fracción. Tampoco está
+   enganchada la pestaña *Devoluciones* (prendas devueltas después de entregadas).
 5. **Consulta de estado** (`GET /payments` con `siteOperationId`): para resolver los
    pedidos que quedan *pendientes* por falta de respuesta o por `review`. Hoy se revisan
    a mano en el backoffice de Payway. No se programó porque no tenemos la forma exacta de

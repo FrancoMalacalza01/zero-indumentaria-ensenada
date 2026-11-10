@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ENTORNO_PRODUCCION, ENTORNO_SANDBOX, MEDIOS, binDe, centavos, codigoValido, cuerpoDePago, cuerpoDeToken, dniValido, idTransaccion,
-  interpretarPago, medioValido, mensajeDeRechazo, tarjetaValida, urlPaywayValida, vencimiento,
+  idDePagoDe, interpretarAnulacion, interpretarPago, medioValido, urlDeAnulacion, mensajeDeRechazo, tarjetaValida, urlPaywayValida, vencimiento,
 } from "../supabase/functions/_shared/payway.mjs";
 
 test("el número de tarjeta se valida con el dígito verificador", () => {
@@ -141,4 +141,44 @@ test("un estado que no se entiende NO se da por pagado", () => {
 test("el mensaje para el cliente nunca trae estados técnicos de Payway", () => {
   for (const r of [interpretarPago(401, { error: "x" }), interpretarPago(200, { status: "review" }), interpretarPago(402, null)])
     assert.doesNotMatch(r.mensaje, /status|rejected|approved|apikey|token/i);
+});
+
+test("el id del pago sale de pago_ref, y sólo si el pedido se pagó por Payway", () => {
+  assert.equal(idDePagoDe("payway:15523975"), "15523975");
+  assert.equal(idDePagoDe("payway-tx:M00007Tabc"), ""); // un cobro en curso no es un pago
+  assert.equal(idDePagoDe("12345678"), ""); // Mercado Pago
+  assert.equal(idDePagoDe("payway:1/../../x"), "");
+  assert.equal(idDePagoDe("payway:"), "");
+  assert.equal(idDePagoDe(null), "");
+});
+
+test("la dirección de anulación lleva el id del pago y sólo es de Payway", () => {
+  assert.equal(
+    urlDeAnulacion(ENTORNO_SANDBOX, "15523975"),
+    "https://developers-ventasonline.payway.com.ar/api/v2/payments/15523975/refunds",
+  );
+  assert.equal(urlDeAnulacion(ENTORNO_PRODUCCION + "/", "7"), "https://ventasonline.payway.com.ar/api/v2/payments/7/refunds");
+  assert.equal(urlDeAnulacion(ENTORNO_SANDBOX, "1/../2"), "");
+  assert.equal(urlDeAnulacion(ENTORNO_SANDBOX, ""), "");
+  assert.equal(urlDeAnulacion("https://evil.com/api/v2", "7"), "");
+});
+
+test("anulación: sólo se da por anulado si Payway lo confirma con un estado de anulado", () => {
+  for (const status of ["annulled", "ANNULLED", "cancelled", "refunded", "annulment_approved"])
+    assert.equal(interpretarAnulacion(200, { id: 1, status }).estado, "anulado", status);
+  // 2xx sin un estado que lo confirme: NO se da por hecho
+  assert.equal(interpretarAnulacion(200, { id: 1, status: "approved" }).estado, "incierto");
+  assert.equal(interpretarAnulacion(201, {}).estado, "incierto");
+  assert.equal(interpretarAnulacion(200, null).estado, "incierto");
+});
+
+test("anulación: rechazos y errores, con mensajes para el dueño sin detalles técnicos", () => {
+  assert.equal(interpretarAnulacion(402, { error: "x" }).estado, "rechazado");
+  assert.equal(interpretarAnulacion(404, null).estado, "rechazado");
+  assert.match(interpretarAnulacion(409, null).mensaje, /backoffice/i);
+  assert.equal(interpretarAnulacion(401, {}).estado, "error");
+  assert.equal(interpretarAnulacion(403, {}).estado, "error");
+  assert.equal(interpretarAnulacion(500, null).estado, "error");
+  for (const r of [interpretarAnulacion(401, {}), interpretarAnulacion(500, null)])
+    assert.doesNotMatch(r.mensaje, /apikey|token|status/i);
 });
