@@ -86,3 +86,43 @@ export function ocultosParaMostrar(respuesta, guardados) {
   if (Array.isArray(guardados)) return guardados.filter((id) => typeof id === "string");
   return [];
 }
+
+/** Tope de unidades por talle que se puede poner de una vez: evita un cero de más al tipear. */
+export const TOPE_UNIDADES_POR_TALLE = 999;
+
+/**
+ * Las fichas importadas que se pueden habilitar para la compra online de una vez, cada una
+ * con `unidades` por cada talle que tiene.
+ *
+ * El stock lo decide el local: esta función no lo inventa, sólo lo reparte como se le pide.
+ * Quedan afuera (y se cuentan aparte) las que ya están administradas, las que el local dio
+ * de baja y las que no tienen talles (no hay qué comprar).
+ *
+ * @returns { fichas, yaHabilitadas, dadasDeBaja, sinTalles }; `fichas` es [] si las
+ *          unidades no son un entero de 1 a TOPE_UNIDADES_POR_TALLE.
+ */
+export function fichasParaHabilitar({ catalogo, productos, ajustes, unidades }) {
+  const vacio = { fichas: [], yaHabilitadas: 0, dadasDeBaja: 0, sinTalles: 0 };
+  if (!Number.isInteger(unidades) || unidades < 1 || unidades > TOPE_UNIDADES_POR_TALLE) return vacio;
+  const origenes = new Set((Array.isArray(productos) ? productos : []).map((p) => p?.sourceCatalogId).filter(Boolean));
+  const salida = { ...vacio, fichas: [] };
+  for (const prenda of Array.isArray(catalogo) ? catalogo : []) {
+    if (!prenda || typeof prenda.id !== "string") continue;
+    if (origenes.has(prenda.id)) {
+      salida.yaHabilitadas++;
+      continue;
+    }
+    const ajuste = ajustes?.[prenda.id] || {};
+    if (ajuste.active === false) {
+      salida.dadasDeBaja++;
+      continue;
+    }
+    const ficha = prepararFichaImportada(prenda, ajuste);
+    if (!ficha.sizes.length || !(ficha.price > 0)) {
+      salida.sinTalles++;
+      continue;
+    }
+    salida.fichas.push({ ...ficha, stock: Object.fromEntries(ficha.sizes.map((t) => [t, unidades])) });
+  }
+  return salida;
+}

@@ -58,6 +58,7 @@ import AdminReports from "./AdminReports";
 import AdminPrecios from "./AdminPrecios";
 import catalogoImportado from "./men-catalog.json";
 import { prepararFichaImportada } from "./importarCatalogo.mjs";
+import { AdminHabilitar } from "./AdminHabilitar";
 import { avisoDeCambio, leerPrecio } from "./menOverrides.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
@@ -893,6 +894,8 @@ export default function Admin({
           )}
 
           {tab === "inventory" && (
+            <>
+            <AdminHabilitar products={products} ajustes={menOverrides} panel={panel} notify={notify} />
             <section className="admin-card admin-inventory-card">
               <div className="admin-inventory-heading">
                 <div>
@@ -1056,6 +1059,7 @@ export default function Admin({
                 </span>
               </div>
             </section>
+            </>
           )}
 
           {tab === "sale" && (
