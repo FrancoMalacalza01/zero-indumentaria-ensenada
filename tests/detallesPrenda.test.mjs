@@ -44,3 +44,14 @@ test("los renglones repetidos de la ficha se muestran una sola vez", () => {
   assert.deepEqual(d.cuidados, ["Lavar"]);
   assert.deepEqual(d.colores, ["Azul"]);
 });
+
+test("los párrafos de la marca se muestran tal cual y sin repetir una característica", () => {
+  const d = detallesDePrenda(
+    { id: "m", colors: [] },
+    { m: { descripcion: ["Descubrí la chomba premium.", "Cuello polo", "Descubrí la chomba premium.", "  "], caracteristicas: ["Cuello polo"] } },
+  );
+  assert.deepEqual(d.descripcion, ["Descubrí la chomba premium."]);
+  // sólo con descripción, igual hay bloque
+  assert.deepEqual(detallesDePrenda({ id: "m" }, { m: { descripcion: ["Un texto largo de la marca."] } }).descripcion, ["Un texto largo de la marca."]);
+  assert.deepEqual(detallesDePrenda({ id: "z", colors: ["Azul"] }, null).descripcion, []);
+});

@@ -99,7 +99,7 @@ function etiquetaPrecio(p: MenProduct) {
   return p.precioAnterior ? "Oferta" : p.precioZero ? "Precio Zero" : "Precio publicado por la marca";
 }
 
-type FichasDeMarca = Record<string, { composicion?: string | null; caracteristicas?: string[]; cuidados?: string[]; medidas?: { nota?: string; filas?: { talle: string; medidas: string }[] } | null }>;
+type FichasDeMarca = Record<string, { composicion?: string | null; descripcion?: string[]; caracteristicas?: string[]; cuidados?: string[]; medidas?: { nota?: string; filas?: { talle: string; medidas: string }[] } | null }>;
 let fichasEnMemoria: FichasDeMarca | null = null;
 /**
  * Lo que cada marca cuenta de sus prendas (material, características, medidas).
@@ -130,6 +130,7 @@ function DetallesDePrenda({ product, fichas }: { product: MenProduct; fichas: Fi
         {d.composicion && <><dt>Material</dt><dd>{d.composicion}</dd></>}
         {d.colores.length > 0 && <><dt>{d.colores.length > 1 ? "Colores" : "Color"}</dt><dd>{d.colores.join(", ")}</dd></>}
       </dl>
+      {d.descripcion.length > 0 && <div className="men-descripcion">{d.descripcion.map((p) => <p key={p}>{p}</p>)}</div>}
       {d.caracteristicas.length > 0 && <ul>{d.caracteristicas.map((c) => <li key={c}>{c}</li>)}</ul>}
       {d.cuidados.length > 0 && <details><summary>Cuidados</summary><ul>{d.cuidados.map((c) => <li key={c}>{c}</li>)}</ul></details>}
       <small>Información de {product.brand}.</small>
