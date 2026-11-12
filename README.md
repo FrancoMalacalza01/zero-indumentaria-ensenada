@@ -441,6 +441,13 @@ costo y si va por reparto propio o por Correo Argentino.
 - **Quién paga el envío.** Lo paga quien compra, y el checkout lo dice con todas las letras
   (`textoQuienPagaEnvio`): pasado el monto del envío gratis, lo pagamos nosotros. El texto
   toma el monto de la configuración, así no promete uno distinto del que cobra la base.
+- **El envío se suma en la bolsa, no recién en el checkout.** La bolsa pregunta "¿Cómo lo
+  recibís?" (retiro o envío a una zona), muestra el costo de esa zona, cuánto falta para el
+  envío sin cargo y el total con envío. La elección se recuerda en la pestaña
+  (`src/zonaElegida.ts`) y el checkout arranca desde ahí. El cálculo es el mismo de siempre
+  (`costoEnvio`), y el que manda al cobrar es `crear_pedido`.
+- **Los cambios se avisan en cada ficha.** Una nota corta (`NotaDeCambios`) con el plazo y las
+  condiciones, enlazada a `/devoluciones`. El plazo (`cambioDias`) se carga en *Configuración*.
 - **Una zona sin costo cargado no sale gratis.** El checkout dice "a coordinar
   por WhatsApp", que es mejor que inventarle un número al cliente. Con `0`
   dice "sin cargo" y con un número lo cobra.
@@ -654,7 +661,7 @@ mezclarlas es como se termina en Defensa del Consumidor:
 |---|---|---|
 | **Arrepentimiento** (sin motivo) | 10 días corridos, mínimo legal | **El local, siempre.** No se puede poner monto mínimo ni condiciones. |
 | **Prenda fallada** (garantía legal) | 6 meses para prendas nuevas | **El local, siempre.** |
-| **Cambio por talle o color** | El que el local decida | El cliente, salvo que la compra pase el monto configurado (de fábrica, $99.999). |
+| **Cambio por talle o color** | 30 días corridos desde que se recibe el pedido (configurable, aparte del arrepentimiento), con la prenda sin uso, con etiquetas y en su bolsa original; sujeto a stock | El cliente, salvo que la compra pase el monto configurado (de fábrica, $99.999) y sólo en el primer cambio. |
 
 El derecho de arrepentimiento está en el artículo 34 de la Ley 24.240 de
 Defensa del Consumidor: diez días corridos, y los gastos de devolución a

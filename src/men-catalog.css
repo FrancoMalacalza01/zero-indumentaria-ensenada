@@ -189,3 +189,6 @@
 .men-detalles summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
 .men-detalles small { display: block; font-size: 11px; color: #8a8c92; }
 .men-descripcion p { margin: 0 0 8px; color: #3b3d44; }
+
+.nota-cambios { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; margin: 10px 0; font-size: 13px; line-height: 1.45; color: var(--muted, #5a6070); }
+.nota-cambios svg { margin-top: 3px; flex: none; }
