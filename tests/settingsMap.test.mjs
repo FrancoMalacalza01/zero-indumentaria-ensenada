@@ -360,3 +360,25 @@ test("Payway: prenderlo exige un booleano de verdad", () => {
   assert.equal(leerSettings({ pago: { paywayOnline: true } }).pago.paywayOnline, true);
   assert.equal(leerSettings({ pago: { paywayOnline: "true" } }).pago.paywayOnline, false);
 });
+
+import { textoQuienPagaEnvio } from "../src/settingsMap.mjs";
+
+test("el cliente lee quién paga el envío, con el monto de la configuración", () => {
+  const s = leerSettings({ envio: { envioGratisDesde: 100000 } });
+  const t = textoQuienPagaEnvio(s);
+  assert.match(t, /lo paga quien compra/);
+  assert.match(t, /100\.000/);
+  assert.match(t, /lo pagamos nosotros/);
+});
+
+test("sin envío gratis, el texto sólo dice que lo paga quien compra", () => {
+  const t = textoQuienPagaEnvio(leerSettings({ envio: { envioGratisDesde: 0 } }));
+  assert.equal(t, "El envío lo paga quien compra.");
+});
+
+test("de fábrica el envío es gratis por encima de $99.999", () => {
+  const s = leerSettings({});
+  assert.equal(s.envio.envioGratisDesde, 100000);
+  assert.equal(llegaAlEnvioGratis(s, 99999), false);
+  assert.equal(llegaAlEnvioGratis(s, 100000), true);
+});

@@ -438,10 +438,13 @@ Zonas de fábrica: **Ensenada, Berisso, La Plata y el resto de la Provincia de
 Buenos Aires**. Se agregan y se sacan desde el panel; cada una tiene nombre,
 costo y si va por reparto propio o por Correo Argentino.
 
+- **Quién paga el envío.** Lo paga quien compra, y el checkout lo dice con todas las letras
+  (`textoQuienPagaEnvio`): pasado el monto del envío gratis, lo pagamos nosotros. El texto
+  toma el monto de la configuración, así no promete uno distinto del que cobra la base.
 - **Una zona sin costo cargado no sale gratis.** El checkout dice "a coordinar
   por WhatsApp", que es mejor que inventarle un número al cliente. Con `0`
   dice "sin cargo" y con un número lo cobra.
-- **Envío sin cargo desde un monto.** De fábrica, $99.999. Se mira contra las
+- **Envío sin cargo desde un monto.** De fábrica, $100.000 (o sea, por encima de $99.999). Se mira contra las
   prendas, sin el envío: si no, el propio envío ayudaría a alcanzar el umbral.
   Con `0`, el envío gratis no existe.
 - **El costo lo pone la base.** La cuenta la hace `crear_pedido` al cobrar y

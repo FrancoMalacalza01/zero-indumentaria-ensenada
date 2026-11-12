@@ -80,7 +80,7 @@ export const porDefecto = () => ({
       },
     ],
     /** Desde este monto de prendas, el envío va sin cargo. 0 = nunca. */
-    envioGratisDesde: 99999,
+    envioGratisDesde: 100000,
   },
   /**
    * Quién vende. El consumidor tiene que poder saberlo antes de comprar:
@@ -338,6 +338,21 @@ export function textoPlazoEnvio(zona) {
   return zona?.tipo === "correo"
     ? `Plazo estimado: ${plazo} desde que despachamos tu pedido.`
     : `Plazo estimado: ${plazo}.`;
+}
+
+/**
+ * Quién paga el envío, dicho como lo lee el cliente antes de comprar.
+ *
+ * El envío lo paga quien compra; pasado el monto del envío gratis lo paga el local. El monto
+ * sale de la configuración (el mismo que usa `costoEnvio` y la base), así el texto nunca
+ * promete un umbral distinto del que se cobra.
+ */
+export function textoQuienPagaEnvio(settings) {
+  const gratis = settings?.envio?.envioGratisDesde || 0;
+  const pesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  return gratis > 0
+    ? `El envío lo paga quien compra. En compras de ${pesos.format(gratis)} o más (sin contar el envío) lo pagamos nosotros.`
+    : "El envío lo paga quien compra.";
 }
 
 /** true si la compra ya pasó el monto desde el que el envío va sin cargo. */
