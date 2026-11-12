@@ -192,3 +192,15 @@
 
 .nota-cambios { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; margin: 10px 0; font-size: 13px; line-height: 1.45; color: var(--muted, #5a6070); }
 .nota-cambios svg { margin-top: 3px; flex: none; }
+
+/*
+ * El botón "Elegir talle y comprar" de la ficha es un enlace con clase `button`: sin esto lo
+ * pintaba `.men-gallery-details a` (texto oscuro, subrayado) sobre el fondo oscuro del botón y
+ * quedaba un bloque negro sin texto, imposible de reconocer como el botón de compra.
+ */
+.men-gallery-details a.button { display: flex; justify-content: center; width: 100%; margin-top: 22px; padding: 14px 23px; color: #fff; border-bottom: 0; font-size: 14px; font-weight: 700; }
+.men-gallery-details a.button + a { margin-top: 16px; }
+@media (max-width: 650px) { .men-gallery-details a.button { margin-top: 12px; padding: 12px 18px; } }
+/* La nota de cambios es un aviso, no un dato principal: sin negrita y más chica que el precio. */
+.men-gallery-details .nota-cambios { font-weight: 400; font-size: 12.5px; color: #4a4d55; }
+.men-gallery-details .nota-cambios a { display: inline; margin: 0; padding: 0; font-size: inherit; border-bottom: 1px solid; }
