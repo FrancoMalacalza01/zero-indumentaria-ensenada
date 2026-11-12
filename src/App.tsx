@@ -60,6 +60,7 @@ import {
   deliveryAvailable,
   deliveryZones,
   faltaParaEnvioGratis,
+  textoQuienPagaEnvio,
   zoneByName,
 } from "./delivery";
 const Admin = lazy(() => import("./Admin"));
@@ -1502,6 +1503,9 @@ function Checkout() {
                   </>
                 )}
               </p>
+              {delivery === "shipping" && (
+                <p className="reference-price">{textoQuienPagaEnvio(settings)}</p>
+              )}
               {falta > 0 && (
                 <p className="reference-price">
                   Te faltan {money(falta)} para que el envío vaya sin cargo.

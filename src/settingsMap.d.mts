@@ -2,6 +2,7 @@ import type { Settings } from "./types";
 export function porDefecto(): Settings;
 export function leerSettings(datos: unknown): Settings;
 export const PLAZO_CORREO_CLASICO: string;
+export function textoQuienPagaEnvio(settings: unknown): string;
 export function textoPlazoEnvio(
   zona: { tipo?: string; plazo?: string } | undefined,
 ): string | null;

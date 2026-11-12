@@ -14,6 +14,7 @@ export {
   costoEnvio,
   llegaAlEnvioGratis,
   faltaParaEnvioGratis,
+  textoQuienPagaEnvio,
 } from "./settingsMap.mjs";
 
 export function deliveryZones(settings: Settings): ZonaEnvio[] {
