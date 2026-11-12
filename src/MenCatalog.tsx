@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, MessageCircle, Ruler, X } from "lucide-react";
 import { Link } from "./router";
 import { useStore } from "./Store";
+import NotaDeCambios from "./NotaDeCambios";
 import { unirCatalogo } from "./importarCatalogo.mjs";
 import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import { descuento } from "./priceTools.mjs";
@@ -197,6 +198,7 @@ function ProductGallery({ product, close, consulta }: { product: MenProduct; clo
           <p>{photo + 1} de {product.images.length} fotos</p>
           <DetallesDePrenda product={product} fichas={fichas} />
           <TablaDeTalles product={product} fichas={fichas} />
+          <NotaDeCambios />
           {product.shopId && product.sizes.length > 0 && <Link className="button button-green" to={`/producto/${encodeURIComponent(product.shopId)}`}>Elegir talle y comprar</Link>}
           {consulta && <a className="button button-green men-whatsapp" href={consulta} target="_blank" rel="noreferrer noopener"><MessageCircle size={18} /> Consultar por WhatsApp</a>}
           <Link to="/sucursales">{consulta ? "Ver cómo llegar a Zero" : "Consultar en Zero"} <ArrowRight size={16} /></Link>

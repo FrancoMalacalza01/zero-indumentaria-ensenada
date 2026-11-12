@@ -15,6 +15,7 @@ export {
   llegaAlEnvioGratis,
   faltaParaEnvioGratis,
   textoQuienPagaEnvio,
+  textoNotaDeCambios,
 } from "./settingsMap.mjs";
 
 export function deliveryZones(settings: Settings): ZonaEnvio[] {

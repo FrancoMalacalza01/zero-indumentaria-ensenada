@@ -803,6 +803,18 @@ export default function AdminConfig({
             />
           </label>
           <label className="admin-field">
+            Días para cambiar por talle o color
+            <input
+              type="number"
+              min={1}
+              max={90}
+              value={draft.devoluciones.cambioDias}
+              onChange={(e) =>
+                setDev("cambioDias", Math.min(90, Math.max(1, Number(e.target.value) || 30)))
+              }
+            />
+          </label>
+          <label className="admin-field">
             Cambio con envío sin cargo desde ($)
             <input
               type="number"

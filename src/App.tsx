@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { money, useStore } from "./Store";
 import { Link, navigate, useRoute } from "./router";
+import NotaDeCambios from "./NotaDeCambios";
+import { guardarEleccion, leerEleccion } from "./zonaElegida";
 import { CATEGORIAS_EN_TIENDA, esProductoDeTienda } from "./storefront.mjs";
 import {
   Arrepentimiento,
@@ -830,6 +832,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
           <p className="reference-price">
             Precio de referencia para esta demostración.
           </p>
+          <NotaDeCambios />
           <div className="detail-divider" />
           <p className="color-label">
             Color: <b>{p.color}</b>
@@ -1014,6 +1017,21 @@ function Cart({ onClose }: { onClose: () => void }) {
       !product?.active ||
       (product.stock[item.size] || 0) < item.quantity,
   );
+  // Cómo lo recibe: con envío, el costo de la zona se suma acá mismo, antes de llegar al checkout.
+  const zonasEnvio = deliveryZones(settings);
+  const guardada = leerEleccion(zonasEnvio);
+  const [recibe, setRecibe] = useState<"pickup" | "shipping">(guardada?.delivery ?? "pickup");
+  const [zonaBolsa, setZonaBolsa] = useState(guardada?.zone || zonasEnvio[0]?.nombre || "");
+  const conEnvio = recibe === "shipping" && zonasEnvio.length > 0;
+  const costoBolsa = conEnvio ? costoEnvio(settings, zonaBolsa, total) : 0;
+  const faltaBolsa = conEnvio && costoBolsa !== 0 ? faltaParaEnvioGratis(settings, total) : 0;
+  const elegir = (valor: string) => {
+    const envia = valor !== "retiro";
+    const zona = envia ? valor : zonaBolsa;
+    setRecibe(envia ? "shipping" : "pickup");
+    setZonaBolsa(zona);
+    guardarEleccion({ delivery: envia ? "shipping" : "pickup", zone: zona });
+  };
   return (
     <Overlay
       title={`Tu bolsa (${cart.reduce((s, i) => s + i.quantity, 0)})`}
@@ -1114,7 +1132,41 @@ function Cart({ onClose }: { onClose: () => void }) {
               <span>Subtotal</span>
               <strong>{money(total)}</strong>
             </div>
-            <p>El retiro en el local no tiene costo.</p>
+            {zonasEnvio.length > 0 && (
+              <label className="field cart-envio">
+                ¿Cómo lo recibís?
+                <select
+                  aria-label="Cómo recibís la compra"
+                  value={conEnvio ? zonaBolsa : "retiro"}
+                  onChange={(e) => elegir(e.target.value)}
+                >
+                  <option value="retiro">Retiro en el local (sin costo)</option>
+                  {zonasEnvio.map((z) => (
+                    <option key={z.id} value={z.nombre}>
+                      Envío a {z.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {conEnvio ? (
+              <>
+                <div>
+                  <span>Envío a {zonaBolsa}</span>
+                  <strong>
+                    {costoBolsa === null ? "a coordinar" : costoBolsa === 0 ? "sin cargo" : money(costoBolsa)}
+                  </strong>
+                </div>
+                <div className="cart-total">
+                  <span>Total</span>
+                  <strong>{money(total + (costoBolsa || 0))}</strong>
+                </div>
+                <p>{textoQuienPagaEnvio(settings)}</p>
+                {faltaBolsa > 0 && <p>Te faltan {money(faltaBolsa)} para que el envío vaya sin cargo.</p>}
+              </>
+            ) : (
+              <p>El retiro en el local no tiene costo.</p>
+            )}
             {invalid && (
               <p className="form-error" role="alert">
                 Revisá los productos sin stock antes de continuar.
@@ -1222,8 +1274,11 @@ function Checkout() {
   const [method, setMethod] = useState<PaymentMethodId | undefined>(
     options[0]?.id,
   );
-  const [delivery, setDelivery] = useState<"pickup" | "shipping">("pickup");
-  const [zone, setZone] = useState(zonas[0]?.nombre || "");
+  // Si ya eligió cómo recibirlo en la bolsa, se parte de ahí.
+  const inicial = leerEleccion(zonas);
+  const [delivery, setDelivery] = useState<"pickup" | "shipping">(inicial?.delivery ?? "pickup");
+  const [zone, setZone] = useState(inicial?.zone || zonas[0]?.nombre || "");
+  useEffect(() => guardarEleccion({ delivery, zone }), [delivery, zone]);
   // Con servidor esto deja de ser un recorrido de prueba: el pedido entra al
   // local y el nombre hace falta de verdad.
   const enVivo = catalogSource === "servidor";
@@ -1856,6 +1911,11 @@ function Returns() {
           mínimo ni condiciones: es un derecho tuyo por la Ley 24.240 de
           Defensa del Consumidor, y no se puede renunciar.
         </p>
+        <p>
+          Escribinos por WhatsApp o Instagram con el número de pedido: te
+          decimos cómo enviarla (o cuándo pasar por el local) sin que pongas
+          plata.
+        </p>
         <h3>Botón de arrepentimiento</h3>
         <p className="legal-nota">
           Completá los datos y se abre el mensaje listo para enviar. Te
@@ -1910,23 +1970,36 @@ function Returns() {
       <section className="legal-block">
         <h2>Cambio por talle o color</h2>
         <p>
-          Dentro de los <b>{dev.dias} días</b>, con la prenda sin usar y con
-          su etiqueta. Esto es una cortesía nuestra, no una obligación legal,
-          así que tiene una condición:
+          Tenés <b>{dev.cambioDias} días corridos</b> desde que recibís el
+          pedido para pedir un cambio. Esto es una cortesía nuestra, no una
+          obligación legal (el arrepentimiento y la garantía son aparte, más
+          arriba). Para aceptarlo, la prenda tiene que estar:
         </p>
+        <ul>
+          <li>Sin uso.</li>
+          <li>Con las etiquetas originales intactas.</li>
+          <li>En su bolsa o empaque original.</li>
+        </ul>
+        <p>Quién paga el envío del cambio:</p>
         <ul>
           <li>
             Compras de <b>{money(dev.cambioGratisDesde)} o más</b>: el envío
-            del cambio lo pagamos nosotros.
+            del primer cambio lo pagamos nosotros.
           </li>
           <li>
             Compras menores a {money(dev.cambioGratisDesde)}: el envío del
             cambio lo paga quien compra, según la tarifa de Correo Argentino
             que corresponda al peso y al código postal.
           </li>
+          <li>
+            Un segundo cambio, o los siguientes: el envío corre siempre por
+            cuenta de quien compra.
+          </li>
         </ul>
         <p className="legal-nota">
-          Para saber qué talle pedir, mirá{" "}
+          Los cambios dependen del stock que haya cuando lo pedís: puede que
+          el modelo exacto ya no esté, y si cambiás por otro puede haber
+          diferencia de precio. Para saber qué talle pedir, mirá{" "}
           <Link className="text-link" to="/talles">
             la tabla de medidas
           </Link>
@@ -1940,18 +2013,35 @@ function Returns() {
       </section>
 
       <section className="legal-block">
-        <h2>Cómo devolver o cambiar</h2>
+        <h2>Cómo hacer un cambio</h2>
+        <h3>Por correo</h3>
         <ol>
           <li>Escribinos por WhatsApp o Instagram con el número de pedido.</li>
-          <li>Te confirmamos cómo enviarla o cuándo pasar por el local.</li>
+          <li>Te confirmamos la dirección a la que mandarlo.</li>
           <li>
-            Si pasás por el local: <b>{donde}</b>.
+            Embalalo en un <b>sobre o caja nueva</b> que lo proteja, bien
+            cerrado. No uses el embalaje con el que te llegó: al abrirse deja
+            de ser seguro.
           </li>
           <li>
-            Si es por correo: te damos la dirección y, cuando el envío corre
-            por nuestra cuenta, la forma de despacharlo sin que pongas plata.
+            Adentro poné una nota con tu <b>número de pedido</b> y el{" "}
+            <b>motivo del cambio</b>. El remitente tiene que ser quien hizo la
+            compra.
+          </li>
+          <li>
+            Podés usar cualquier empresa de correo. Es tu responsabilidad que
+            el paquete llegue.
           </li>
         </ol>
+        <h3>En el local</h3>
+        <p>
+          Pasá por <b>{donde}</b> con la prenda y el número de pedido.
+        </p>
+        <p className="legal-nota">
+          Si la prenda no cumple las condiciones de arriba no podemos
+          hacer el cambio. Estas condiciones pueden actualizarse; vale la
+          versión publicada cuando hiciste la compra.
+        </p>
         {dev.notas && <p className="legal-nota">{dev.notas}</p>}
       </section>
 

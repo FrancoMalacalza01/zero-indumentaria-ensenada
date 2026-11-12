@@ -157,6 +157,8 @@ export interface Settings {
   };
   devoluciones: {
     dias: number;
+    /** Días para cambiar por talle o color, desde la recepción del pedido. */
+    cambioDias: number;
     cambioGratisDesde: number;
     direccion: string;
     notas: string;

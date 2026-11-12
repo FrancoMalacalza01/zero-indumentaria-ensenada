@@ -382,3 +382,22 @@ test("de fábrica el envío es gratis por encima de $99.999", () => {
   assert.equal(llegaAlEnvioGratis(s, 99999), false);
   assert.equal(llegaAlEnvioGratis(s, 100000), true);
 });
+
+import { textoNotaDeCambios } from "../src/settingsMap.mjs";
+
+test("los días de cambio: 30 de fábrica, aparte del arrepentimiento, con tope razonable", () => {
+  const s = leerSettings({});
+  assert.equal(s.devoluciones.cambioDias, 30);
+  assert.equal(s.devoluciones.dias, 10);
+  assert.equal(leerSettings({ devoluciones: { cambioDias: 15 } }).devoluciones.cambioDias, 15);
+  assert.equal(leerSettings({ devoluciones: { cambioDias: 0 } }).devoluciones.cambioDias, 30);
+  assert.equal(leerSettings({ devoluciones: { cambioDias: 9999 } }).devoluciones.cambioDias, 90);
+  assert.equal(leerSettings({ devoluciones: { cambioDias: "xx" } }).devoluciones.cambioDias, 30);
+});
+
+test("la nota de cambios de la ficha usa los días de la configuración", () => {
+  const t = textoNotaDeCambios(leerSettings({ devoluciones: { cambioDias: 20 } }));
+  assert.match(t, /20 días corridos/);
+  assert.match(t, /sin uso/);
+  assert.match(t, /etiquetas/);
+});

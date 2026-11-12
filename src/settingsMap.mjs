@@ -107,6 +107,12 @@ export const porDefecto = () => ({
     /** Días corridos del derecho de arrepentimiento. La ley dice diez. */
     dias: 10,
     /**
+     * Días corridos para pedir un cambio por talle o color, contados desde que el
+     * cliente recibe el pedido. Es una cortesía del local, no el derecho de
+     * arrepentimiento: por eso es otro número y no tiene el piso de la ley.
+     */
+    cambioDias: 30,
+    /**
      * Desde este monto, el cambio por talle o color lo paga el local.
      * Abajo de eso lo paga el cliente. No aplica al arrepentimiento ni a una
      * prenda fallada: esos los paga el local siempre, lo diga esto o no.
@@ -296,6 +302,7 @@ export function leerSettings(datos) {
     },
     devoluciones: {
       dias: Math.max(10, entero(dev.dias, base.devoluciones.dias)),
+      cambioDias: Math.min(90, Math.max(1, entero(dev.cambioDias, base.devoluciones.cambioDias) || base.devoluciones.cambioDias)),
       cambioGratisDesde: entero(
         dev.cambioGratisDesde,
         base.devoluciones.cambioGratisDesde,
@@ -353,6 +360,12 @@ export function textoQuienPagaEnvio(settings) {
   return gratis > 0
     ? `El envío lo paga quien compra. En compras de ${pesos.format(gratis)} o más (sin contar el envío) lo pagamos nosotros.`
     : "El envío lo paga quien compra.";
+}
+
+/** La nota corta de cambios que se ve en cada ficha de producto, antes de comprar. */
+export function textoNotaDeCambios(settings) {
+  const dias = settings?.devoluciones?.cambioDias || 30;
+  return `Cambios por talle o color: hasta ${dias} días corridos desde que recibís el pedido, con la prenda sin uso, con sus etiquetas y en su bolsa original.`;
 }
 
 /** true si la compra ya pasó el monto desde el que el envío va sin cargo. */
