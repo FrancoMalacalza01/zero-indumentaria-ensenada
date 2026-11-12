@@ -3,6 +3,10 @@ export function porDefecto(): Settings;
 export function leerSettings(datos: unknown): Settings;
 export const PLAZO_CORREO_CLASICO: string;
 export function textoQuienPagaEnvio(settings: unknown): string;
+export function rangosDeCodigosPostales(texto: unknown): [number, number][];
+export function codigoPostalDe(entrada: unknown): number | null;
+export function hayCodigosPostales(zonas: readonly { cp?: string }[]): boolean;
+export function zonaPorCodigoPostal<T extends { cp?: string }>(zonas: readonly T[], entrada: unknown): T | null;
 export function textoNotaDeCambios(settings: unknown): string;
 export function textoPlazoEnvio(
   zona: { tipo?: string; plazo?: string } | undefined,

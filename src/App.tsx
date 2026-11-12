@@ -36,6 +36,7 @@ import { money, useStore } from "./Store";
 import { Link, navigate, useRoute } from "./router";
 import NotaDeCambios from "./NotaDeCambios";
 import { guardarEleccion, leerEleccion } from "./zonaElegida";
+import SelectorDeZona from "./SelectorDeZona";
 import { CATEGORIAS_EN_TIENDA, esProductoDeTienda } from "./storefront.mjs";
 import {
   Arrepentimiento,
@@ -63,6 +64,7 @@ import {
   deliveryZones,
   faltaParaEnvioGratis,
   textoQuienPagaEnvio,
+  hayCodigosPostales,
   zoneByName,
 } from "./delivery";
 const Admin = lazy(() => import("./Admin"));
@@ -1021,16 +1023,24 @@ function Cart({ onClose }: { onClose: () => void }) {
   const zonasEnvio = deliveryZones(settings);
   const guardada = leerEleccion(zonasEnvio);
   const [recibe, setRecibe] = useState<"pickup" | "shipping">(guardada?.delivery ?? "pickup");
-  const [zonaBolsa, setZonaBolsa] = useState(guardada?.zone || zonasEnvio[0]?.nombre || "");
+  const conCodigos = hayCodigosPostales(zonasEnvio);
+  const [destino, setDestino] = useState({
+    zone: guardada?.zone ?? (conCodigos ? "" : zonasEnvio[0]?.nombre || ""),
+    cp: guardada?.cp ?? "",
+  });
+  const zonaBolsa = destino.zone;
   const conEnvio = recibe === "shipping" && zonasEnvio.length > 0;
-  const costoBolsa = conEnvio ? costoEnvio(settings, zonaBolsa, total) : 0;
-  const faltaBolsa = conEnvio && costoBolsa !== 0 ? faltaParaEnvioGratis(settings, total) : 0;
-  const elegir = (valor: string) => {
-    const envia = valor !== "retiro";
-    const zona = envia ? valor : zonaBolsa;
+  // Con códigos postales, hasta que el código no cae en una zona no hay costo que mostrar.
+  const sinZona = conEnvio && !zonaBolsa;
+  const costoBolsa = conEnvio && !sinZona ? costoEnvio(settings, zonaBolsa, total) : 0;
+  const faltaBolsa = conEnvio && !sinZona && costoBolsa !== 0 ? faltaParaEnvioGratis(settings, total) : 0;
+  const elegir = (envia: boolean) => {
     setRecibe(envia ? "shipping" : "pickup");
-    setZonaBolsa(zona);
-    guardarEleccion({ delivery: envia ? "shipping" : "pickup", zone: zona });
+    guardarEleccion({ delivery: envia ? "shipping" : "pickup", ...destino });
+  };
+  const elegirDestino = (d: { zone: string; cp: string }) => {
+    setDestino(d);
+    guardarEleccion({ delivery: "shipping", ...d });
   };
   return (
     <Overlay
@@ -1137,19 +1147,18 @@ function Cart({ onClose }: { onClose: () => void }) {
                 ¿Cómo lo recibís?
                 <select
                   aria-label="Cómo recibís la compra"
-                  value={conEnvio ? zonaBolsa : "retiro"}
-                  onChange={(e) => elegir(e.target.value)}
+                  value={conEnvio ? "envio" : "retiro"}
+                  onChange={(e) => elegir(e.target.value === "envio")}
                 >
                   <option value="retiro">Retiro en el local (sin costo)</option>
-                  {zonasEnvio.map((z) => (
-                    <option key={z.id} value={z.nombre}>
-                      Envío a {z.nombre}
-                    </option>
-                  ))}
+                  <option value="envio">Envío a domicilio</option>
                 </select>
               </label>
             )}
-            {conEnvio ? (
+            {conEnvio && (
+              <SelectorDeZona zonas={zonasEnvio} value={destino} onChange={elegirDestino} whatsapp={settings.whatsapp} />
+            )}
+            {conEnvio && !sinZona ? (
               <>
                 <div>
                   <span>Envío a {zonaBolsa}</span>
@@ -1165,7 +1174,7 @@ function Cart({ onClose }: { onClose: () => void }) {
                 {faltaBolsa > 0 && <p>Te faltan {money(faltaBolsa)} para que el envío vaya sin cargo.</p>}
               </>
             ) : (
-              <p>El retiro en el local no tiene costo.</p>
+              !conEnvio && <p>El retiro en el local no tiene costo.</p>
             )}
             {invalid && (
               <p className="form-error" role="alert">
@@ -1174,7 +1183,7 @@ function Cart({ onClose }: { onClose: () => void }) {
             )}
             <button
               className="button button-green"
-              disabled={invalid}
+              disabled={invalid || sinZona}
               onClick={() => {
                 onClose();
                 navigate("/checkout");
@@ -1276,9 +1285,11 @@ function Checkout() {
   );
   // Si ya eligió cómo recibirlo en la bolsa, se parte de ahí.
   const inicial = leerEleccion(zonas);
+  const conCodigos = hayCodigosPostales(zonas);
   const [delivery, setDelivery] = useState<"pickup" | "shipping">(inicial?.delivery ?? "pickup");
-  const [zone, setZone] = useState(inicial?.zone || zonas[0]?.nombre || "");
-  useEffect(() => guardarEleccion({ delivery, zone }), [delivery, zone]);
+  const [zone, setZone] = useState(inicial?.zone ?? (conCodigos ? "" : zonas[0]?.nombre || ""));
+  const [cp, setCp] = useState(inicial?.cp ?? "");
+  useEffect(() => guardarEleccion({ delivery, zone, cp }), [delivery, zone, cp]);
   // Con servidor esto deja de ser un recorrido de prueba: el pedido entra al
   // local y el nombre hace falta de verdad.
   const enVivo = catalogSource === "servidor";
@@ -1438,9 +1449,11 @@ function Checkout() {
   const zonaElegida = zoneByName(settings, zone);
   // La misma cuenta que hace la base al cobrar. `null` es "todavía no está
   // definido": la zona existe pero no tiene costo cargado.
-  const envio = delivery === "shipping" ? costoEnvio(settings, zone, total) : 0;
+  // Con códigos postales, sin zona (código sin escribir o que no cubrimos) no hay a dónde enviar.
+  const sinZona = delivery === "shipping" && !zone;
+  const envio = delivery === "shipping" && !sinZona ? costoEnvio(settings, zone, total) : 0;
   const falta =
-    delivery === "shipping" && envio !== 0
+    delivery === "shipping" && !sinZona && envio !== 0
       ? faltaParaEnvioGratis(settings, total)
       : 0;
   return (
@@ -1527,20 +1540,20 @@ function Checkout() {
                 </label>
               </div>
               {delivery === "shipping" && (
-                <label className="field">
-                  ¿A qué ciudad lo mandamos?
-                  <select
-                    value={zone}
-                    onChange={(e) => setZone(e.target.value)}
-                  >
-                    {zonas.map((z) => (
-                      <option key={z.id}>{z.nombre}</option>
-                    ))}
-                  </select>
-                </label>
+                <SelectorDeZona
+                  zonas={zonas}
+                  value={{ zone, cp }}
+                  onChange={(d) => {
+                    setZone(d.zone);
+                    setCp(d.cp);
+                  }}
+                  whatsapp={settings.whatsapp}
+                />
               )}
               <p className="reference-price">
-                {delivery === "shipping" ? (
+                {sinZona ? (
+                  <>Poné tu código postal para ver cuánto sale el envío.</>
+                ) : delivery === "shipping" ? (
                   <>
                     {envio === 0
                       ? "Envío sin cargo"
@@ -1651,7 +1664,7 @@ function Checkout() {
               {error}
             </p>
           )}
-          <button className="button button-green" type="submit" disabled={busy}>
+          <button className="button button-green" type="submit" disabled={busy || sinZona}>
             {enVivo
               ? busy
                 ? "Confirmando…"
@@ -1677,7 +1690,7 @@ function Checkout() {
               </div>
             );
           })}
-          {delivery === "shipping" && (
+          {delivery === "shipping" && !sinZona && (
             <div className="summary-line">
               <span>Envío a {zone}</span>
               <strong>

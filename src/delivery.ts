@@ -16,6 +16,9 @@ export {
   faltaParaEnvioGratis,
   textoQuienPagaEnvio,
   textoNotaDeCambios,
+  zonaPorCodigoPostal,
+  hayCodigosPostales,
+  codigoPostalDe,
 } from "./settingsMap.mjs";
 
 export function deliveryZones(settings: Settings): ZonaEnvio[] {
