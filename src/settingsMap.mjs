@@ -189,6 +189,7 @@ function zonas(valor, base) {
       tipo,
       ...(puesto === undefined ? {} : { costo: puesto }),
       ...(texto(z?.nota) ? { nota: texto(z.nota) } : {}),
+      ...(texto(z?.cp).trim() ? { cp: texto(z.cp).trim().slice(0, 600) } : {}),
       ...(plazo === undefined || (plazo === "" && tipo !== "correo")
         ? {}
         : { plazo }),
@@ -360,6 +361,49 @@ export function textoQuienPagaEnvio(settings) {
   return gratis > 0
     ? `El envío lo paga quien compra. En compras de ${pesos.format(gratis)} o más (sin contar el envío) lo pagamos nosotros.`
     : "El envío lo paga quien compra.";
+}
+
+/**
+ * Los números de código postal de un texto como "1923, 1925, 1900-1909".
+ * Devuelve rangos `[desde, hasta]`; lo que no se entiende se ignora (no rompe la tienda).
+ */
+export function rangosDeCodigosPostales(texto) {
+  const rangos = [];
+  for (const parte of String(texto ?? "").split(/[,;\s]+/)) {
+    const m = /^[A-Za-z]?(\d{4})(?:\s*[-–]\s*[A-Za-z]?(\d{4}))?$/.exec(parte.trim());
+    if (!m) continue;
+    const desde = Number(m[1]);
+    const hasta = m[2] === undefined ? desde : Number(m[2]);
+    if (hasta >= desde) rangos.push([desde, hasta]);
+  }
+  return rangos;
+}
+
+/**
+ * El código postal que escribió el cliente, como número de 4 dígitos. Acepta "1925",
+ * "B1925" y el CPA completo "B1925ABC"; devuelve `null` si no es un código.
+ */
+export function codigoPostalDe(entrada) {
+  const m = /^[A-Za-z]?\s*(\d{4})\s*(?:[A-Za-z]{3})?$/.exec(String(entrada ?? "").trim());
+  return m ? Number(m[1]) : null;
+}
+
+/** true si alguna zona del local dice qué códigos postales cubre: el checkout pide el código. */
+export function hayCodigosPostales(zonas) {
+  return (Array.isArray(zonas) ? zonas : []).some((z) => rangosDeCodigosPostales(z?.cp).length > 0);
+}
+
+/**
+ * La zona de envío de un código postal, o `null` si ninguna lo cubre. Si dos zonas lo cubren
+ * gana la primera de la lista, así el local decide poniendo la más específica arriba.
+ */
+export function zonaPorCodigoPostal(zonas, entrada) {
+  const cp = codigoPostalDe(entrada);
+  if (cp === null) return null;
+  for (const z of Array.isArray(zonas) ? zonas : []) {
+    if (rangosDeCodigosPostales(z?.cp).some(([d, h]) => cp >= d && cp <= h)) return z;
+  }
+  return null;
 }
 
 /** La nota corta de cambios que se ve en cada ficha de producto, antes de comprar. */

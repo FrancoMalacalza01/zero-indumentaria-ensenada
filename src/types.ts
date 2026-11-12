@@ -88,6 +88,11 @@ export interface ZonaEnvio {
   costo?: number;
   nota?: string;
   /**
+   * Los códigos postales que cubre, como los escribe el local: "1923, 1925, 1900-1909".
+   * Si alguna zona lo tiene, el cliente escribe su código y la zona sale sola.
+   */
+  cp?: string;
+  /**
    * Cuánto tarda en llegar, en las palabras que ve el cliente ("2 a 5 días
    * hábiles"). Vacío = no se dice nada. Las zonas de Correo Argentino traen el
    * de Paq.ar Clásico de fábrica.

@@ -693,6 +693,16 @@ export default function AdminConfig({
                 />
               </label>
               <label className="admin-field">
+                Códigos postales que cubre
+                <input
+                  type="text"
+                  maxLength={600}
+                  placeholder="ej. 1923, 1900-1909"
+                  value={z.cp ?? ""}
+                  onChange={(e) => editarZona(i, { cp: e.target.value })}
+                />
+              </label>
+              <label className="admin-field">
                 Cómo llega
                 <select
                   value={z.tipo}

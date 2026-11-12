@@ -446,6 +446,18 @@ costo y si va por reparto propio o por Correo Argentino.
   envío sin cargo y el total con envío. La elección se recuerda en la pestaña
   (`src/zonaElegida.ts`) y el checkout arranca desde ahí. El cálculo es el mismo de siempre
   (`costoEnvio`), y el que manda al cobrar es `crear_pedido`.
+- **La zona sale del código postal.** Cada zona puede decir qué códigos cubre
+  (*Configuración → Envíos → Códigos postales que cubre*, por ejemplo `1923, 1925, 1900-1909`).
+  Si alguna zona los tiene, la bolsa y el checkout piden el código postal del cliente (acepta
+  `1925`, `B1925` y `B1925ABC`) y la zona, con su costo, salen solas. Si dos zonas cubren el mismo
+  código gana la primera de la lista (poné la más específica arriba). Un código que ninguna zona
+  cubre no se acepta: el aviso manda a WhatsApp y no se puede continuar, en vez de inventar un
+  precio. Si ninguna zona tiene códigos, queda el desplegable de siempre. Pasa por
+  `zonaPorCodigoPostal` (`src/settingsMap.mjs`).
+  *Límite:* el costo lo sigue cobrando la base por **nombre de zona**; el código postal sólo
+  ayuda a elegirla, así que quien prepara el pedido tiene que mirar que la dirección que pasa el
+  cliente corresponda a la zona. Los códigos hay que cargarlos y verificarlos en el panel; el
+  código no trae ninguno de fábrica.
 - **Los cambios se avisan en cada ficha.** Una nota corta (`NotaDeCambios`) con el plazo y las
   condiciones, enlazada a `/devoluciones`. El plazo (`cambioDias`) se carga en *Configuración*.
 - **Una zona sin costo cargado no sale gratis.** El checkout dice "a coordinar
@@ -815,7 +827,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 269 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 280 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -835,6 +847,7 @@ completar esos datos con información confirmada del local.
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los párrafos de la marca salgan tal cual, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 6 |
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
 | `ofertas.test.mjs` | las ofertas con fecha de fin: el último segundo del día elegido en hora de Argentina, qué fechas se rechazan, que una oferta vencida vuelva al precio de antes (en la tienda, en los precios propios de hombre y en los precios en masa), que una sin fecha o con fecha ilegible nunca venza, y que el vencimiento se guarde, se borre y se restaure al deshacer | 17 |
+| `codigoPostal.test.mjs` | el envío por código postal: cómo se lee lo que escribe el cliente (`1925`, `B1925`, `B1925ABC`), la lista de códigos de una zona (sueltos y rangos, lo ilegible se ignora), que cada código caiga en su zona y gane la primera si dos lo cubren, que uno no cubierto no tenga zona y que sólo se pida el código si el local cargó alguno | 6 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
