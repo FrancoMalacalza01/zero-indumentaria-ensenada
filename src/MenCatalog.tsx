@@ -134,9 +134,15 @@ function ProductGallery({ product, close, consulta }: { product: MenProduct; clo
           <DetallesDePrenda product={product} fichas={fichas} />
           <TablaDeTalles product={product} fichas={fichas} />
           <NotaDeCambios />
-          {product.shopId && product.sizes.length > 0 && <Link className="button button-green" to={`/producto/${encodeURIComponent(product.shopId)}`}>Elegir talle y comprar</Link>}
-          {consulta && <a className="button button-green men-whatsapp" href={consulta} target="_blank" rel="noreferrer noopener"><MessageCircle size={18} /> Consultar por WhatsApp</a>}
-          <Link to="/sucursales">{consulta ? "Ver cómo llegar a Zero" : "Consultar en Zero"} <ArrowRight size={16} /></Link>
+          {/* Si se puede comprar, se compra: sin "consultar", que confunde y aleja la venta. */}
+          {product.shopId && product.sizes.length > 0 ? (
+            <Link className="button button-green" to={`/producto/${encodeURIComponent(product.shopId)}`}>Elegir talle y comprar</Link>
+          ) : (
+            <>
+              <p className="men-sin-compra">Por ahora no se puede comprar online.</p>
+              {consulta && <a className="button button-green men-whatsapp" href={consulta} target="_blank" rel="noreferrer noopener"><MessageCircle size={18} /> Consultar por WhatsApp</a>}
+            </>
+          )}
         </div>
         {product.images.length > 1 && <div className="men-gallery-thumbs">
           {product.images.map((src, index) => <button key={`${src}-${index}`} className={index === photo ? "active" : ""} onClick={() => setPhoto(index)} aria-label={`Ver foto ${index + 1}`}><img src={src} alt="" loading="lazy" /></button>)}

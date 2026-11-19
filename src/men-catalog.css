@@ -210,3 +210,4 @@
 .men-talles .men-talles-columnas td, .men-talles .men-talles-columnas tbody th { padding: 7px 8px; border-bottom: 1px solid #e6e6e6; white-space: nowrap; }
 .men-talles .men-talles-columnas tbody th { text-align: left; font-weight: 800; }
 @media (max-width: 650px) { .men-talles { overflow-x: auto; } .men-talles .men-talles-columnas { width: max-content; min-width: calc(100% - 28px); } }
+.men-gallery-details .men-sin-compra { margin: 18px 0 0; font-size: 14px; font-weight: 400; color: #6b6d73; }
