@@ -1,39 +1,65 @@
 import { useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Boxes, ChevronDown, CircleHelp, ClipboardList, CloudUpload, History, KeyRound, LayoutDashboard, LogOut, MapPin, Package, PackagePlus, Plus, Search, Receipt, Settings, ShoppingBag, SlidersHorizontal, Store, Tag, TrendingUp, TriangleAlert, Undo2 } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowLeft,
+  ArrowUpRight,
+  Boxes,
+  ChevronDown,
+  CircleHelp,
+  CloudUpload,
+  History,
+  KeyRound,
+  LayoutDashboard,
+  LogOut,
+  PackagePlus,
+  Plus,
+  Search,
+  Receipt,
+  Settings,
+  ShoppingBag,
+  SlidersHorizontal,
+  Store,
+  Tag,
+  TrendingUp,
+  TriangleAlert,
+  Undo2,
+} from "lucide-react";
 import { useStore } from "./Store";
-import type { Category, MovementReason, Order, Product, StockChange } from "./types";
-import { paymentLabel } from "./payment";
+import type {
+  Category,
+  MovementReason,
+  Order,
+  Product,
+  StockChange,
+} from "./types";
 import { adminLocked } from "./adminAccess";
 import { useServerPanel } from "./useServerPanel";
 import AdminConfig from "./AdminConfig";
+
 import AdminReturns from "./AdminReturns";
+
 import AdminReports from "./AdminReports";
+
 import AdminPrecios from "./AdminPrecios";
+
 import catalogoImportado from "./men-catalog.json";
+
 import { prepararFichaImportada } from "./importarCatalogo.mjs";
 import { AdminHabilitar } from "./AdminHabilitar";
-import { importeDeVentas, pedidosActivos } from "./pedidosActivos.mjs";
+import { pedidosActivos } from "./pedidosActivos.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
-import { categories, money, units, dateLabel, orderStatuses, pagoEtiquetas, Metric, StatusBadge, Empty } from "./adminComunes";
+import { categories, money, units, Empty } from "./adminComunes";
+import type { Tab } from "./adminComunes";
 import { SaleRegister } from "./AdminVentaDelDia";
 import { StockLoader } from "./AdminCargarStock";
 import { MovementsView } from "./AdminMovimientos";
 import { PasswordDialog } from "./AdminClave";
 import { ProductEditor } from "./AdminProductEditor";
+import { AdminResumen } from "./AdminResumen";
+import { AdminPedidos } from "./AdminPedidos";
 import "./admin.css";
 
-type Tab =
-  | "overview"
-  | "sale"
-  | "inventory"
-  | "precios"
-  | "stock"
-  | "movements"
-  | "orders"
-  | "returns"
-  | "reports"
-  | "config";
 const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
   {
     overview: {
@@ -628,193 +654,21 @@ export default function Admin({
           </div>
 
           {tab === "overview" && (
-            <>
-              <section
-                className="admin-metrics"
-                aria-label="Resumen de actividad"
-              >
-                <Metric
-                  icon={<Package size={20} />}
-                  label="Productos publicados"
-                  value={String(activeProducts.length)}
-                  foot={`${products.length} productos en tu catálogo`}
-                />
-                <Metric
-                  icon={<Boxes size={20} />}
-                  label="Unidades en stock"
-                  value={inventoryUnits.toLocaleString("es-AR")}
-                  foot="En el local"
-                />
-                <Metric
-                  icon={<ShoppingBag size={20} />}
-                  label="Pedidos activos"
-                  value={String(pendingOrders.length)}
-                  foot={panel.conectado ? "Pendientes, en preparación o para retirar" : "Pedidos de demostración"}
-                />
-                <Metric
-                  icon={<History size={20} />}
-                  label="Unidades vendidas"
-                  value={String(
-                    movements
-                      .filter((m) => m.reason === "Venta")
-                      .reduce((sum, m) => sum - m.delta, 0),
-                  )}
-                  foot="Descontadas del stock automáticamente"
-                />
-                <Metric
-                  icon={<TrendingUp size={20} />}
-                  label="Ventas registradas"
-                  value={money(importeDeVentas(orders))}
-                  foot={panel.conectado ? "Sin contar cancelados ni devueltos" : "Importe total de pedidos demo"}
-                />
-              </section>
-              <div className="admin-overview-grid">
-                <section className="admin-card admin-orders-card">
-                  <div className="admin-card-heading">
-                    <div>
-                      <h2>Últimos pedidos</h2>
-                      <p>El movimiento más reciente de tu tienda.</p>
-                    </div>
-                    <button
-                      className="admin-text-button"
-                      onClick={() => setTab("orders")}
-                    >
-                      Ver todos <ArrowRight size={16} />
-                    </button>
-                  </div>
-                  {orders.length ? (
-                    <div className="admin-recent-orders">
-                      {recentOrders.slice(0, 5).map((order) => (
-                        <button
-                          key={order.id}
-                          className="admin-recent-order"
-                          onClick={() => setTab("orders")}
-                        >
-                          <span className="admin-order-icon">
-                            <ShoppingBag size={19} />
-                          </span>
-                          <span className="admin-order-info">
-                            <strong>{order.customer}</strong>
-                            <small>
-                              #{order.id.slice(-8).toUpperCase()} ·{" "}
-                              {order.delivery === "shipping"
-                                ? order.zone || "Envío"
-                                : "Retiro"}
-                            </small>
-                          </span>
-                          <span className="admin-order-summary">
-                            <strong>{money(order.total)}</strong>
-                            <StatusBadge status={order.status} />
-                          </span>
-                          <ArrowRight size={16} />
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <Empty
-                      icon={<ClipboardList size={29} />}
-                      title="Acá van a aparecer tus pedidos"
-                      text="Completá una compra de prueba en la tienda para ver cómo funciona."
-                      action={
-                        <button className="admin-text-button" onClick={onExit}>
-                          Ir a la tienda <ArrowRight size={16} />
-                        </button>
-                      }
-                    />
-                  )}
-                </section>
-                <section className="admin-card">
-                  <div className="admin-card-heading">
-                    <div>
-                      <h2>Stock por categoría</h2>
-                      <p>Disponibilidad actual del inventario.</p>
-                    </div>
-                    <MapPin size={20} />
-                  </div>
-                  <div className="admin-branch-cards">
-                    {categories.map((category, i) => {
-                      const count = products
-                        .filter((p) => p.category === category)
-                        .reduce((sum, p) => sum + units(p), 0);
-                      return (
-                        <div key={category} className="admin-branch-stock">
-                          <div>
-                            <span
-                              className={`admin-branch-symbol admin-branch-symbol-${i}`}
-                            >
-                              <Store size={20} />
-                            </span>
-                            <span>
-                              <strong>{category}</strong>
-                              <small>Unidades en el local</small>
-                            </span>
-                            <b>
-                              {count}
-                              <small>unidades</small>
-                            </b>
-                          </div>
-                          <div className="admin-stock-track">
-                            <span
-                              style={{
-                                width: `${inventoryUnits ? (count / inventoryUnits) * 100 : 0}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <button
-                    className="admin-branch-footer"
-                    onClick={() => setTab("inventory")}
-                  >
-                    Administrar inventario <ArrowRight size={16} />
-                  </button>
-                </section>
-              </div>
-              <section className="admin-card admin-alert-card">
-                <div className="admin-card-heading">
-                  <div className="admin-alert-heading">
-                    <span>
-                      <TriangleAlert size={20} />
-                    </span>
-                    <div>
-                      <h2>Atención al stock</h2>
-                      <p>
-                        {lowStock.length
-                          ? `${lowStock.length} productos con 5 unidades o menos.`
-                          : "Todos los productos publicados tienen más de 5 unidades disponibles."}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    className="admin-text-button"
-                    onClick={() => {
-                      setLowOnly(true);
-                      setTab("inventory");
-                    }}
-                  >
-                    Revisar stock <ArrowRight size={16} />
-                  </button>
-                </div>
-                {lowStock.length > 0 && (
-                  <div className="admin-low-list">
-                    {lowStock.slice(0, 4).map((p) => (
-                      <button key={p.id} onClick={() => openEditor(p)}>
-                        <img src={p.image} alt="" />
-                        <span>
-                          <strong>{p.name}</strong>
-                          <small>{p.color}</small>
-                        </span>
-                        <b className={units(p) === 0 ? "admin-zero" : ""}>
-                          {units(p)} u.
-                        </b>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </section>
-            </>
+            <AdminResumen
+              products={products}
+              orders={orders}
+              movements={movements}
+              activeProducts={activeProducts}
+              inventoryUnits={inventoryUnits}
+              lowStock={lowStock}
+              pendingOrders={pendingOrders}
+              recentOrders={recentOrders}
+              conectado={panel.conectado}
+              openEditor={openEditor}
+              setLowOnly={setLowOnly}
+              setTab={setTab}
+              onExit={onExit}
+            />
           )}
 
           {tab === "inventory" && (
@@ -1071,192 +925,18 @@ export default function Admin({
           )}
 
           {tab === "orders" && (
-            <section className="admin-card admin-inventory-card">
-              <div className="admin-inventory-heading">
-                <div>
-                  <h2>
-                    Pedidos de la tienda <span>{orders.length}</span>
-                  </h2>
-                  <p>
-                    {panel.conectado
-                      ? "Pedidos guardados en el servidor."
-                      : "Compras simuladas, guardadas en este navegador."}
-                  </p>
-                </div>
-              </div>
-              <div className="admin-filters">
-                <label className="admin-search">
-                  <Search size={18} />
-                  <input
-                    aria-label="Buscar pedidos"
-                    placeholder="Buscar cliente o número de pedido…"
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                  />
-                </label>
-                <label className="admin-filter-select">
-                  <SlidersHorizontal size={16} />
-                  <select
-                    aria-label="Filtrar estado de pedido"
-                    value={orderFilter}
-                    onChange={(e) => setOrderFilter(e.target.value)}
-                  >
-                    <option value="Todos">Todos los estados</option>
-                    {orderStatuses.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              {visibleOrders.length ? (
-                <div
-                  className="admin-table-wrap"
-                  role="region"
-                  aria-label="Pedidos"
-                  tabIndex={0}
-                >
-                  <table className="admin-table admin-orders-table">
-                    <thead>
-                      <tr>
-                        <th>PEDIDO / CLIENTE</th>
-                        <th>PRODUCTOS</th>
-                        <th>ENTREGA</th>
-                        <th>TOTAL</th>
-                        <th>COBRO</th>
-                        <th>ESTADO</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleOrders.map((o) => (
-                        <tr key={o.id}>
-                          <td>
-                            <div className="admin-order-id">
-                              <strong>#{o.id.slice(-8).toUpperCase()}</strong>
-                              <span>{o.customer}</span>
-                              <small>{dateLabel(o.date)}</small>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="admin-order-items">
-                              {o.items.map((item, index) => (
-                                <span
-                                  key={`${item.productId}-${item.size}-${index}`}
-                                >
-                                  {item.quantity} × {item.name}
-                                  <small>Talle {item.size}</small>
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="admin-order-id">
-                              <strong>
-                                {o.delivery === "pickup"
-                                  ? "Retiro en el local"
-                                  : "Envío a domicilio"}
-                              </strong>
-                              <span>
-                                {o.delivery === "shipping"
-                                  ? o.zone || "A convenir"
-                                  : "En el local"}
-                              </span>
-                              {o.payment && (
-                                <small>{paymentLabel(o.payment)}</small>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="admin-order-id">
-                              <strong>{money(o.total)}</strong>
-                              {o.envio ? (
-                                <small>{money(o.envio)} de envío</small>
-                              ) : null}
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className={`admin-pago ${
-                                pagoEtiquetas[o.paymentStatus || "sin_pago"]
-                                  ?.clase || "pago-sin"
-                              }`}
-                            >
-                              <span />
-                              {pagoEtiquetas[o.paymentStatus || "sin_pago"]
-                                ?.texto || "Sin pagar"}
-                            </span>
-                            {o.mailEnviadoAt && (
-                              <small className="admin-pago-nota">
-                                Mail enviado
-                              </small>
-                            )}
-                          </td>
-                          <td>
-                            {["Cancelado", "Devuelto"].includes(o.status) ? (
-                              <span className="admin-pago pago-mal">
-                                <span />
-                                {o.status}
-                              </span>
-                            ) : (
-                              <select
-                                className="admin-status-select"
-                                aria-label={`Estado del pedido ${o.id}`}
-                                value={o.status}
-                                onChange={(e) =>
-                                  setOrderStatus(
-                                    o.id,
-                                    e.target.value as Order["status"],
-                                  )
-                                }
-                              >
-                                {orderStatuses.map((s) => (
-                                  <option key={s}>{s}</option>
-                                ))}
-                              </select>
-                            )}
-                          </td>
-                          <td>
-                            {!["Cancelado", "Devuelto"].includes(o.status) && (
-                              <button
-                                className="admin-text-button"
-                                onClick={() => cancelar(o)}
-                                title="Cancelar y devolver el stock"
-                              >
-                                Cancelar
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty
-                  icon={<ShoppingBag size={30} />}
-                  title={
-                    orders.length
-                      ? "No hay pedidos con estos filtros"
-                      : "Todo listo para tu primera venta"
-                  }
-                  text={
-                    orders.length
-                      ? "Ajustá la búsqueda para ver otros pedidos."
-                      : "Hacé una compra de prueba desde la tienda. El pedido aparecerá acá."
-                  }
-                  action={
-                    !orders.length ? (
-                      <button
-                        className="admin-button admin-button-primary"
-                        onClick={onExit}
-                      >
-                        Explorar la tienda <ArrowRight size={16} />
-                      </button>
-                    ) : undefined
-                  }
-                />
-              )}
-            </section>
+            <AdminPedidos
+              orders={orders}
+              visibleOrders={visibleOrders}
+              conectado={panel.conectado}
+              orderSearch={orderSearch}
+              setOrderSearch={setOrderSearch}
+              orderFilter={orderFilter}
+              setOrderFilter={setOrderFilter}
+              setOrderStatus={setOrderStatus}
+              cancelar={cancelar}
+              onExit={onExit}
+            />
           )}
           <footer className="admin-footer">
             <span>

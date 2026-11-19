@@ -105,3 +105,15 @@ export function Empty({
   );
 }
 
+/** Las pestañas del panel. */
+export type Tab =
+  | "overview"
+  | "sale"
+  | "inventory"
+  | "precios"
+  | "stock"
+  | "movements"
+  | "orders"
+  | "returns"
+  | "reports"
+  | "config";
