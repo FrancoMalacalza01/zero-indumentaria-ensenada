@@ -1,0 +1,17 @@
+# Cabeceras de seguridad para Cloudflare Pages (y Netlify). Es lo mismo que `headers` de vercel.json:
+# si se cambia una, se cambia la otra (tests/despliegue.test.mjs lo comprueba).
+#
+# La CSP permite hablar con Supabase y con Payway (el navegador manda los datos de la tarjeta directo a
+# Payway: sin esto el cobro con tarjeta falla sin avisar).
+#
+# No hay _redirects a propósito: Cloudflare Pages ya manda cualquier dirección sin archivo a index.html
+# (modo SPA) mientras no exista un public/404.html. Por eso tampoco hay que crear uno.
+/*
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; connect-src 'self' https://*.supabase.co https://*.payway.com.ar; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  X-Frame-Options: DENY
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

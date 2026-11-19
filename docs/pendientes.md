@@ -145,11 +145,11 @@ Estos puntos **impiden abrir la tienda de verdad** y no son código. En el panel
 
 Y dos decisiones:
 
-- **Qué proyecto de Vercel es el de producción.** Hoy publica el de Juan
-  (`zero-indumentaria-ensenada`, su cuenta). El de la otra cuenta
-  (`mistral-la-plata`) no está conectado a este repo: Vercel no deja conectar un
-  repo **privado de una organización** en el plan Hobby. Tiene que salir de uno
-  solo.
+- **Dónde se publica la producción.** El repo pasó (20/11/2026) a la cuenta personal del dueño
+  (`FrancoMalacalza01/zero-indumentaria-ensenada`, privado); el de la organización `Solia-laplata`
+  quedó como archivo. Falta conectar el host: **Cloudflare Pages** (gratis, permite uso comercial; pasos
+  en el README, *Publicación*) o Vercel Pro. El proyecto viejo de Vercel (cuenta de Juan) se
+  desconecta cuando el nuevo ande. Tiene que salir de uno solo.
 - **Cuándo sacar el `noindex`** de `index.html` y `public/robots.txt`: mientras el
   catálogo no tenga precios reales, Google no debería indexarlo.
 
@@ -302,7 +302,7 @@ de la tienda hoy, y hace pesado al repo (más de 160 MB de historia).
 
 **Novedad (29/10/2026).** Franco informó que **tiene autorización de las marcas**. Falta dejarla **por escrito** (mail o documento firmado) y guardarla fuera del repo; con eso la salida de abajo queda resuelta, pero el peso del repo sigue siendo un tema.
 
-**Qué hacer.** Esto es una **decisión de Juan y del dueño** antes que una tarea.
+**Qué hacer.** Esto es una **decisión del dueño** antes que una tarea.
 Las salidas posibles: fotos propias, o una autorización de las marcas (si el local
 es revendedor oficial, suelen tener material para distribuidores). **No** hacer
 público el repo mientras estas imágenes estén adentro.
