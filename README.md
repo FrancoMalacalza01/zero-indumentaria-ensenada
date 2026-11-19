@@ -836,7 +836,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 290 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 291 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
