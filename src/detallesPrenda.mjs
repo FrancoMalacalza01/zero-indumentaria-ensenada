@@ -19,7 +19,10 @@ export function detallesDePrenda(prenda, detalles) {
   const d = detalles && Object.hasOwn(detalles, prenda.id) ? detalles[prenda.id] : null;
   const composicion = typeof d?.composicion === "string" && d.composicion.trim() ? d.composicion.trim() : "";
   const colores = textos(prenda.colors);
-  const caracteristicas = textos(d?.caracteristicas).filter((c) => c !== composicion);
+  // Restos de la página de la marca que no son características: títulos ("Características principales",
+  // "Guía de Talles") y cortes de frase ("Las", "Las dos").
+  const resto = /^(características principales|guía de talles?|las( dos)?|medidas)$/i;
+  const caracteristicas = textos(d?.caracteristicas).filter((c) => c !== composicion && !resto.test(c));
   // Los párrafos que escribe la marca, tal cual. Si uno repite una característica, no se muestra dos veces.
   const descripcion = textos(d?.descripcion).filter((p) => !caracteristicas.includes(p));
   const cuidados = textos(d?.cuidados);

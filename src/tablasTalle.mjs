@@ -42,3 +42,33 @@ export function tablaDeTalles(prenda, detalles) {
   }
   return null;
 }
+
+/**
+ * Convierte filas "Ancho de pecho 51 cm, Largo total 70 cm" en una tabla de verdad: una columna por
+ * medida (Talle | Ancho de pecho | Largo total). Sólo si todos los talles traen las mismas medidas, en
+ * el mismo orden: si no, devuelve `null` y se muestra el texto de cada fila tal cual lo escribió la marca.
+ *
+ * @returns { titulos: string[], filas: [{ talle, valores: string[] }] } o `null`
+ */
+export function columnasDeMedidas(filas) {
+  if (!Array.isArray(filas) || !filas.length) return null;
+  let titulos = null;
+  const salida = [];
+  for (const f of filas) {
+    if (!f || typeof f.talle !== "string" || typeof f.medidas !== "string") return null;
+    const partes = f.medidas.split(/\s*,\s*/).map((p) => p.trim()).filter(Boolean);
+    const celdas = [];
+    for (const parte of partes) {
+      // "Ancho de pecho 51 cm" -> título "Ancho de pecho", valor "51 cm"; el valor empieza en el primer número.
+      const m = /^(\D+?)\s*(\d.*)$/.exec(parte);
+      if (!m) return null;
+      celdas.push({ titulo: m[1].trim().replace(/\s+/g, " "), valor: m[2].trim() });
+    }
+    if (!celdas.length) return null;
+    const t = celdas.map((c) => c.titulo.toLowerCase());
+    if (titulos === null) titulos = celdas.map((c) => c.titulo);
+    else if (t.join("|") !== titulos.map((x) => x.toLowerCase()).join("|")) return null;
+    salida.push({ talle: f.talle, valores: celdas.map((c) => c.valor) });
+  }
+  return { titulos, filas: salida };
+}

@@ -55,3 +55,10 @@ test("los párrafos de la marca se muestran tal cual y sin repetir una caracter�
   assert.deepEqual(detallesDePrenda({ id: "m" }, { m: { descripcion: ["Un texto largo de la marca."] } }).descripcion, ["Un texto largo de la marca."]);
   assert.deepEqual(detallesDePrenda({ id: "z", colors: ["Azul"] }, null).descripcion, []);
 });
+
+test("los títulos y cortes de frase de la página de la marca no salen como características", () => {
+  const r = detallesDePrenda({ id: "x", colors: [] }, {
+    x: { caracteristicas: ["Características principales", "Cuello redondo", "Guía de Talles", "Las", "Las dos", "Corte amplio"] },
+  });
+  assert.deepEqual(r.caracteristicas, ["Cuello redondo", "Corte amplio"]);
+});
