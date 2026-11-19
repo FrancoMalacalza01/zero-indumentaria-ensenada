@@ -61,6 +61,7 @@ import { prepararFichaImportada } from "./importarCatalogo.mjs";
 import { AdminHabilitar } from "./AdminHabilitar";
 import { avisoDeCambio, leerPrecio } from "./menOverrides.mjs";
 import { diaDe, finDelDia, vencida } from "./ofertas.mjs";
+import { importeDeVentas, pedidosActivos } from "./pedidosActivos.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
 import "./admin.css";
@@ -131,7 +132,9 @@ const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
   };
 const addReasons: MovementReason[] = ["Ingreso", "Devolución"];
 const removeReasons: MovementReason[] = ["Rotura", "Ajuste"];
-const categories: Category[] = ["Hombre", "Accesorios"];
+// Accesorios ya no se vende: no se ofrece como categoría ni aparece en el stock. Si en la base quedara un
+// producto viejo de esa categoría, no se muestra acá (la tienda tampoco lo publica).
+const categories: Category[] = ["Hombre"];
 const money = (value: number) =>
   new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -217,7 +220,7 @@ export default function Admin({
   const activeProducts = products.filter((p) => p.active);
   const inventoryUnits = products.reduce((sum, p) => sum + units(p), 0);
   const lowStock = products.filter((p) => p.active && units(p) <= 5);
-  const pendingOrders = orders.filter((o) => o.status !== "Completado");
+  const pendingOrders = pedidosActivos(orders);
   const idsGuardados = useMemo(() => new Set(products.map((p) => p.id)), [products]);
   const inventario = useMemo(() => {
     const existentes = new Set(products.map((p) => p.sourceCatalogId).filter(Boolean));
@@ -726,7 +729,7 @@ export default function Admin({
                   icon={<ShoppingBag size={20} />}
                   label="Pedidos activos"
                   value={String(pendingOrders.length)}
-                  foot="Pedidos de demostración"
+                  foot={panel.conectado ? "Pendientes, en preparación o para retirar" : "Pedidos de demostración"}
                 />
                 <Metric
                   icon={<History size={20} />}
@@ -741,8 +744,8 @@ export default function Admin({
                 <Metric
                   icon={<TrendingUp size={20} />}
                   label="Ventas registradas"
-                  value={money(orders.reduce((sum, o) => sum + o.total, 0))}
-                  foot="Importe total de pedidos demo"
+                  value={money(importeDeVentas(orders))}
+                  foot={panel.conectado ? "Sin contar cancelados ni devueltos" : "Importe total de pedidos demo"}
                 />
               </section>
               <div className="admin-overview-grid">
