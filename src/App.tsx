@@ -2037,22 +2037,45 @@ function Returns() {
           <li>Con las etiquetas originales intactas.</li>
           <li>En su bolsa o empaque original.</li>
         </ul>
-        <p>Quién paga el envío del cambio:</p>
-        <ul>
-          <li>
-            Compras de <b>{money(dev.cambioGratisDesde)} o más</b>: el envío
-            del primer cambio lo pagamos nosotros.
-          </li>
-          <li>
-            Compras menores a {money(dev.cambioGratisDesde)}: el envío del
-            cambio lo paga quien compra, según la tarifa de Correo Argentino
-            que corresponda al peso y al código postal.
-          </li>
-          <li>
-            Un segundo cambio, o los siguientes: el envío corre siempre por
-            cuenta de quien compra.
-          </li>
-        </ul>
+        <p>
+          <b>Quién paga el envío del cambio:</b>
+        </p>
+        {dev.cambioGratisDesde > 0 ? (
+          <ul>
+            <li>
+              Compras de <b>{money(dev.cambioGratisDesde)} o más</b>: el envío
+              del primer cambio lo pagamos nosotros.
+            </li>
+            <li>
+              Compras menores a {money(dev.cambioGratisDesde)}: el envío del
+              cambio lo paga quien compra, según la tarifa de Correo Argentino
+              que corresponda al peso y al código postal.
+            </li>
+            <li>
+              Un segundo cambio, o los siguientes: el envío corre siempre por
+              cuenta de quien compra.
+            </li>
+          </ul>
+        ) : (
+          <p>
+            El envío de la prenda hacia nosotros y el de la prenda nueva hacia
+            vos corren <b>siempre por cuenta de quien compra</b>, sea el
+            primer cambio o uno posterior. Si preferís evitar el costo, podés
+            hacer el cambio en el local, sin envío.
+          </p>
+        )}
+        <h3>Qué no tiene cambio</h3>
+        <p>
+          Por razones de higiene, la <b>ropa interior y las medias</b> no
+          tienen cambio por talle o color. Tampoco las prendas que no cumplen
+          las condiciones de arriba.
+        </p>
+        <h3>Valor del cambio</h3>
+        <p>
+          Se toma <b>el valor que pagaste</b> por la prenda al momento de la
+          compra. Si la prenda nueva vale más, te pasamos el link o los datos
+          para abonar la diferencia antes de enviarla.
+        </p>
         <p className="legal-nota">
           Los cambios dependen del stock que haya cuando lo pedís: puede que
           el modelo exacto ya no esté, y si cambiás por otro puede haber
@@ -2098,6 +2121,11 @@ function Returns() {
           Si la prenda no cumple las condiciones de arriba no podemos
           hacer el cambio. Estas condiciones pueden actualizarse; vale la
           versión publicada cuando hiciste la compra.
+        </p>
+        <p className="legal-nota">
+          En semanas de mucha demanda (Hot Sale, Cyber Monday, Navidad…) los
+          tiempos de respuesta pueden extenderse: los cambios se procesan una
+          vez pasado el evento.
         </p>
         {dev.notas && <p className="legal-nota">{dev.notas}</p>}
       </section>
