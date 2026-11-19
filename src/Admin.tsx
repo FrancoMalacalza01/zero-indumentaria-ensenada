@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
 import {
-  ArrowDownToLine,
   ArrowLeft,
   ArrowUpRight,
   Boxes,
@@ -13,11 +12,9 @@ import {
   LogOut,
   PackagePlus,
   Plus,
-  Search,
   Receipt,
   Settings,
   ShoppingBag,
-  SlidersHorizontal,
   Store,
   Tag,
   TrendingUp,
@@ -36,20 +33,24 @@ import { adminLocked } from "./adminAccess";
 import { useServerPanel } from "./useServerPanel";
 import AdminConfig from "./AdminConfig";
 
+
 import AdminReturns from "./AdminReturns";
+
 
 import AdminReports from "./AdminReports";
 
+
 import AdminPrecios from "./AdminPrecios";
+
 
 import catalogoImportado from "./men-catalog.json";
 
+
 import { prepararFichaImportada } from "./importarCatalogo.mjs";
-import { AdminHabilitar } from "./AdminHabilitar";
 import { pedidosActivos } from "./pedidosActivos.mjs";
 import { guardarSettings } from "./settings";
 import type { Session } from "./auth";
-import { categories, money, units, Empty } from "./adminComunes";
+import { units } from "./adminComunes";
 import type { Tab } from "./adminComunes";
 import { SaleRegister } from "./AdminVentaDelDia";
 import { StockLoader } from "./AdminCargarStock";
@@ -58,6 +59,7 @@ import { PasswordDialog } from "./AdminClave";
 import { ProductEditor } from "./AdminProductEditor";
 import { AdminResumen } from "./AdminResumen";
 import { AdminPedidos } from "./AdminPedidos";
+import { AdminProductos } from "./AdminProductos";
 import "./admin.css";
 
 const pageTitles: Record<Tab, { crumb: string; title: string; lead: string }> =
@@ -672,172 +674,24 @@ export default function Admin({
           )}
 
           {tab === "inventory" && (
-            <>
-            <AdminHabilitar products={products} ajustes={menOverrides} panel={panel} notify={notify} />
-            <section className="admin-card admin-inventory-card">
-              <div className="admin-inventory-heading">
-                <div>
-                  <h2>
-                    Tu catálogo <span>{inventario.length}</span>
-                  </h2>
-                  <p>Los cambios se reflejan en la tienda al instante.</p>
-                </div>
-                <button
-                  className="admin-button admin-button-outline"
-                  onClick={exportStock}
-                >
-                  <ArrowDownToLine size={17} /> Exportar CSV
-                </button>
-              </div>
-              <div className="admin-filters">
-                <label className="admin-search">
-                  <Search size={18} />
-                  <input
-                    aria-label="Buscar productos"
-                    placeholder="Buscar por nombre, tipo o color…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </label>
-                <label className="admin-filter-select">
-                  <SlidersHorizontal size={16} />
-                  <select
-                    aria-label="Filtrar categoría"
-                    value={categoryFilter}
-                    onChange={(e) =>
-                      setCategoryFilter(e.target.value as Category | "Todas")
-                    }
-                  >
-                    <option value="Todas">Todas las categorías</option>
-                    {categories.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  className={`admin-low-toggle ${lowOnly ? "is-active" : ""}`}
-                  onClick={() => setLowOnly(!lowOnly)}
-                  aria-pressed={lowOnly}
-                >
-                  <TriangleAlert size={15} /> Stock bajo
-                </button>
-              </div>
-              <div
-                className="admin-table-wrap"
-                role="region"
-                aria-label="Inventario de productos"
-                tabIndex={0}
-              >
-                <table className="admin-table admin-inventario">
-                  <thead>
-                    <tr>
-                      <th>PRODUCTO</th>
-                      <th>PRECIO</th>
-                      <th>STOCK</th>
-                      <th>ESTADO</th>
-                      <th>
-                        <span className="admin-sr-only">Acciones</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          <div className="admin-product-cell">
-                            <img src={p.image} alt="" />
-                            <div>
-                              <strong>{p.name}</strong>
-                              <span>
-                                {p.category} · {p.color}
-                              </span>
-                              <small>{p.sizes.join(" / ")}</small>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="admin-price-cell">{money(p.price)}</td>
-                        <td>
-                          <span
-                            className={`admin-stock-pill ${units(p) === 0 ? "admin-stock-empty" : units(p) <= 5 ? "admin-stock-low" : ""}`}
-                          >
-                            <span /> {!idsGuardados.has(p.id) ? "Sin cargar" : `${units(p)} unidades`}
-                          </span>
-                        </td>
-                        <td>
-                          <button
-                            className={`admin-publish-status ${p.active ? "is-published" : ""}`}
-                            disabled={!idsGuardados.has(p.id)}
-                            onClick={() => {
-                              const siguientes = products.map((product) =>
-                                product.id === p.id
-                                  ? { ...product, active: !product.active }
-                                  : product,
-                              );
-                              setProducts(siguientes);
-                              const cambiado = siguientes.find(
-                                (x) => x.id === p.id,
-                              );
-                              if (cambiado)
-                                panel.publicar(
-                                  cambiado,
-                                  siguientes.indexOf(cambiado),
-                                );
-                              notify(
-                                p.active
-                                  ? "Producto ocultado de la tienda"
-                                  : "Producto publicado",
-                              );
-                            }}
-                            title={!idsGuardados.has(p.id) ? "Editá la ficha para administrarla" : p.active ? "Ocultar de la tienda" : "Publicar en la tienda"}
-                            aria-label={`${!idsGuardados.has(p.id) ? "Editar para administrar" : p.active ? "Ocultar" : "Publicar"} ${p.name}`}
-                          >
-                            <span />
-                            {!idsGuardados.has(p.id) ? "Editar para administrar" : p.active ? "Publicado" : "Oculto"}
-                          </button>
-                        </td>
-                        <td>
-                          <button
-                            className="admin-edit-button"
-                            onClick={() => openEditor(p)}
-                          >
-                            Editar <ArrowUpRight size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {filtered.length === 0 && (
-                <Empty
-                  icon={<Search size={28} />}
-                  title="No encontramos productos"
-                  text="Probá otra búsqueda o ajustá los filtros."
-                  action={
-                    <button
-                      className="admin-text-button"
-                      onClick={() => {
-                        setSearch("");
-                        setCategoryFilter("Todas");
-                        setLowOnly(false);
-                      }}
-                    >
-                      Limpiar filtros
-                    </button>
-                  }
-                />
-              )}
-              <div className="admin-table-footer">
-                <span>
-                  {filtered.length} de {inventario.length} productos
-                </span>
-                <span>
-                  <span className="admin-stock-key" /> Stock bajo: hasta 5
-                  unidades
-                </span>
-              </div>
-            </section>
-            </>
+            <AdminProductos
+              products={products}
+              inventario={inventario}
+              filtered={filtered}
+              idsGuardados={idsGuardados}
+              menOverrides={menOverrides}
+              search={search}
+              setSearch={setSearch}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+              lowOnly={lowOnly}
+              setLowOnly={setLowOnly}
+              setProducts={setProducts}
+              panel={panel}
+              notify={notify}
+              openEditor={openEditor}
+              exportStock={exportStock}
+            />
           )}
 
           {tab === "sale" && (
