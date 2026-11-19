@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowRight, MessageCircle, Ruler, ShieldCheck } from "lucide-react";
-import { useStore } from "./Store";
+import { money, useStore } from "./Store";
+import { paymentOptions } from "./payment";
 import { Link } from "./router";
 import { cuitFormateado } from "./settingsMap.mjs";
 import type { Settings } from "./types";
@@ -338,6 +339,7 @@ export function Terminos() {
   const dev = settings.devoluciones;
   const zonas = settings.envio.zonas.map((z) => z.nombre).join(", ");
   const quien = e.razonSocial || "el local";
+  const opciones = paymentOptions(settings);
   return (
     <main className="section legal-page">
       <span className="eyebrow dark">TÉRMINOS Y CONDICIONES</span>
@@ -401,7 +403,7 @@ export function Terminos() {
       </section>
 
       <section className="legal-block">
-        <h2>3. Stock y confirmación</h2>
+        <h2>3. Stock, confirmación y cancelación</h2>
         <p>
           Cuando confirmás el pedido, las prendas quedan reservadas a tu
           nombre y el stock se descuenta en ese momento. Si una prenda no
@@ -409,28 +411,73 @@ export function Terminos() {
           pagado por ella.
         </p>
         <p>
-          El pedido queda registrado con un número. Guardalo: es lo que
-          usamos para encontrarlo.
+          El pedido queda registrado con un número, y te mandamos la
+          confirmación por el medio que dejaste. Guardalo: es lo que usamos
+          para encontrarlo.
+        </p>
+        <p>
+          Podés <b>cancelar el pedido mientras no haya sido despachado</b>:
+          escribinos con el número de pedido. Si ya lo habías pagado, te
+          devolvemos el importe por el mismo medio. Una vez despachado, vale
+          lo que dice la sección de arrepentimiento, cambios y garantía.
         </p>
       </section>
 
       <section className="legal-block">
         <h2>4. Formas de pago</h2>
+        {opciones.length > 0 && (
+          <p>
+            Podés pagar con: <b>{opciones.map((o) => o.label).join(", ")}</b>.
+            Todos los pagos están sujetos a que el importe se acredite y se
+            verifique.
+          </p>
+        )}
         <p>
           El sitio no guarda datos de tu tarjeta. Si pagás online, el cobro lo
-          procesa la plataforma de pagos; si pagás en el local, es con el
-          posnet o en efectivo al retirar. Lo que se coordina por WhatsApp o
-          por transferencia se confirma con el comprobante.
+          procesa la plataforma de pagos y los datos de la tarjeta los
+          maneja ella, no nosotros; si pagás en el local, es con el posnet o en
+          efectivo al retirar. Lo que se coordina por WhatsApp o por
+          transferencia se confirma con el comprobante. No somos responsables
+          por las interrupciones del servicio de la plataforma de pagos, pero
+          si te cobraron y el pedido no se pudo tomar, te devolvemos el
+          importe.
         </p>
       </section>
 
       <section className="legal-block">
-        <h2>5. Entregas</h2>
+        <h2>5. Entregas y costo del envío</h2>
         <p>
-          Podés retirar en el local o pedir envío a las zonas que figuran en
-          el checkout. Los plazos dependen de la zona y, cuando el envío va
-          por Correo Argentino, de su servicio. Te avisamos cuando el pedido
-          sale o está listo para retirar.
+          Podés <b>retirar en el local sin costo</b>, o pedir envío a las
+          zonas que figuran en el checkout{zonas ? ` (${zonas})` : ""}. El
+          costo del envío se calcula por zona y, cuando va por Correo
+          Argentino, por el peso y el destino, y te lo mostramos{" "}
+          <b>antes de confirmar la compra</b>.
+        </p>
+        <p>
+          <b>El costo del envío lo paga quien compra</b>
+          {settings.envio.envioGratisDesde > 0 ? (
+            <>
+              , salvo en compras de{" "}
+              <b>{money(settings.envio.envioGratisDesde)} o más</b> (sin contar
+              el envío), que lo pagamos nosotros
+            </>
+          ) : null}
+          .
+        </p>
+        <p>
+          Los plazos son estimados y dependen de la zona y, en Correo
+          Argentino, de su servicio; se cuentan desde que despachamos el
+          pedido. No se puede elegir el día ni la hora de entrega: podés dejar
+          sugerencias al hacer el pedido, pero quedan sujetas a cómo trabaja
+          el correo. Si retirás en el local, el día y la hora se acuerdan con
+          vos.
+        </p>
+        <p>
+          La dirección de entrega es la que vos indiques y puede ser distinta
+          de tu domicilio. <b>Revisala con cuidado</b>: es tu responsabilidad
+          que sea correcta para que el envío llegue bien y a tiempo. Cuando el
+          pedido sale te mandamos el número de seguimiento para que lo veas en
+          la página de Correo Argentino.
         </p>
       </section>
 
@@ -441,11 +488,16 @@ export function Terminos() {
           sin dar motivo, y <b>el envío de vuelta lo pagamos nosotros</b>. Las
           prendas nuevas tienen <b>garantía legal de seis meses</b>: si viene
           fallada, la cambiamos o te devolvemos la plata, y el envío también
-          corre por nuestra cuenta.
+          corre por nuestra cuenta. Esto lo dice la Ley 24.240 y no depende de
+          ninguna condición nuestra.
         </p>
         <p>
-          El cambio por talle o color es otra cosa: es una cortesía nuestra y
-          tiene condiciones, que están en{" "}
+          El cambio por talle o color es otra cosa: es una cortesía nuestra, con
+          sus condiciones y{" "}
+          {dev.cambioGratisDesde > 0
+            ? "el envío a cargo de quien compra salvo en compras grandes"
+            : "el envío siempre a cargo de quien compra"}
+          . Todo está en{" "}
           <Link className="text-link" to="/devoluciones">
             cambios y devoluciones
           </Link>
@@ -454,19 +506,39 @@ export function Terminos() {
       </section>
 
       <section className="legal-block">
-        <h2>7. Tus datos</h2>
+        <h2>7. Facturación</h2>
         <p>
-          Usamos tu nombre, tu contacto y la dirección de entrega sólo para
-          hacerte llegar el pedido y responderte. Está todo explicado en la{" "}
-          <Link className="text-link" to="/privacidad">
-            política de privacidad
-          </Link>
-          .
+          Con tu compra te damos el comprobante correspondiente, por el mail o
+          el WhatsApp que nos hayas dejado.
         </p>
       </section>
 
       <section className="legal-block">
-        <h2>8. Si cambiamos algo</h2>
+        <h2>8. Tus datos</h2>
+        <p>
+          Usamos tu nombre, tu contacto y la dirección de entrega sólo para
+          hacerte llegar el pedido y responderte. El sitio usa conexión segura
+          (HTTPS) para que lo que escribís viaje cifrado. Está todo explicado
+          en la{" "}
+          <Link className="text-link" to="/privacidad">
+            política de privacidad
+          </Link>
+          , conforme a la Ley 25.326.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>9. Marcas y fotos</h2>
+        <p>
+          Las marcas, fotos y descripciones de las prendas pertenecen a sus
+          titulares (Mistral, Brooksfield y las demás marcas que vendemos). El
+          diseño y los textos propios de esta tienda son de {quien}. No se
+          pueden copiar ni usar sin permiso.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>10. Si cambiamos algo</h2>
         <p>
           Si modificamos estos términos, la versión que vale para tu compra es
           la que estaba publicada cuando la hiciste. Un cambio posterior no te
@@ -475,7 +547,7 @@ export function Terminos() {
       </section>
 
       <section className="legal-block">
-        <h2>9. Reclamos</h2>
+        <h2>11. Reclamos</h2>
         <p>
           Lo primero es escribirnos: la mayoría de las cosas se resuelven en
           una conversación. Si aun así no llegamos a un acuerdo, podés
@@ -500,6 +572,7 @@ export function Terminos() {
 export function Privacidad() {
   const { settings } = useStore();
   const e = settings.empresa;
+  const contacto = e.emailContacto;
   return (
     <main className="section legal-page">
       <span className="eyebrow dark">PRIVACIDAD</span>
@@ -528,6 +601,12 @@ export function Privacidad() {
             <b>Qué compraste</b>, porque es el pedido.
           </li>
         </ul>
+        <p>
+          Como cualquier sitio, el servidor puede guardar datos técnicos de la
+          visita (la dirección IP y las páginas que se piden) para que la tienda
+          ande bien y para detectar problemas de seguridad. No los usamos para
+          identificarte ni para hacerte publicidad.
+        </p>
         <p className="legal-nota">
           No te pedimos DNI, ni fecha de nacimiento, ni datos de tarjeta. El
           sitio no guarda datos de tarjetas: de eso se encarga la plataforma
@@ -555,8 +634,23 @@ export function Privacidad() {
         <h2>Tus derechos</h2>
         <p>
           Podés pedirnos en cualquier momento que te digamos qué datos tuyos
-          tenemos, que los corrijamos o que los borremos. Escribinos y lo
-          hacemos.
+          tenemos, que los corrijamos, los actualicemos o los borremos.
+          {contacto ? (
+            <>
+              {" "}Escribinos a <b>{contacto}</b> con el asunto{" "}
+              <b>"Acceso a datos personales"</b>.
+            </>
+          ) : (
+            " Escribinos y lo hacemos."
+          )}{" "}
+          Podemos pedirte que te identifiques y que nos digas a qué datos te
+          referís.
+        </p>
+        <p>
+          Te respondemos <b>dentro de los 10 días corridos</b> y corregimos o
+          borramos lo que corresponda <b>dentro de los 5 días hábiles</b>. El
+          servicio es gratuito. Sólo conservamos lo que la ley nos obliga a
+          guardar de una venta.
         </p>
         <p className="legal-nota">
           El titular de los datos personales tiene la facultad de ejercer el
@@ -586,6 +680,61 @@ export function Privacidad() {
           terceros. Guarda en tu navegador lo que hace falta para que la
           tienda funcione —tu bolsa de compras y tus favoritos— y eso no sale
           de tu dispositivo.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>Seguridad</h2>
+        <p>
+          Tomamos medidas razonables para proteger tus datos y que nadie sin
+          autorización los vea, cambie o borre: el sitio usa conexión segura
+          (HTTPS), el acceso al panel es sólo para quienes trabajan en el local
+          y le pedimos lo mismo de los servicios que usamos. Ningún sistema de
+          internet es infalible; si hubiera un problema que te afecte, te
+          avisamos.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>Menores de edad</h2>
+        <p>
+          La tienda es para quienes tienen edad legal para comprar. Si sos
+          menor de 18 años, comprá con un adulto responsable y no nos dejes
+          datos personales sin que lo sepa. Si sos madre, padre o tutor y creés
+          que un menor nos dejó datos, escribinos y los borramos.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>Si el negocio cambia o la ley lo exige</h2>
+        <p>
+          Si el negocio se transfiere, tus datos seguirán protegidos con lo que
+          dice esta política. Sólo los damos a un juez o a un organismo del
+          Estado cuando lo piden en la forma que corresponde, o cuando es
+          necesario para cumplir una obligación legal o defender un derecho.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>Si cambiamos esta política</h2>
+        <p>
+          Si la modificamos, publicamos la versión nueva acá. La que vale para
+          tus datos es la que estaba publicada cuando los diste, y si el
+          cambio es importante lo destacamos en esta página.
+        </p>
+      </section>
+
+      <section className="legal-block">
+        <h2>Contacto</h2>
+        <p>
+          Para cualquier duda sobre esta política o sobre tus datos:{" "}
+          {contacto ? <b>{contacto}</b> : null}
+          {contacto && settings.whatsapp ? " o " : ""}
+          {settings.whatsapp ? (
+            <a href={`https://wa.me/${settings.whatsapp}`} target="_blank" rel="noreferrer">WhatsApp</a>
+          ) : null}
+          {!contacto && !settings.whatsapp && <Pendiente>Falta cargar un mail o WhatsApp de contacto.</Pendiente>}
+          .
         </p>
       </section>
 

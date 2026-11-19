@@ -114,10 +114,11 @@ export const porDefecto = () => ({
     cambioDias: 30,
     /**
      * Desde este monto, el cambio por talle o color lo paga el local.
-     * Abajo de eso lo paga el cliente. No aplica al arrepentimiento ni a una
-     * prenda fallada: esos los paga el local siempre, lo diga esto o no.
+     * Abajo de eso lo paga el cliente. **0 = nunca: siempre lo paga el cliente** (de fábrica).
+     * No aplica al arrepentimiento ni a una prenda fallada: esos los paga el local siempre,
+     * lo diga esto o no (Ley 24.240, art. 34 y 11 a 17).
      */
-    cambioGratisDesde: 99999,
+    cambioGratisDesde: 0,
     /** Dónde se reciben las devoluciones. Vacío = la dirección del local. */
     direccion: "",
     notas: "",

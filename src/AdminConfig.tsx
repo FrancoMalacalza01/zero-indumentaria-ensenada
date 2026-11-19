@@ -825,7 +825,7 @@ export default function AdminConfig({
             />
           </label>
           <label className="admin-field">
-            Cambio con envío sin cargo desde ($)
+            Cambio con envío sin cargo desde ($, 0 = lo paga siempre el cliente)
             <input
               type="number"
               min={0}
@@ -856,7 +856,11 @@ export default function AdminConfig({
           </label>
         </div>
         <Ojo>
-          El monto de <b>{money(draft.devoluciones.cambioGratisDesde)}</b> vale
+          {draft.devoluciones.cambioGratisDesde > 0 ? (
+            <>El monto de <b>{money(draft.devoluciones.cambioGratisDesde)}</b> vale</>
+          ) : (
+            <>Con <b>0</b>, el envío del cambio lo paga <b>siempre el cliente</b>. El monto, si lo pones, vale</>
+          )}{" "}
           sólo para el <b>cambio por talle o color</b>, que es una cortesía
           tuya. Si el cliente se arrepiente de la compra, o si la prenda vino
           fallada, <b>el envío de vuelta lo pagás vos siempre</b>, sin importar

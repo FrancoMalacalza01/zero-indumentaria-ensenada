@@ -682,7 +682,7 @@ mezclarlas es como se termina en Defensa del Consumidor:
 |---|---|---|
 | **Arrepentimiento** (sin motivo) | 10 días corridos, mínimo legal | **El local, siempre.** No se puede poner monto mínimo ni condiciones. |
 | **Prenda fallada** (garantía legal) | 6 meses para prendas nuevas | **El local, siempre.** |
-| **Cambio por talle o color** | 30 días corridos desde que se recibe el pedido (configurable, aparte del arrepentimiento), con la prenda sin uso, con etiquetas y en su bolsa original; sujeto a stock | El cliente, salvo que la compra pase el monto configurado (de fábrica, $99.999) y sólo en el primer cambio. |
+| **Cambio por talle o color** | 30 días corridos desde que se recibe el pedido (configurable, aparte del arrepentimiento), con la prenda sin uso, con etiquetas y en su bolsa original; sujeto a stock; el valor es el que se pagó (la diferencia se abona); no aplica a ropa interior ni medias | **Siempre el cliente** (ida y vuelta, cualquier cambio). El campo "Cambio con envío sin cargo desde" queda en 0; con un monto, el primer cambio de una compra grande lo paga el local. El arrepentimiento y la garantía siguen a cargo del local: lo manda la ley (24.240, art. 34 y 11 a 17) |
 
 El derecho de arrepentimiento está en el artículo 34 de la Ley 24.240 de
 Defensa del Consumidor: diez días corridos, y los gastos de devolución a
@@ -974,3 +974,19 @@ La prueba de navegador `tests/catalogo-navegador.cjs` usa una base simulada y
 bloquea las conexiones externas: levantá `pnpm dev --host 127.0.0.1 --port 5174`
 y ejecutá `node tests/catalogo-navegador.cjs`. Usa el Chromium de Playwright o,
 si hace falta, la ruta indicada en `CHROME_PATH`.
+
+### Textos legales (términos, privacidad, cambios)
+
+Las tres páginas (`/terminos`, `/privacidad`, `/devoluciones`) se armaron sobre los textos de las marcas con las que se
+trabaja, **adaptados a los datos del local** (razón social, CUIT, domicilio, mail y WhatsApp salen de *Configuración*; si
+falta uno, la página lo dice en vez de inventarlo). Dos decisiones que conviene saber:
+
+- **Devoluciones a cargo del cliente, con un límite legal.** El envío de los cambios por talle o color es siempre del
+  cliente. El arrepentimiento (10 días) y la garantía legal (6 meses) **no**: la ley obliga a que el vendedor pague el
+  envío de vuelta y una cláusula en contrario no vale (y puede traer problemas con Defensa del Consumidor).
+- **Privacidad: plazos de la Ley 25.326.** El acceso a los datos se responde en 10 días corridos y la corrección o baja
+  en 5 días hábiles (art. 14 y 16). Se dejaron afuera cláusulas de otros textos que no corresponden: compartir datos con
+  empresas de "evaluación de conductas", no retener la información por ningún plazo y deslindar toda responsabilidad.
+
+Son un punto de partida, **no asesoramiento legal**: antes de abrir la tienda de verdad conviene que los lea un abogado o
+contador.
