@@ -73,7 +73,7 @@ productos despublicados, y cualquier escritura le rebota.
 `movements` y `orders` no son públicas: la primera dice cuánto entra y cuánto
 se vende, la segunda tiene datos de clientes.
 
-La CSP de `vercel.json` tiene que permitir el origen del servidor
+La CSP (`vercel.json` y `public/_headers`) tiene que permitir el origen del servidor
 (`connect-src ... https://*.supabase.co`). Sin eso el navegador bloquea el
 pedido y la tienda cae al catálogo interno sin decir por qué.
 
@@ -824,9 +824,15 @@ el suyo desde el panel. Las direcciones, los horarios, las condiciones de entreg
 
 Para reiniciar la demo, borrar los datos de este sitio en el navegador. No ingresar datos personales reales durante la presentación.
 
-## Publicación en Vercel
+## Publicación (Cloudflare Pages o Vercel)
 
-Este repositorio de trabajo es [`Solia-laplata/Presentacion`](https://github.com/Solia-laplata/Presentacion). Para publicarlo en Vercel: importar ese repositorio, usar la raíz, preset **Vite**, comando `pnpm build` y salida `dist`. `vercel.json` configura el frontend y sus rutas. El servidor Supabase puede configurarse con `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY` o con las claves públicas de respaldo en `src/server.ts`.
+El código vive en [`Solia-laplata/zero-indumentaria.ensenada`](https://github.com/Solia-laplata/zero-indumentaria.ensenada), una **organización** de GitHub. Dos formas de publicarlo:
+
+**Cloudflare Pages (gratis y permite uso comercial; recomendado).** En dash.cloudflare.com: *Workers & Pages → Create → Pages → Connect to Git*, elegir el repo (hay que instalar la app de Cloudflare en la organización; lo aprueba su dueño), comando de build `pnpm build`, carpeta de salida `dist`. Cada merge a `main` publica la producción y cada rama tiene su vista previa. Las cabeceras de seguridad salen de `public/_headers`, y las rutas del sitio (`/admin`, `/producto/…`) las resuelve Pages solo mientras **no exista `public/404.html`** (modo SPA).
+
+**Vercel.** Importar el repo, raíz, preset **Vite**; `vercel.json` trae el comando de build, la salida `dist`, las rutas y las cabeceras. Ojo con el plan: el gratis (Hobby) **no deja desplegar repos privados de una organización** y es sólo para uso no comercial, así que para vender hace falta Pro.
+
+En los dos casos el servidor Supabase puede configurarse con `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY`, o con las claves públicas de respaldo en `src/server.ts` (no hace falta ninguna variable). **`vercel.json` y `public/_headers` dicen lo mismo y `tests/despliegue.test.mjs` lo comprueba**: la CSP permite hablar con Supabase y con Payway (el navegador manda la tarjeta directo a Payway), y nada más.
 
 El sitio queda fuera de los buscadores con `noindex,nofollow` y
 `public/robots.txt` mientras los precios y el inventario de Zero estén
@@ -836,7 +842,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 291 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 295 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -858,6 +864,7 @@ completar esos datos con información confirmada del local.
 | `ofertas.test.mjs` | las ofertas con fecha de fin: el último segundo del día elegido en hora de Argentina, qué fechas se rechazan, que una oferta vencida vuelva al precio de antes (en la tienda, en los precios propios de hombre y en los precios en masa), que una sin fecha o con fecha ilegible nunca venza, y que el vencimiento se guarde, se borre y se restaure al deshacer | 17 |
 | `codigoPostal.test.mjs` | el envío por código postal: cómo se lee lo que escribe el cliente (`1925`, `B1925`, `B1925ABC`), la lista de códigos de una zona (sueltos y rangos, lo ilegible se ignora), que cada código caiga en su zona y gane la primera si dos lo cubren, que uno no cubierto no tenga zona y que sólo se pida el código si el local cargó alguno | 6 |
 | `promos.test.mjs` | las promos junto al precio en la ficha: cuotas sin interés (precio dividido, sólo con tarjeta de crédito y más de una cuota), descuento por transferencia o efectivo (sólo si hay un medio que lo admita), que sin nada configurado no se muestre ninguna y el texto del envío gratis | 7 |
+| `despliegue.test.mjs` | que las cabeceras de `public/_headers` (Cloudflare Pages) digan lo mismo que `vercel.json`, que la CSP deje hablar sólo con Supabase y Payway, que no exista un `public/404.html` (rompería las rutas del sitio en Cloudflare) y que los assets con hash se cacheen | 4 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
