@@ -826,11 +826,11 @@ Para reiniciar la demo, borrar los datos de este sitio en el navegador. No ingre
 
 ## Publicación (Cloudflare Pages o Vercel)
 
-El código vive en [`Solia-laplata/zero-indumentaria.ensenada`](https://github.com/Solia-laplata/zero-indumentaria.ensenada), una **organización** de GitHub. Dos formas de publicarlo:
+El código vive en [`FrancoMalacalza01/zero-indumentaria-ensenada`](https://github.com/FrancoMalacalza01/zero-indumentaria-ensenada), un repositorio **privado de la cuenta personal** de GitHub del dueño (antes estaba en la organización `Solia-laplata`, que quedó como archivo). Dos formas de publicarlo:
 
-**Cloudflare Pages (gratis y permite uso comercial; recomendado).** En dash.cloudflare.com: *Workers & Pages → Create → Pages → Connect to Git*, elegir el repo (hay que instalar la app de Cloudflare en la organización; lo aprueba su dueño), comando de build `pnpm build`, carpeta de salida `dist`. Cada merge a `main` publica la producción y cada rama tiene su vista previa. Las cabeceras de seguridad salen de `public/_headers`, y las rutas del sitio (`/admin`, `/producto/…`) las resuelve Pages solo mientras **no exista `public/404.html`** (modo SPA).
+**Cloudflare Pages (gratis y permite uso comercial; recomendado).** En dash.cloudflare.com: *Workers & Pages → Create → Pages → Connect to Git*, elegir el repo (hay que darle acceso a la app de Cloudflare a ese repo), comando de build `pnpm build`, carpeta de salida `dist`. Cada merge a `main` publica la producción y cada rama tiene su vista previa. Las cabeceras de seguridad salen de `public/_headers`, y las rutas del sitio (`/admin`, `/producto/…`) las resuelve Pages solo mientras **no exista `public/404.html`** (modo SPA).
 
-**Vercel.** Importar el repo, raíz, preset **Vite**; `vercel.json` trae el comando de build, la salida `dist`, las rutas y las cabeceras. Ojo con el plan: el gratis (Hobby) **no deja desplegar repos privados de una organización** y es sólo para uso no comercial, así que para vender hace falta Pro.
+**Vercel.** Importar el repo, raíz, preset **Vite**; `vercel.json` trae el comando de build, la salida `dist`, las rutas y las cabeceras. Ojo con el plan: el gratis (Hobby) es sólo para uso no comercial, así que para vender hace falta Pro. (Con el repo en una organización, además, ni siquiera deja importarlo.)
 
 En los dos casos el servidor Supabase puede configurarse con `VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY`, o con las claves públicas de respaldo en `src/server.ts` (no hace falta ninguna variable). **`vercel.json` y `public/_headers` dicen lo mismo y `tests/despliegue.test.mjs` lo comprueba**: la CSP permite hablar con Supabase y con Payway (el navegador manda la tarjeta directo a Payway), y nada más.
 

@@ -8,7 +8,7 @@ el chat.
 
 Tienda y panel de administración de Zero Indumentaria (Ensenada). React,
 TypeScript y Vite; la base y las funciones viven en Supabase; se publica en
-Vercel. El `README.md` explica cómo anda cada parte y por qué.
+Cloudflare Pages (o Vercel). El `README.md` explica cómo anda cada parte y por qué.
 
 ```sh
 corepack enable
@@ -33,8 +33,9 @@ ahí primero: puede que ya esté hecho o que haya una decisión pendiente.
    sin rebase ni `--force` sobre una rama ya subida), resolver conflictos y
    correr `pnpm test` y `pnpm build`. GitHub corre lo mismo en cada PR; si da
    rojo, se arregla antes de mergear.
-4. **Lo mergea la otra persona**, mirando el PR en GitHub. Quien lo escribió no
-   se lo mergea solo, salvo que el otro lo haya visto y dicho que sí.
+4. **Lo mergea el dueño del repo**, mirando el PR en GitHub, o la IA cuando el
+   dueño se lo pide (por ejemplo, "mergealo cuando dé verde"). La IA no mergea
+   por su cuenta un PR que ella escribió.
 5. **No se reescribe historia publicada.** Nada de `push --force`, `rebase` ni
    `commit --amend` sobre commits que ya están en GitHub.
 6. **Si dos ramas tocan el mismo archivo, se avisa** antes de seguir, no
@@ -62,7 +63,8 @@ ahí primero: puede que ya esté hecho o que haya una decisión pendiente.
 
 ## Publicación
 
-Vercel publica `main` como producción y cada rama como una vista previa con su
-propia dirección. Hay que mirar la vista previa del PR antes de mergear.
-Producción tiene que salir de **un solo** proyecto de Vercel; si hay dos
-apuntando a este repo, uno se desconecta.
+El host (Cloudflare Pages o Vercel) publica `main` como producción y cada rama
+como una vista previa con su propia dirección. Hay que mirar la vista previa del
+PR antes de mergear. Producción tiene que salir de **un solo** proyecto; si hay
+dos apuntando a este repo, uno se desconecta. Cómo se configura, en el
+`README.md` (*Publicación*).
