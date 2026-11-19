@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Ruler } from "lucide-react";
-import { tablaDeTalles } from "./tablasTalle.mjs";
+import { columnasDeMedidas, tablaDeTalles } from "./tablasTalle.mjs";
 import { detallesDePrenda } from "./detallesPrenda.mjs";
 
 /** Lo mínimo que hace falta de una prenda para mostrar lo que cuenta su marca. */
@@ -46,20 +46,32 @@ export function DetallesDePrenda({ product, fichas }: { product: PrendaDeMarca; 
 }
 
 /** La tabla de talles que publica la marca para esta prenda, si la publicó. */
-export function TablaDeTalles({ product, fichas }: { product: PrendaDeMarca; fichas: FichasDeMarca | null }) {
+export function TablaDeTalles({ product, fichas, abierta = false }: { product: PrendaDeMarca; fichas: FichasDeMarca | null; abierta?: boolean }) {
   const tabla = tablaDeTalles(product, fichas);
   if (!tabla) return null;
+  const columnas = tabla.tipo === "filas" ? columnasDeMedidas(tabla.filas) : null;
   return (
-    <details className="men-talles">
+    <details className="men-talles" open={abierta}>
       <summary><Ruler size={16} /> Tabla de talles</summary>
       {tabla.tipo === "filas" ? (
         <>
           <p>Medidas en cm{tabla.nota ? ` (${tabla.nota.toLowerCase()})` : ""}. Pueden variar mínimamente según la producción.</p>
-          <table>
-            <tbody>
-              {tabla.filas.map((f) => <tr key={f.talle}><th scope="row">{f.talle}</th><td>{f.medidas}</td></tr>)}
-            </tbody>
-          </table>
+          {columnas ? (
+            <table className="men-talles-columnas">
+              <thead>
+                <tr><th scope="col">Talle</th>{columnas.titulos.map((t) => <th scope="col" key={t}>{t}</th>)}</tr>
+              </thead>
+              <tbody>
+                {columnas.filas.map((f) => <tr key={f.talle}><th scope="row">{f.talle}</th>{f.valores.map((v, i) => <td key={i}>{v}</td>)}</tr>)}
+              </tbody>
+            </table>
+          ) : (
+            <table>
+              <tbody>
+                {tabla.filas.map((f) => <tr key={f.talle}><th scope="row">{f.talle}</th><td>{f.medidas}</td></tr>)}
+              </tbody>
+            </table>
+          )}
         </>
       ) : (
         <a href={tabla.src} target="_blank" rel="noreferrer noopener" title="Abrir la tabla en grande">

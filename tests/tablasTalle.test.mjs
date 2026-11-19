@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { tablaDeTalles } from "../src/tablasTalle.mjs";
+import { tablaDeTalles, columnasDeMedidas } from "../src/tablasTalle.mjs";
 
 const medidas = {
   "m-1": { medidas: { nota: "Prenda en plano", filas: [{ talle: "M", medidas: "Ancho de pecho 54 cm" }, { talle: "L", medidas: "Ancho de pecho 56 cm" }] } },
@@ -52,4 +52,35 @@ test("otra marca, o datos rotos: sin tabla", () => {
   assert.equal(tablaDeTalles({ id: "x", brand: "Otra" }, medidas), null);
   assert.equal(tablaDeTalles(null, medidas), null);
   assert.equal(tablaDeTalles("hola", medidas), null);
+});
+
+test("las medidas de cada talle se arman en columnas cuando son las mismas para todos", () => {
+  const t = columnasDeMedidas([
+    { talle: "S", medidas: "Ancho de pecho 51 cm, Largo total 70 cm" },
+    { talle: "M", medidas: "Ancho de pecho 53 cm, Largo total 72 cm" },
+  ]);
+  assert.deepEqual(t, {
+    titulos: ["Ancho de pecho", "Largo total"],
+    filas: [{ talle: "S", valores: ["51 cm", "70 cm"] }, { talle: "M", valores: ["53 cm", "72 cm"] }],
+  });
+});
+
+test("medidas con rango y con texto largo también quedan en columnas", () => {
+  const t = columnasDeMedidas([
+    { talle: "S", medidas: "Ancho de cintura 35 a 46 cm, Ancho de cadera 50 cm, Largo lateral 98 cm" },
+    { talle: "M", medidas: "Ancho de cintura 37 a 48 cm, Ancho de cadera 52cm, Largo lateral 99.5 cm" },
+  ]);
+  assert.deepEqual(t.titulos, ["Ancho de cintura", "Ancho de cadera", "Largo lateral"]);
+  assert.deepEqual(t.filas[0].valores, ["35 a 46 cm", "50 cm", "98 cm"]);
+  assert.equal(t.filas[1].valores[2], "99.5 cm");
+});
+
+test("si los talles no traen las mismas medidas, no se inventa una tabla: queda el texto de la marca", () => {
+  assert.equal(columnasDeMedidas([
+    { talle: "S", medidas: "Ancho de pecho 51 cm, Largo total 70 cm" },
+    { talle: "M", medidas: "Ancho de pecho 53 cm" },
+  ]), null);
+  assert.equal(columnasDeMedidas([{ talle: "S", medidas: "Sin números" }]), null);
+  assert.equal(columnasDeMedidas([]), null);
+  assert.equal(columnasDeMedidas(undefined), null);
 });

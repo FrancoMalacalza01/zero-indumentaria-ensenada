@@ -77,12 +77,57 @@ def sacar_json(s):
     return s.replace("\\/", "/").replace("\\n", "\n")
 
 
+def medidas_con_guiones(texto):
+    """Formato "Talle S - Ancho de cintura 35 a 46 cm - Ancho de cadera 50 cm - Largo lateral 98 cm"."""
+    filas = []
+    patron = rf"(?:(?<=\s)|^)Talle\s+({TALLE})\s*[-–]\s*(.+?)(?=\s*(?:\n|Talle\s+{TALLE}\s*[-–]|$))"
+    for t in re.finditer(patron, texto):
+        medida = re.sub(r"\s+", " ", t.group(2).replace(" - ", ", ")).strip(" ,.-")
+        if re.search(r"\d", medida):
+            filas.append({"talle": t.group(1).upper(), "medidas": medida[:1].upper() + medida[1:]})
+    return filas
+
+
+def medidas_en_tabla(texto):
+    """Formato de tabla con barras: "| Talle | Ancho de pecho | Largo total | |---|---| | S | 59 cm | 69 cm |"."""
+    celdas = [c.strip() for c in texto.split("|")]
+    for i, c in enumerate(celdas):
+        if c.lower() != "talle":
+            continue
+        j = i + 1
+        titulos = []
+        while j < len(celdas) and celdas[j] and not re.fullmatch(r":?-{2,}:?", celdas[j]):
+            titulos.append(celdas[j])
+            j += 1
+        if not titulos:
+            continue
+        filas = []
+        while j < len(celdas):
+            if not celdas[j] or re.fullmatch(r":?-{2,}:?", celdas[j]):
+                j += 1
+                continue
+            if not re.fullmatch(TALLE, celdas[j], re.I):
+                break
+            valores = celdas[j + 1 : j + 1 + len(titulos)]
+            if len(valores) < len(titulos):
+                break
+            medida = ", ".join(f"{t} {v}" for t, v in zip(titulos, valores) if v)
+            filas.append({"talle": celdas[j].upper(), "medidas": medida[:1].upper() + medida[1:]})
+            j += 1 + len(titulos)
+        if filas:
+            return filas
+    return []
+
+
 def medidas_de(texto):
+    # Mistral cuenta las medidas de tres maneras: "Talle S: ancho de pecho 51 cm", "Talle S - Ancho de
+    # cintura 35 a 46 cm - ..." y una tabla con barras. Se prueba cada una; la primera que da filas gana.
     i = re.search(r"medidas en cm|medidas del producto", texto, re.I) or re.search(
         rf"{INICIO}\s*(?:ancho|pecho|largo|cintura|cadera|\d)", texto, re.I
     )
     if not i:
-        return None
+        filas = medidas_con_guiones(texto) or medidas_en_tabla(texto)
+        return {"nota": "", "filas": filas} if filas else None
     trozo = texto[i.start() : i.start() + 3500]
     nota = ""
     m = re.search(r"medidas en cm\.?\s*\(([^)]*)\)", trozo, re.I)
@@ -93,6 +138,8 @@ def medidas_de(texto):
         medida = re.sub(r"\s+,", ",", t.group(2).replace("|", ",").replace(" - ", ", ")).strip(" ,.-\"}")
         if re.search(r"\d", medida):
             filas.append({"talle": t.group(1).upper(), "medidas": medida[:1].upper() + medida[1:]})
+    if not filas:
+        filas = medidas_con_guiones(texto) or medidas_en_tabla(texto)
     return {"nota": nota, "filas": filas} if filas else None
 
 

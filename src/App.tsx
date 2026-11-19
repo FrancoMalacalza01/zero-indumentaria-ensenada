@@ -960,7 +960,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
               {prendaDeMarca ? (
                 <>
                   <DetallesDePrenda product={prendaDeMarca} fichas={fichas} />
-                  <TablaDeTalles product={prendaDeMarca} fichas={fichas} />
+                  <TablaDeTalles product={prendaDeMarca} fichas={fichas} abierta />
                 </>
               ) : (
                 <>
