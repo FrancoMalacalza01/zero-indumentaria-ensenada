@@ -23,15 +23,27 @@
  *
  * CÓMO CAMBIARLA: desde el panel, con el botón de arriba a la derecha. Esa
  * contraseña queda guardada en el navegador donde la cambiaste y pisa a la de
- * abajo; borrar los datos del sitio la devuelve a la de fábrica.
+ * abajo; borrar los datos del sitio la devuelve a la que viene de las variables.
  *
- * Para cambiar la de fábrica, la que viene en el sitio para todos:
- * `node scripts/clave-admin.mjs "la nueva clave"` imprime el bloque de abajo
- * ya armado. Dejando `hash` y `salt` vacíos, el panel se abre sin contraseña.
+ * Para generar una: `node scripts/clave-admin.mjs "la nueva clave"` imprime las
+ * dos variables (`VITE_PANEL_DEMO_HASH` y `VITE_PANEL_DEMO_SALT`) ya armadas.
+ */
+/**
+ * El modo demo está APAGADO por defecto. Se prende sólo con `VITE_PANEL_DEMO=1` al construir el sitio
+ * (por ejemplo `VITE_PANEL_DEMO=1 pnpm dev`, para trabajar o mostrar el panel sin conexión). En la
+ * producción no se define, así que si el servidor no contesta el panel dice "sin conexión" y no ofrece
+ * ninguna entrada alternativa: antes había una contraseña de fábrica cuyo hash viajaba en el sitio.
+ */
+export const demoHabilitada = import.meta.env.VITE_PANEL_DEMO === "1";
+
+/**
+ * La contraseña del modo demo, ya en forma de hash (`node scripts/clave-admin.mjs`). Viene de variables de
+ * entorno, no del código: `VITE_PANEL_DEMO_HASH` y `VITE_PANEL_DEMO_SALT`. Con el modo demo prendido y sin
+ * ellas, el panel de demo abre sin contraseña (sólo sirve para desarrollo en la propia computadora).
  */
 export const adminAccess = {
-  hash: "jlczHdK+UTh/rhdW6ciQpLBOgYMwAwKxt7BPVBQ7Ykc=",
-  salt: "J77+0ig57ezXsE2ynYMZQw==",
+  hash: demoHabilitada ? String(import.meta.env.VITE_PANEL_DEMO_HASH || "") : "",
+  salt: demoHabilitada ? String(import.meta.env.VITE_PANEL_DEMO_SALT || "") : "",
   iterations: 310000,
 };
 

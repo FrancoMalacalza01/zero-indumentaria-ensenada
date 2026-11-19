@@ -4,6 +4,7 @@ import { ArrowRight, Lock, WifiOff } from "lucide-react";
 import {
   adminLocked,
   checkAdminPassword,
+  demoHabilitada,
   InsecureContextError,
 } from "./adminAccess";
 import {
@@ -38,6 +39,8 @@ import { serverConfigured } from "./server";
 const SESSION_KEY = "mistral-admin-unlocked";
 
 function demoRecordada() {
+  // Con el modo demo apagado (producción) no se recuerda nada: no hay a qué volver.
+  if (!demoHabilitada) return false;
   try {
     return sessionStorage.getItem(SESSION_KEY) === "1";
   } catch {
@@ -103,7 +106,8 @@ export default function AdminGate({
   };
 
   if (session) return <>{children({ session, salir })}</>;
-  if (demo || (!adminLocked && !serverConfigured))
+  // El panel sin sesión sólo existe con el modo demo prendido (VITE_PANEL_DEMO=1). En producción, no.
+  if (demoHabilitada && (demo || (!adminLocked && !serverConfigured)))
     return <>{children({ session: null, salir })}</>;
 
   if (revisando)
@@ -168,14 +172,21 @@ export default function AdminGate({
           "Esa cuenta existe pero no tiene permiso para el panel. Hay que agregarla a la lista de administradores.",
         );
       } else if (err instanceof SinConexion) {
-        // El servidor no contestó, así que de la contraseña no sabemos nada.
-        // Recién acá se ofrece el modo demo.
-        if (await probarLocal()) return;
-        setOfrecerDemo(true);
-        if (!error)
+        if (!demoHabilitada) {
+          // Producción: sin servidor no hay otra entrada. Se avisa y se reintenta.
           setError(
-            "No se pudo llegar al servidor. Se puede entrar en modo demo, pero los cambios no se publican.",
+            "No se pudo llegar al servidor. Revisá tu conexión y probá de nuevo; si sigue igual, puede que el proyecto de Supabase esté pausado.",
           );
+        } else {
+          // El servidor no contestó, así que de la contraseña no sabemos nada.
+          // Recién acá se ofrece el modo demo (sólo si está prendido).
+          if (await probarLocal()) return;
+          setOfrecerDemo(true);
+          if (!error)
+            setError(
+              "No se pudo llegar al servidor. Se puede entrar en modo demo, pero los cambios no se publican.",
+            );
+        }
       } else {
         setError("No se pudo entrar. Probá de nuevo en un rato.");
       }

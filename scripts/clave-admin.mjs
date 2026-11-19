@@ -3,9 +3,10 @@
 //   node scripts/clave-admin.mjs                → inventa una contraseña
 //   node scripts/clave-admin.mjs "mi clave"     → usa la que le pases
 //
-// Imprime el bloque para pegar en src/adminAccess.ts. La contraseña en sí no
-// se guarda en ningún lado: lo que viaja al navegador es el hash, y del hash
-// no se vuelve a la contraseña.
+// Imprime las variables de entorno del modo demo del panel (VITE_PANEL_DEMO_HASH y
+// VITE_PANEL_DEMO_SALT). La contraseña en sí no se guarda en ningún lado: lo que
+// viaja al navegador es el hash, y del hash no se vuelve a la contraseña. El modo
+// demo sólo funciona con VITE_PANEL_DEMO=1; en producción está apagado.
 import { randomBytes, pbkdf2Sync } from "node:crypto";
 
 const ITERATIONS = 310000;
@@ -28,10 +29,8 @@ else if (password.length < 10)
 const salt = randomBytes(16);
 const hash = pbkdf2Sync(password, salt, ITERATIONS, 32, "sha256");
 
-console.log("Pegá esto en src/adminAccess.ts, reemplazando el bloque actual:\n");
-console.log("export const adminAccess = {");
-console.log(`  hash: "${hash.toString("base64")}",`);
-console.log(`  salt: "${salt.toString("base64")}",`);
-console.log(`  iterations: ${ITERATIONS},`);
-console.log("};\n");
+console.log("Para probar el modo demo en tu computadora, creá un archivo .env.local con:\n");
+console.log("VITE_PANEL_DEMO=1");
+console.log(`VITE_PANEL_DEMO_HASH=${hash.toString("base64")}`);
+console.log(`VITE_PANEL_DEMO_SALT=${salt.toString("base64")}\n`);
 if (!given) console.log("Guardá la contraseña: no se puede recuperar de acá.\n");
