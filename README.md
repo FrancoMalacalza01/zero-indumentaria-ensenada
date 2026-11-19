@@ -842,7 +842,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 295 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 300 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -865,6 +865,7 @@ completar esos datos con información confirmada del local.
 | `codigoPostal.test.mjs` | el envío por código postal: cómo se lee lo que escribe el cliente (`1925`, `B1925`, `B1925ABC`), la lista de códigos de una zona (sueltos y rangos, lo ilegible se ignora), que cada código caiga en su zona y gane la primera si dos lo cubren, que uno no cubierto no tenga zona y que sólo se pida el código si el local cargó alguno | 6 |
 | `promos.test.mjs` | las promos junto al precio en la ficha: cuotas sin interés (precio dividido, sólo con tarjeta de crédito y más de una cuota), descuento por transferencia o efectivo (sólo si hay un medio que lo admita), que sin nada configurado no se muestre ninguna y el texto del envío gratis | 7 |
 | `despliegue.test.mjs` | que las cabeceras de `public/_headers` (Cloudflare Pages) digan lo mismo que `vercel.json`, que la CSP deje hablar sólo con Supabase y Payway, que no exista un `public/404.html` (rompería las rutas del sitio en Cloudflare) y que los assets con hash se cacheen | 4 |
+| `pedidosActivos.test.mjs` | qué pedidos cuentan como activos en el menú y el Resumen del panel (pendiente, preparando, listo para retirar) y que lo cancelado o devuelto no sume ni como pedido activo ni como venta | 5 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
