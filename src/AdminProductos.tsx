@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { ArrowDownToLine, ArrowUpRight, Search, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import type { Category, Product } from "./types";
 import { AdminHabilitar } from "./AdminHabilitar";
 import { money, units, categories, Empty } from "./adminComunes";
+import { POR_PAGINA, recortar } from "./mostrarMas.mjs";
 import type { useServerPanel } from "./useServerPanel";
 import type { useStore } from "./Store";
 
@@ -48,6 +50,10 @@ export function AdminProductos({
   openEditor: (product: Product | "new") => void;
   exportStock: () => void;
 }) {
+  // De a 50: dibujar las ~970 prendas juntas trababa la pestaña en el celular. Al cambiar un filtro se vuelve al principio.
+  const [visibles, setVisibles] = useState(POR_PAGINA);
+  useEffect(() => setVisibles(POR_PAGINA), [search, categoryFilter, lowOnly]);
+  const { items: pagina, quedan } = recortar(filtered, visibles);
   return (
       <>
       <AdminHabilitar products={products} ajustes={menOverrides} panel={panel} notify={notify} />
@@ -118,7 +124,7 @@ export function AdminProductos({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {pagina.map((p) => (
                 <tr key={p.id}>
                   <td>
                     <div className="admin-product-cell">
@@ -206,7 +212,19 @@ export function AdminProductos({
         )}
         <div className="admin-table-footer">
           <span>
-            {filtered.length} de {inventario.length} productos
+            {pagina.length} de {filtered.length} productos
+            {filtered.length !== inventario.length && ` (hay ${inventario.length} en total)`}
+            {quedan > 0 && (
+              <>
+                {" · "}
+                <button
+                  className="admin-text-button"
+                  onClick={() => setVisibles((v) => v + POR_PAGINA)}
+                >
+                  Mostrar {Math.min(POR_PAGINA, quedan)} más
+                </button>
+              </>
+            )}
           </span>
           <span>
             <span className="admin-stock-key" /> Stock bajo: hasta 5
