@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Heart,
   Grid2X2,
+  Info,
   Instagram,
   Landmark,
   MapPin,
@@ -22,6 +23,7 @@ import {
   MessageCircle,
   Minus,
   Plus,
+  Ruler,
   Search,
   ShoppingBag,
   Shirt,
@@ -37,6 +39,10 @@ import { Link, navigate, useRoute } from "./router";
 import NotaDeCambios from "./NotaDeCambios";
 import { guardarEleccion, leerEleccion } from "./zonaElegida";
 import SelectorDeZona from "./SelectorDeZona";
+import CalculadoraDeEnvio from "./CalculadoraDeEnvio";
+import { DetallesDePrenda, TablaDeTalles, useFichasDeMarca } from "./FichaDeMarca";
+import { promosDePrecio, textoEnvioGratis } from "./promos.mjs";
+import "./ficha-producto.css";
 import { CATEGORIAS_EN_TIENDA, esProductoDeTienda } from "./storefront.mjs";
 import {
   Arrepentimiento,
@@ -745,15 +751,24 @@ function Catalog({ favorites = false }: { favorites?: boolean }) {
   );
 }
 function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
-  const { products, cart, setCart, favorites, toggleFavorite, notify, settings } =
+  const { products, cart, setCart, favorites, toggleFavorite, notify, settings, catalogSource } =
     useStore();
+  const enVivoCatalogo = catalogSource === "servidor";
   const [size, setSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [guide, setGuide] = useState(false);
   const [photo, setPhoto] = useState(0);
   const [error, setError] = useState("");
   const p = products.find((p) => p.id === id && isStorefrontProduct(p));
+  // Lo que cuenta la marca de la prenda (material, descripción, medidas) sólo se baja si la prenda es de una marca.
+  const fichas = useFichasDeMarca(Boolean(p?.sourceCatalogId));
   if (!p) return <NotFound />;
+  const promos = promosDePrecio(settings.pago, p.price);
+  const envioGratis = textoEnvioGratis(settings.envio, money);
+  const opcionesDePago = paymentOptions(settings);
+  const prendaDeMarca = p.sourceCatalogId
+    ? { id: p.sourceCatalogId, brand: p.brand || "", category: p.type, name: p.name, colors: p.color ? p.color.split(",").map((c) => c.trim()).filter(Boolean) : [] }
+    : null;
   const max = size ? p.stock[size] || 0 : 0;
   const photos = [p.image, ...(p.images || [])].filter(Boolean);
   const add = () => {
@@ -819,54 +834,61 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
             </div>
           )}
         </div>
-        <div className="detail-info">
-          <span className="eyebrow dark">
-            {p.category} / {p.type}
-          </span>
+        <div className="detail-info pdp">
           <h1>{p.name}</h1>
-          <p className="detail-price">
-            {p.oldPrice && p.oldPrice > p.price ? <del>{money(p.oldPrice)}</del> : null}
-            {money(p.price)} <small>ARS</small>
-            {p.oldPrice && descuento(p.oldPrice, p.price) > 0 ? (
-              <em className="offer-badge">−{descuento(p.oldPrice, p.price)}%</em>
-            ) : null}
-          </p>
-          <p className="reference-price">
-            Precio de referencia para esta demostración.
-          </p>
-          <NotaDeCambios />
-          <div className="detail-divider" />
-          <p className="color-label">
-            Color: <b>{p.color}</b>
-          </p>
-          <span className="detail-swatch" style={{ background: p.colorHex }} />
-          <div className="size-heading">
-            <b>Elegí tu talle</b>
-            <button onClick={() => setGuide(true)}>Ayuda con los talles</button>
+          <div className="pdp-precio">
+            <p className="detail-price">
+              {p.oldPrice && p.oldPrice > p.price ? <del>{money(p.oldPrice)}</del> : null}
+              {money(p.price)}
+              {p.oldPrice && descuento(p.oldPrice, p.price) > 0 ? (
+                <em className="offer-badge">−{descuento(p.oldPrice, p.price)}%</em>
+              ) : null}
+            </p>
+            {promos.cuotas && (
+              <p className="pdp-cuotas">{promos.cuotas.cantidad} cuotas sin interés de {money(promos.cuotas.monto)}</p>
+            )}
           </div>
-          <div className="size-options">
-            {p.sizes.map((s) => (
-              <button
-                key={s}
-                disabled={!p.stock[s]}
-                aria-pressed={size === s}
-                className={size === s ? "selected" : ""}
-                onClick={() => {
-                  setSize(s);
+          {promos.contado && (
+            <p className="pdp-promo">
+              <b>{money(promos.contado.monto)}</b> con {promos.contado.medios} {promos.contado.porcentaje}% OFF
+            </p>
+          )}
+          {envioGratis && (
+            <p className="pdp-gratis"><Truck size={17} aria-hidden /> <b>{envioGratis.split(" en compras")[0]}</b> en compras{envioGratis.split(" en compras")[1]}</p>
+          )}
+          <NotaDeCambios />
+          <div className="pdp-selects">
+            <label>
+              <span>Color</span>
+              <select value={p.color} disabled aria-label="Color">
+                <option>{p.color}</option>
+              </select>
+            </label>
+            <label>
+              <span>Talle</span>
+              <select
+                value={size}
+                aria-label="Talle"
+                onChange={(e) => {
+                  setSize(e.target.value);
                   setQuantity(1);
                   setError("");
                 }}
               >
-                {s}
-              </button>
-            ))}
+                <option value="">Elegí un talle</option>
+                {p.sizes.map((s) => (
+                  <option key={s} value={s} disabled={!p.stock[s]}>
+                    {s}{p.stock[s] ? "" : " (agotado)"}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-          <p className="stock-label">
-            <MapPin size={15} />
-            {size
-              ? `${max} unidades disponibles`
-              : "Consultá disponibilidad"}
-          </p>
+          <button type="button" className="pdp-guia" onClick={() => setGuide(true)}>
+            <Ruler size={15} aria-hidden /> Guía de talles
+          </button>
+          {size && max === 1 && <p className="pdp-ultimo">¡No te lo pierdas, es el último!</p>}
+          {size && max > 1 && max <= 3 && <p className="pdp-ultimo">¡Quedan solo {max}!</p>}
           <div className="purchase-controls">
             <div className="quantity-control">
               <button
@@ -891,7 +913,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
               disabled={!Object.values(p.stock).some((n) => n > 0)}
             >
               <ShoppingBag size={18} />
-              Agregar a la bolsa
+              Agregar al carrito
             </button>
             <button
               className={`icon-button detail-favorite ${favorites.includes(id) ? "selected" : ""}`}
@@ -907,27 +929,49 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
               {error}
             </p>
           )}
-          <div className="product-service">
-            <Store size={21} />
-            <div>
-              <b>Retiro en el local</b>
-              <span>La Merced 327, Ensenada. O te lo enviamos.</span>
+          <details className="pdp-acordeon" open>
+            <summary><CreditCard size={18} aria-hidden /> Medios de pago</summary>
+            <div className="pdp-acordeon-cuerpo">
+              {promos.cuotas && <p><b>{promos.cuotas.cantidad} cuotas sin interés</b> de {money(promos.cuotas.monto)}</p>}
+              {opcionesDePago.length > 0 ? (
+                <ul className="pdp-medios">
+                  {opcionesDePago.map((o) => (
+                    <li key={o.id}>
+                      {o.label}
+                      {o.descuento ? <em>{o.descuento}% OFF</em> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>Coordinás el pago con el local al confirmar el pedido.</p>
+              )}
+              <Link className="text-link" to="/devoluciones">Cambios y devoluciones</Link>
             </div>
-          </div>
-          <details open>
-            <summary>
-              Sobre esta prenda <Plus size={16} />
-            </summary>
-            <p>{p.description}</p>
           </details>
-          <details>
-            <summary>
-              Información de la demo <Plus size={16} />
-            </summary>
-            <p>
-              Las fotos y los precios son de referencia. El stock es simulado y
-              las compras no generan cobros ni reservas reales.
-            </p>
+          <details className="pdp-acordeon" open>
+            <summary><Truck size={18} aria-hidden /> Medios de envío</summary>
+            <div className="pdp-acordeon-cuerpo">
+              <CalculadoraDeEnvio settings={settings} subtotal={p.price * quantity} />
+            </div>
+          </details>
+          <details className="pdp-acordeon" open>
+            <summary><Info size={18} aria-hidden /> Descripción</summary>
+            <div className="pdp-acordeon-cuerpo">
+              {prendaDeMarca ? (
+                <>
+                  <DetallesDePrenda product={prendaDeMarca} fichas={fichas} />
+                  <TablaDeTalles product={prendaDeMarca} fichas={fichas} />
+                </>
+              ) : (
+                <>
+                  {p.description && <p>{p.description}</p>}
+                  <p className="pdp-detalle"><b>Color:</b> {p.color}</p>
+                </>
+              )}
+              {!enVivoCatalogo && (
+                <p className="reference-price">Las fotos y los precios son de referencia. El stock es simulado y las compras no generan cobros ni reservas reales.</p>
+              )}
+            </div>
           </details>
         </div>
       </div>

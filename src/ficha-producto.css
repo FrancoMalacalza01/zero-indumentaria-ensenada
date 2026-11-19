@@ -1,0 +1,43 @@
+/* Ficha de producto en el estilo de las tiendas de las marcas: precio y promos arriba, selectores,
+   un botón grande y los bloques desplegables de pago, envío y descripción. */
+.pdp h1 { font-size: clamp(28px, 4.2vw, 46px); line-height: 1.08; margin: 6px 0 18px; }
+.pdp-precio { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; }
+.pdp .detail-price { font-size: clamp(28px, 3.4vw, 38px); font-weight: 800; margin: 0; }
+.pdp .detail-price del { font-size: .55em; font-weight: 400; color: #8a8a8a; margin-right: 10px; }
+.pdp-cuotas { margin: 0; font-size: 16px; color: #5a6070; }
+.pdp-promo { margin: 10px 0 0; font-size: 15px; }
+.pdp-gratis { display: flex; align-items: center; gap: 8px; margin: 18px 0 6px; padding-top: 16px; border-top: 1px solid #e3e5ec; font-size: 14px; }
+.pdp-gratis b { color: #c8102e; }
+.pdp-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 22px 0 10px; }
+.pdp-selects label span { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #3b6aa0; margin-bottom: 6px; }
+.pdp-selects select { width: 100%; padding: 14px 12px; font-size: 16px; border: 1px solid #c9cde0; border-radius: 6px; background: #fff; color: #1c1c1c; }
+.pdp-selects select:disabled { opacity: 1; color: #1c1c1c; }
+.pdp-guia { display: inline-flex; align-items: center; gap: 8px; margin: 8px 0 14px; padding: 0; border: 0; background: none; font-size: 13px; color: #1c1c1c; cursor: pointer; }
+.pdp-ultimo { margin: 6px 0 14px; color: #c8102e; font-weight: 700; }
+.pdp .purchase-controls { margin-top: 10px; }
+.pdp .purchase-controls .button-green { flex: 1; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; padding-block: 16px; }
+.pdp-acordeon { border-top: 1px solid #e3e5ec; margin-top: 18px; padding-top: 14px; }
+.pdp-acordeon summary { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; cursor: pointer; list-style: none; }
+.pdp-acordeon summary::-webkit-details-marker { display: none; }
+.pdp-acordeon-cuerpo { padding: 12px 0 4px; }
+.pdp-acordeon-cuerpo h4 { margin: 16px 0 6px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+.pdp-medios { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 6px; }
+.pdp-medios em { margin-left: 8px; font-style: normal; font-size: 12px; font-weight: 700; color: #c8102e; border: 1px solid #c8102e; border-radius: 4px; padding: 1px 6px; }
+.pdp-envio-fila { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 12px 0; border-top: 1px solid #e3e5ec; }
+.pdp-envio-fila div { display: grid; gap: 2px; }
+.pdp-envio-fila b { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.pdp-envio-fila span { font-size: 13.5px; color: #6b6d73; }
+.pdp-envio-fila strong { font-size: 17px; white-space: nowrap; }
+.pdp-envio-cp { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pdp-cambiar { border: 1px solid #c8102e; color: #c8102e; background: none; border-radius: 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 6px 12px; cursor: pointer; }
+.pdp-cp { display: flex; border: 1px solid #c9cde0; border-radius: 6px; overflow: hidden; background: #fff; }
+.pdp-cp input { flex: 1; border: 0; padding: 14px 12px; font-size: 16px; outline: none; }
+.pdp-cp button { border: 0; background: none; padding: 0 14px; cursor: pointer; color: #132457; }
+.pdp .men-detalles { margin: 0 0 12px; }
+@media (max-width: 650px) { .pdp-selects { grid-template-columns: 1fr 1fr; } }
+
+/* Le gana al estilo general de `details summary` (título a la derecha con el signo +). */
+.pdp .pdp-acordeon summary { justify-content: flex-start; }
+.pdp .pdp-acordeon summary svg { flex: none; }
+.pdp .nota-cambios { font-size: 13px; line-height: 1.45; margin: 14px 0 0; }
+.pdp .men-talles summary { font-size: 15px; font-weight: 700; justify-content: flex-start; text-transform: none; }

@@ -458,6 +458,15 @@ costo y si va por reparto propio o por Correo Argentino.
   ayuda a elegirla, así que quien prepara el pedido tiene que mirar que la dirección que pasa el
   cliente corresponda a la zona. Los códigos hay que cargarlos y verificarlos en el panel; el
   código no trae ninguno de fábrica.
+- **La ficha de producto** (`/producto/:id`) sigue el estilo de las tiendas de las marcas: precio
+  grande con las promos al lado (cuotas sin interés y descuento por transferencia o efectivo,
+  `src/promos.mjs`), el envío gratis, color y talle, "¡No te lo pierdas, es el último!" cuando queda
+  una unidad, y bloques desplegables de **Medios de pago**, **Medios de envío** y **Descripción**.
+  Las promos salen **sólo de lo que el local configuró** (*Configuración → Pagos*): sin cuotas ni
+  descuento cargados no aparece ninguna. En *Medios de envío* el cliente escribe su código postal y ve
+  el costo y el plazo antes de comprar (`CalculadoraDeEnvio`, la misma cuenta del checkout); la
+  zona queda guardada para la bolsa. Las prendas de marca muestran la descripción, el material y la
+  tabla de talles de la marca (`FichaDeMarca`).
 - **Los cambios se avisan en cada ficha.** Una nota corta (`NotaDeCambios`) con el plazo y las
   condiciones, enlazada a `/devoluciones`. El plazo (`cambioDias`) se carga en *Configuración*.
 - **Una zona sin costo cargado no sale gratis.** El checkout dice "a coordinar
@@ -827,7 +836,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 280 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 287 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -848,6 +857,7 @@ completar esos datos con información confirmada del local.
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
 | `ofertas.test.mjs` | las ofertas con fecha de fin: el último segundo del día elegido en hora de Argentina, qué fechas se rechazan, que una oferta vencida vuelva al precio de antes (en la tienda, en los precios propios de hombre y en los precios en masa), que una sin fecha o con fecha ilegible nunca venza, y que el vencimiento se guarde, se borre y se restaure al deshacer | 17 |
 | `codigoPostal.test.mjs` | el envío por código postal: cómo se lee lo que escribe el cliente (`1925`, `B1925`, `B1925ABC`), la lista de códigos de una zona (sueltos y rangos, lo ilegible se ignora), que cada código caiga en su zona y gane la primera si dos lo cubren, que uno no cubierto no tenga zona y que sólo se pida el código si el local cargó alguno | 6 |
+| `promos.test.mjs` | las promos junto al precio en la ficha: cuotas sin interés (precio dividido, sólo con tarjeta de crédito y más de una cuota), descuento por transferencia o efectivo (sólo si hay un medio que lo admita), que sin nada configurado no se muestre ninguna y el texto del envío gratis | 7 |
 | `storefront.test.mjs` | qué se publica en la tienda: sólo prendas de hombre publicadas; Accesorios, categorías desconocidas, productos sin publicar y datos rotos no se muestran ni rompen nada | 6 |
 | `migrate.test.mjs` | la conversión de una demo guardada con la forma vieja (stock por sucursal) a la actual | 8 |
 
