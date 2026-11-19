@@ -519,51 +519,29 @@ escribir nada, y el login lo avisa en vez de dejarlo descubrirlo al primer
 guardado. La sesión queda abierta entre visitas; el botón de salir, arriba a
 la derecha, la cierra.
 
-**2. Modo demo.** Solo si no se puede llegar al servidor. Ahí vale la
-contraseña local de siempre, que abre el panel pero **no publica nada**: los
-cambios se guardan en ese navegador. Sirve para mostrar el sistema sin
-conexión; no sirve para trabajar. El panel lo dice arriba, en la chapita y en
-el cartel.
+**2. Modo demo (apagado en producción).** Sirve para trabajar o mostrar el panel sin conexión, en tu
+computadora: se prende con `VITE_PANEL_DEMO=1` (por ejemplo `VITE_PANEL_DEMO=1 pnpm dev`, o en un archivo
+`.env.local`). Abre el panel con una contraseña local pero **no publica nada**: los cambios se guardan en ese
+navegador, y el panel lo dice arriba, en la chapita y en el cartel. **En la producción no se define esa variable**:
+si el servidor no contesta, el panel dice "sin conexión" y no ofrece otra entrada.
 
-La contraseña local de fábrica es **`Leomistral01`**.
-
-**Para cambiar la local, desde el modo demo:** el botón de la llave, arriba a la derecha.
-Pide la actual y la nueva. Esa contraseña queda guardada en el navegador donde
-la cambiaste y pisa a la de fábrica; desde ese mismo diálogo se vuelve atrás.
-En otra computadora o celular sigue valiendo la de fábrica, y borrar los datos
-del sitio también la devuelve a esa.
-
-**Para cambiar la de fábrica**, la que viene en el sitio para todos:
+La contraseña del modo demo ya no viene en el código: sale de `VITE_PANEL_DEMO_HASH` y `VITE_PANEL_DEMO_SALT`.
+Para generarla:
 
 ```sh
-node scripts/clave-admin.mjs "la nueva clave"
+node scripts/clave-admin.mjs "la clave"
 ```
 
-El script imprime un bloque con el hash y la sal; se pega en
-`src/adminAccess.ts`, reemplazando el que está. Sin argumento inventa una
-contraseña y la muestra. Dejando `hash` y `salt` vacíos, el panel vuelve a
-abrirse sin contraseña.
+El script imprime las tres variables para pegar en `.env.local`; sin argumento inventa una contraseña y la
+muestra. Con el modo demo prendido y sin hash, el panel de demo abre sin contraseña (sólo para desarrollo).
 
-La contraseña no se guarda en ningún lado: lo que viaja al navegador es un
-hash PBKDF2-SHA256 con 310.000 vueltas, y del hash no se vuelve a la
-contraseña. Queda desbloqueado mientras dure la pestaña; al cerrarla, la pide
-de nuevo.
+> **Sobre la contraseña de fábrica anterior.** Estuvo escrita en este README y su hash en el código, y sigue en
+> el historial de git. Si se usó en algún otro lado, **cambiala ahí**: tomala por pública.
 
-**Qué es y qué no es.** Esto evita que alguien entre de casualidad o
-curioseando. No es control de acceso de verdad, por dos motivos que conviene
-decir antes de que los descubra el cliente:
-
-- El hash viaja en el sitio, como todo el código. No se puede volver de ahí a
-  la contraseña, pero sí probar contraseñas contra él sin límite y sin que nos
-  enteremos. La traba vale lo que valga la contraseña: una corta o adivinable
-  no sirve.
-- Los datos de la demo están en el `localStorage` del navegador y se leen sin
-  contraseña. Esto tapa la pantalla, no los datos.
-
-Eso vale para el **modo demo**. El acceso con usuario y contraseña es otra
-cosa: ahí la contraseña se verifica del lado del servidor, no viaja ningún
-hash en el sitio, y los permisos de la base son los que deciden qué se puede
-leer y escribir.
+Lo que esto cuida: antes, cualquiera que bajara el sitio tenía el hash para probar contraseñas sin límite. Ahora
+la producción no tiene ninguna entrada que no sea el usuario y la contraseña verificados en el servidor, donde
+los permisos de la base deciden qué se puede leer y escribir. Los datos de la demo viven en el `localStorage` del
+navegador y se leen sin contraseña: la contraseña tapa la pantalla, no los datos.
 
 ## Formas de pago
 
