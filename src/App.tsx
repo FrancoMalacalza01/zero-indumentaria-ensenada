@@ -39,6 +39,7 @@ import { Link, navigate, useRoute } from "./router";
 import NotaDeCambios from "./NotaDeCambios";
 import { guardarEleccion, leerEleccion } from "./zonaElegida";
 import SelectorDeZona from "./SelectorDeZona";
+import MarcaLogo from "./MarcaLogo";
 import CalculadoraDeEnvio from "./CalculadoraDeEnvio";
 import { DetallesDePrenda, TablaDeTalles, useFichasDeMarca } from "./FichaDeMarca";
 import { promosDePrecio, textoEnvioGratis } from "./promos.mjs";
@@ -835,6 +836,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
           )}
         </div>
         <div className="detail-info pdp">
+          {p.brand && <p className="pdp-marca"><MarcaLogo marca={p.brand} tamano="md" /></p>}
           <h1>{p.name}</h1>
           <div className="pdp-precio">
             <p className="detail-price">

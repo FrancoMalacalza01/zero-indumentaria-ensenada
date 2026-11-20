@@ -7,6 +7,8 @@ import { unirCatalogo } from "./importarCatalogo.mjs";
 import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import { descuento } from "./priceTools.mjs";
 import { ORDENES, ordenarProductos } from "./ordenProductos.mjs";
+import { categoriasPorMarca } from "./marcas.mjs";
+import MarcaLogo from "./MarcaLogo";
 import catalog from "./men-catalog.json";
 import { DetallesDePrenda, TablaDeTalles, useFichasDeMarca } from "./FichaDeMarca";
 import "./men-catalog.css";
@@ -127,7 +129,7 @@ function ProductGallery({ product, close, consulta }: { product: MenProduct; clo
           {product.images.length > 1 && <button onClick={() => setPhoto((i) => (i + 1) % product.images.length)} aria-label="Foto siguiente"><ChevronRight /></button>}
         </div>
         <div className="men-gallery-details">
-          <span>{product.brand} / {product.category}</span>
+          <span className="marca-linea"><MarcaLogo marca={product.brand} tamano="sm" /> / {product.category}</span>
           <h2>{product.name}</h2>
           <p>{etiquetaPrecio(product)}: <Precio p={product} /></p>
           <p>{photo + 1} de {product.images.length} fotos</p>
@@ -161,12 +163,25 @@ export function HomeBrandCatalog() {
   const [orden, setOrden] = useState("destacados");
   const [visible, setVisible] = useState(12);
   const [selected, setSelected] = useState<MenProduct | null>(null);
-  const categories = useMemo(() => [...new Set(products.map((product) => product.category))].sort((a, b) => a.localeCompare(b, "es-AR")), [products]);
+  const porMarca = useMemo(() => categoriasPorMarca(products), [products]);
+  // La lista de secciones es la de la marca elegida; con "Todas", las de las dos juntas.
+  const categories = useMemo(
+    () => (brand !== "Todas" && porMarca[brand]
+      ? porMarca[brand].map((c) => c.nombre)
+      : [...new Set(products.map((product) => product.category))]).sort((a, b) => a.localeCompare(b, "es-AR")),
+    [products, brand, porMarca],
+  );
   const filtered = useMemo(() => ordenarProductos(products.filter((product) =>
     (brand === "Todas" || product.brand === brand) &&
     (category === "Todas" || product.category === category),
   ), orden), [products, brand, category, orden]);
-  const changeBrand = (next: string) => { setBrand(next); setVisible(12); };
+  const changeBrand = (next: string) => {
+    setBrand(next);
+    // Una sección que la marca nueva no tiene no puede quedar elegida: la grilla quedaría vacía.
+    if (next !== "Todas" && category !== "Todas" && !porMarca[next]?.some((c) => c.nombre === category)) setCategory("Todas");
+    setVisible(12);
+  };
+  const elegir = (marca: string, seccion: string) => { setBrand(marca); setCategory(seccion); setVisible(12); };
   const changeCategory = (next: string) => { setCategory(next); setVisible(12); };
   const changeOrden = (next: string) => { setOrden(next); setVisible(12); };
 
@@ -180,7 +195,7 @@ export function HomeBrandCatalog() {
     </div>
     <div className="home-brand-controls">
       <div className="home-brand-tabs" role="group" aria-label="Filtrar productos por marca">
-        {(["Todas", ...brands]).map((item) => <button key={item} className={brand === item ? "active" : ""} onClick={() => changeBrand(item)} aria-pressed={brand === item}>{item}<small>{item === "Todas" ? products.length : products.filter((product) => product.brand === item).length}</small></button>)}
+        {(["Todas", ...brands]).map((item) => <button key={item} className={brand === item ? "active" : ""} onClick={() => changeBrand(item)} aria-pressed={brand === item}>{item === "Todas" ? item : <MarcaLogo marca={item} tamano="sm" />}<small>{item === "Todas" ? products.length : products.filter((product) => product.brand === item).length}</small></button>)}
       </div>
       <label className="home-brand-category">
         <span>Sección</span>
@@ -198,6 +213,23 @@ export function HomeBrandCatalog() {
         <ChevronDown size={15} />
       </label>
     </div>
+    <div className="marcas-bloques">
+      {brands.filter((m) => brand === "Todas" || m === brand).map((m) => (
+        <section className="marca-bloque" key={m} aria-label={`Prendas de ${m}`}>
+          <header>
+            <MarcaLogo marca={m} tamano="lg" />
+            <small>{products.filter((p) => p.brand === m).length} prendas</small>
+          </header>
+          <div className="marca-categorias" role="group" aria-label={`Secciones de ${m}`}>
+            {(porMarca[m] ?? []).map((c) => (
+              <button key={c.nombre} className={brand === m && category === c.nombre ? "active" : ""} aria-pressed={brand === m && category === c.nombre} onClick={() => elegir(m, c.nombre)}>
+                {c.nombre}<small>{c.cantidad}</small>
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
     {filtered.length ? <>
       <div className="home-brand-grid">
         {filtered.slice(0, visible).map((product) => <article className="men-card home-brand-card" key={product.id}>
@@ -206,7 +238,7 @@ export function HomeBrandCatalog() {
             <span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span>
           </button>
           <div className="men-card-body">
-            <span>{product.brand} / {product.category}</span>
+            <span className="marca-linea"><MarcaLogo marca={product.brand} tamano="sm" /> / {product.category}</span>
             <button onClick={() => setSelected(product)}>{product.name}</button>
             <p><Precio p={product} /></p>
             {consultaDe(product) && <a className="men-card-consult" href={consultaDe(product)!} target="_blank" rel="noreferrer noopener" aria-label={`Consultar por WhatsApp: ${product.name}`}><MessageCircle size={14} /> Consultar por WhatsApp</a>}
@@ -365,7 +397,7 @@ export default function MenCatalog() {
       <section className="men-results" aria-label="Productos de hombre">
         <div className="men-section-head"><div><span className="eyebrow dark">MISTRAL + BROOKSFIELD</span><h2>{category === "Todas" ? "Todas las secciones" : category}</h2></div><Link to="/sucursales">Consultar disponibilidad <ArrowRight size={17} /></Link></div>
         <div className="men-toolbar"><span>{filtered.length} productos</span><label className="men-sort"><span>Ordenar</span><select value={orden} onChange={(event) => setOrden(event.target.value)} aria-label="Ordenar productos">{ORDENES.map((o) => <option key={o.id} value={o.id}>{o.etiqueta}</option>)}</select></label></div>
-        {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span>{product.brand} / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p><Precio p={product} /></p><small>{etiquetaPrecio(product)}</small>{consultaDe(product) && <a className="men-card-consult" href={consultaDe(product)!} target="_blank" rel="noreferrer noopener" aria-label={`Consultar por WhatsApp: ${product.name}`}><MessageCircle size={14} /> Consultar por WhatsApp</a>}</div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
+        {filtered.length ? <><div className="men-grid">{filtered.slice(0, visible).map((product) => <article className="men-card" key={product.id}><button className="men-card-image" onClick={() => setSelected(product)} aria-label={`Ver fotos de ${product.name}`}><img src={product.cover || product.images[0]} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/images/product-fallback.svg"; }} /><span>Ver {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span></button><div className="men-card-body"><span className="marca-linea"><MarcaLogo marca={product.brand} tamano="sm" /> / {product.category}</span><button onClick={() => setSelected(product)}>{product.name}</button><p><Precio p={product} /></p><small>{etiquetaPrecio(product)}</small>{consultaDe(product) && <a className="men-card-consult" href={consultaDe(product)!} target="_blank" rel="noreferrer noopener" aria-label={`Consultar por WhatsApp: ${product.name}`}><MessageCircle size={14} /> Consultar por WhatsApp</a>}</div></article>)}</div>{visible < filtered.length && <button className="men-more" onClick={() => setVisible((n) => n + pageSize)}>Mostrar más productos <ArrowRight size={18} /></button>}</> : <div className="men-empty"><h3>No encontramos productos.</h3><p>Probá otra búsqueda o sección.</p></div>}
       </section>
       <p className="men-source-note">Catálogo de marcas relevado el {new Date(`${catalog.capturedAt}T12:00:00`).toLocaleDateString("es-AR")}. Fotos publicadas por <a href="https://www.mistral.com.ar/hombre/" target="_blank" rel="noopener noreferrer">Mistral</a> y <a href="https://www.brooksfieldstore.com/3-hombre-brooksfield" target="_blank" rel="noopener noreferrer">Brooksfield</a>. Los precios son los de la marca, salvo los que Zero ajustó. Consultá la disponibilidad en Zero Indumentaria.</p>
     </div>
