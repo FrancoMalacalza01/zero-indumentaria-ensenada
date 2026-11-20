@@ -18,7 +18,7 @@ import { leerAjustes, ajusteAFila } from "./menOverrides.mjs";
 import { ocultosParaMostrar } from "./importarCatalogo.mjs";
 import type { AjustesHombre } from "./menOverrides.mjs";
 import { fetchSettings, porDefecto } from "./settings";
-import { costoEnvio } from "./settingsMap.mjs";
+import { costoEnvio, textoDePausa } from "./settingsMap.mjs";
 const KEY = "mistral-local-demo-v1";
 /**
  * Los ajustes del catálogo de hombre se guardan aparte de la demo: no son parte
@@ -357,6 +357,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       notify("Demo restablecida.");
     },
     placeOrder: async (delivery, customer, payment, zone) => {
+      // Tienda en pausa: no se toma ningún pedido (la base también lo rechaza, por si alguien se saltea la pantalla).
+      const pausa = textoDePausa(settings);
+      if (pausa) return { error: pausa };
       // Si el catálogo vino del servidor, el pedido tiene que ir al servidor:
       // descontar stock acá nomás dejaría la base diciendo otra cosa.
       if (catalogSource === "servidor") {
