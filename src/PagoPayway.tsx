@@ -28,12 +28,14 @@ const agrupar = (v: string) => v.replace(/\D/g, "").slice(0, 19).replace(/(.{4})
  */
 export function PagoPayway({
   pedido,
+  codigoPago,
   total,
   url,
   clavePublica,
   money,
 }: {
   pedido: string;
+  codigoPago: string;
   total: number;
   url: string;
   clavePublica: string;
@@ -87,7 +89,7 @@ export function PagoPayway({
       setEnviando(false);
       return;
     }
-    const r = await pagarConPayway({ pedido, token, bin, medio });
+    const r = await pagarConPayway({ pedido, codigoPago, token, bin, medio });
     setResultado(r);
     setEnviando(false);
   };

@@ -48,6 +48,7 @@ declare
   v_envio    int := 0;
   v_gratis   int;
   v_costo    text;
+  v_token    text;
 begin
   -- Lo que se puede rechazar sin tocar nada, se rechaza antes de tocar nada.
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
@@ -88,6 +89,9 @@ begin
   if v_lineas > 40 then
     return jsonb_build_object('error', 'El pedido tiene demasiados renglones.');
   end if;
+
+  -- Los pedidos de pago online que nadie pagó devuelven su stock antes de contar lo que hay.
+  perform public.vencer_pedidos_sin_pago();
 
   -- Freno de mano. Esta función la puede llamar cualquiera que entre a la
   -- tienda, y descuenta stock: un script podría dejar el local en cero sin
@@ -216,10 +220,13 @@ begin
 
     v_id := 'M-' || lpad(nextval('public.pedidos_web_seq')::text, 5, '0');
 
-    insert into public.orders (id, fecha, customer, items, total, envio, delivery, zone, payment, status)
+    -- Código de pago: sólo lo recibe quien hace el pedido y hace falta para cobrarlo (ver reservar_cobro).
+    v_token := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+
+    insert into public.orders (id, fecha, customer, items, total, envio, delivery, zone, payment, status, pago_token)
     values (v_id, v_fecha, v_cliente, v_items, v_total + v_envio, v_envio, p_entrega,
             case when p_entrega = 'shipping' then v_zona end,
-            p_pago, 'Pendiente');
+            p_pago, 'Pendiente', v_token);
 
     insert into public.movements (id, fecha, product_id, product_name, size, delta, reason, order_id)
     select v_id || '-' || (ord - 1),
@@ -256,7 +263,8 @@ begin
     'status',   'Pendiente',
     'customer', v_cliente,
     'payment',  p_pago,
-    'zone',     case when p_entrega = 'shipping' then v_zona end));
+    'zone',     case when p_entrega = 'shipping' then v_zona end),
+    'pagoToken', v_token);
 end;
 $fn$;
 

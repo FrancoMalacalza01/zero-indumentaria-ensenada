@@ -167,7 +167,10 @@ export async function crearPedido(
     if (datos?.error) return { error: String(datos.error) };
     if (!datos?.order)
       return { error: "El servidor contestó algo que no entiendo." };
-    return { order: datos.order as Order };
+    // El código de pago viaja aparte del pedido y sólo en esta respuesta: no se guarda ni se muestra, se
+    // usa para cobrar (ver reservar_cobro). Sin él, la función de cobro no acepta el pedido.
+    const pagoToken = typeof datos.pagoToken === "string" ? datos.pagoToken : undefined;
+    return { order: { ...(datos.order as Order), pagoToken } };
   } catch {
     // Acá no se puede improvisar: si no sabemos si el pedido entró, decirle al
     // cliente que está listo sería mentirle, y el stock quedaría mal.

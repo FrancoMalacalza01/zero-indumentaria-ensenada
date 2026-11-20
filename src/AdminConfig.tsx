@@ -798,6 +798,34 @@ export default function AdminConfig({
       </div>
 
       <div className="config-bloque">
+        <h2>Pedidos sin pagar</h2>
+        <div className="config-grid">
+          <label className="admin-field">
+            Se cancelan solos a las (horas)
+            <input
+              type="number"
+              min={0}
+              max={720}
+              value={draft.pedidos.vencenEnHoras}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  pedidos: {
+                    vencenEnHoras: Math.min(720, Math.max(0, Math.trunc(Number(e.target.value) || 0))),
+                  },
+                }))
+              }
+            />
+          </label>
+        </div>
+        <Ayuda>
+          Un pedido de pago online (tarjeta o Mercado Pago) que nadie pagó se cancela solo pasadas estas horas y
+          las prendas vuelven al stock. Evita que pedidos sin pagar dejen una prenda "agotada". Con <b>0</b> no
+          vencen. Los pedidos de efectivo o transferencia no vencen solos: los cancelás vos desde Pedidos.
+        </Ayuda>
+      </div>
+
+      <div className="config-bloque">
         <h2>Cambios y devoluciones</h2>
         <div className="config-grid">
           <label className="admin-field">

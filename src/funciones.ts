@@ -85,6 +85,8 @@ export async function mandarConfirmacion(pedido: string, email: string) {
  */
 export async function pagarConPayway(datos: {
   pedido: string;
+  /** El código de pago que devolvió crear_pedido: sin él no se cobra. */
+  codigoPago: string;
   token: string;
   bin: string;
   medio: number;
