@@ -60,6 +60,22 @@ export function tablaDeTalles(prenda, detalles) {
       alt: `Tabla de medidas de Brooksfield: ${tipo}`,
     };
   }
+  // Mistral cuya ficha no trae medidas: se usa la tabla de la prenda equivalente que pasó el local (la de
+  // Brooksfield), AVISANDO que es de referencia y de otra marca. Los joggings y las fragancias quedan sin tabla.
+  const tipoMistral = Object.hasOwn(IMAGENES_BROOKSFIELD, prenda.category)
+    ? IMAGENES_BROOKSFIELD[prenda.category]
+    : prenda.category === "Buzos"
+      ? "sweaters"
+      : null;
+  if (prenda.brand === "Mistral" && tipoMistral) {
+    return {
+      tipo: "imagen",
+      marca: "Brooksfield",
+      src: `/men-medidas/brooksfield-${tipoMistral}.jpg`,
+      alt: `Tabla de medidas de referencia: ${tipoMistral}`,
+      referencia: `Medidas de referencia: Mistral no publicó una tabla para esta prenda; son las de ${tipoMistral} de Brooksfield. Pueden variar un poco; ante la duda, consultanos.`,
+    };
+  }
   return null;
 }
 
