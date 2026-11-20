@@ -17,6 +17,16 @@ const IMAGENES_BROOKSFIELD = Object.freeze({
   Camperas: "camperas",
 });
 
+// Prendas para las que Brooksfield no publicó una tabla propia: se les muestra la de la prenda más parecida,
+// AVISANDO que es de referencia. Los pantalones y bermudas usan las medidas de cintura, cadera y largo de sus
+// jeans; los buzos y chalecos, las de sus sweaters. Los cortes distintos pueden variar un poco.
+const REFERENCIA_BROOKSFIELD = Object.freeze({
+  Pantalones: { tipo: "jeans", como: "jeans" },
+  Bermudas: { tipo: "jeans", como: "jeans" },
+  Buzos: { tipo: "sweaters", como: "sweaters" },
+  Chalecos: { tipo: "sweaters", como: "sweaters" },
+});
+
 /**
  * @param prenda    { id, brand, category, name }
  * @param detalles  el contenido de men-detalles.json: { [id]: { medidas: { nota, filas: [{ talle, medidas }] } } }
@@ -32,7 +42,17 @@ export function tablaDeTalles(prenda, detalles) {
   if (prenda.brand === "Brooksfield") {
     const esJean = /\bjeans?\b/i.test(String(prenda.name || ""));
     const tipo = esJean ? "jeans" : IMAGENES_BROOKSFIELD[prenda.category];
-    if (!tipo) return null;
+    if (!tipo) {
+      const ref = Object.hasOwn(REFERENCIA_BROOKSFIELD, prenda.category) ? REFERENCIA_BROOKSFIELD[prenda.category] : null;
+      if (!ref) return null;
+      return {
+        tipo: "imagen",
+        marca: "Brooksfield",
+        src: `/men-medidas/brooksfield-${ref.tipo}.jpg`,
+        alt: `Tabla de medidas de Brooksfield: ${ref.como}`,
+        referencia: `Medidas de referencia: son las de los ${ref.como} de Brooksfield. En otros cortes pueden variar; ante la duda, consultanos.`,
+      };
+    }
     return {
       tipo: "imagen",
       marca: "Brooksfield",
