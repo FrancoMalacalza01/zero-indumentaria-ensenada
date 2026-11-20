@@ -15,6 +15,7 @@
  * reintenta el mismo aviso durante horas.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { montoCoincide } from "../_shared/codigoDePago.mjs";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const CLAVE_SERVICIO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -66,6 +67,24 @@ Deno.serve(async (req: Request) => {
     if (!pedidoId) return ok();
 
     const estado = traducir(String(pago?.status || ""));
+
+    // Se mira el pedido antes de escribir: que el monto pagado sea el del pedido y que un aviso tardío no pise
+    // un pago que ya quedó aprobado (por ejemplo, un segundo intento rechazado).
+    const lectura = await fetch(
+      `${URL_BASE}/rest/v1/orders?id=eq.${encodeURIComponent(pedidoId)}&select=total,payment_status`,
+      { headers: { apikey: CLAVE_SERVICIO, Authorization: `Bearer ${CLAVE_SERVICIO}` } },
+    );
+    const filas = lectura.ok ? await lectura.json().catch(() => []) : [];
+    const pedido = Array.isArray(filas) ? filas[0] : null;
+    if (!pedido) return ok();
+    if (estado === "aprobado" && !montoCoincide(pago?.transaction_amount, pedido.total)) {
+      console.error("el monto pagado no es el del pedido; no se marca pagado", pedidoId, pago?.transaction_amount, pedido.total);
+      return ok();
+    }
+    // Un pago ya aprobado sólo cambia si Mercado Pago avisa que se devolvió.
+    if (pedido.payment_status === "aprobado" && estado !== "devuelto") return ok();
+    if (pedido.payment_status === "devuelto") return ok();
+
     const patch = await fetch(
       `${URL_BASE}/rest/v1/orders?id=eq.${encodeURIComponent(pedidoId)}`,
       {
