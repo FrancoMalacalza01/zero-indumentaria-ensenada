@@ -45,6 +45,8 @@ SQL
 echo "→ aplicando esquema.sql y crear_pedido.sql"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/esquema.sql" 2>/dev/null
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/crear_pedido.sql" 2>/dev/null
+psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/factura-y-direccion.sql" 2>/dev/null
+psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/crear_pedido.sql" 2>/dev/null
 echo "→ aplicando pagos-seguros.sql (también sobre una base que ya lo tiene)"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/pagos-seguros.sql" 2>/dev/null
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/pagos-seguros.sql" 2>/dev/null
@@ -96,17 +98,17 @@ insert into public.stock (product_id,size,qty) values ('e','M',10),('f','M',10);
 SQL
 envio_cerca=$(psqlm -c "select (public.crear_pedido(
   '[{\"productId\":\"e\",\"size\":\"M\",\"quantity\":1}]'::jsonb,
-  'Vecina','shipping','Ensenada')->'order'->>'envio')")
+  'Vecina','shipping','Ensenada',null,false,null,jsonb_build_object('calle','Calle 7','numero','1','localidad','X','cp','1900'))->'order'->>'envio')")
 envio_lejos=$(psqlm -c "select (public.crear_pedido(
   '[{\"productId\":\"e\",\"size\":\"M\",\"quantity\":1}]'::jsonb,
-  'Lejana','shipping','Resto de la Provincia de Buenos Aires')->'order'->>'envio')")
+  'Lejana','shipping','Resto de la Provincia de Buenos Aires',null,false,null,jsonb_build_object('calle','Calle 7','numero','1','localidad','X','cp','1900'))->'order'->>'envio')")
 total_lejos=$(psqlm -c "select total from public.orders order by fecha desc, id desc limit 1")
 envio_gratis=$(psqlm -c "select (public.crear_pedido(
   '[{\"productId\":\"f\",\"size\":\"M\",\"quantity\":1}]'::jsonb,
-  'Compra grande','shipping','Resto de la Provincia de Buenos Aires')->'order'->>'envio')")
+  'Compra grande','shipping','Resto de la Provincia de Buenos Aires',null,false,null,jsonb_build_object('calle','Calle 7','numero','1','localidad','X','cp','1900'))->'order'->>'envio')")
 zona_rara=$(psqlm -c "select public.crear_pedido(
   '[{\"productId\":\"e\",\"size\":\"M\",\"quantity\":1}]'::jsonb,
-  'De otra provincia','shipping','Ushuaia')->>'error'")
+  'De otra provincia','shipping','Ushuaia',null,false,null,jsonb_build_object('calle','Calle 7','numero','1','localidad','X','cp','1900'))->>'error'")
 echo "Ensenada (costo 0): envío \$$envio_cerca"
 echo "Resto de la provincia, \$30.000 de prendas: envío \$$envio_lejos · total \$$total_lejos"
 echo "Resto de la provincia, \$120.000 de prendas: envío \$$envio_gratis"
@@ -230,3 +232,29 @@ if [ "$r_p" = "Volvemos el 5 de enero" ] && [ "$antes_p" = "$despues_p" ]; then 
 psqlm -q -c "update public.settings set datos = jsonb_set(datos, '{pausa,activa}', 'false'::jsonb) where id='local'"
 ok_p=$(psqlm -c "select (public.crear_pedido('[{\"productId\":\"ps\",\"size\":\"M\",\"quantity\":1}]'::jsonb,'SinPausa','pickup',null,'efectivo')->'order'->>'id') is not null")
 if [ "$ok_p" = "t" ]; then echo "✔ al apagar la pausa, se vuelve a poder comprar"; else echo "✘ con la pausa apagada no se pudo comprar"; exit 1; fi
+
+echo
+echo "→ factura, mail y dirección"
+psqlm -q -c "update public.orders set fecha = fecha - interval '10 minutes'"
+nuevo2() { psqlm -c "select public.crear_pedido('[{\"productId\":\"ps\",\"size\":\"M\",\"quantity\":1}]'::jsonb,'Cliente','$1',$2,'efectivo',$3,$4,$5)"; }
+err() { python3 -c "import sys,json;print(json.load(sys.stdin).get('error',''))"; }
+oid() { python3 -c "import sys,json;print(json.load(sys.stdin)['order']['id'])"; }
+e1=$(nuevo2 pickup null true null null | err)
+[ "$e1" = "Para mandarte la factura necesitamos tu mail." ] && echo "✔ con factura y sin mail: se rechaza" || { echo "✘ factura sin mail dio: $e1"; exit 1; }
+e2=$(nuevo2 pickup null false "'ana@'" null | err)
+[ "$e2" = "Ese mail no parece un mail. Revisalo." ] && echo "✔ un mail mal escrito se rechaza" || { echo "✘ mail malo dio: $e2"; exit 1; }
+r3=$(nuevo2 pickup null true "' Ana@Correo.com '" null | oid)
+f3=$(psqlm -c "select factura::text || '|' || email from public.orders where id='$r3'")
+[ "$f3" = "true|ana@correo.com" ] && echo "✔ con factura y mail: entra y queda guardado (mail en minúsculas)" || { echo "✘ guardó: $f3"; exit 1; }
+r4=$(nuevo2 pickup null false null null | oid)
+f4=$(psqlm -c "select factura::text || '|' || coalesce(email,'sin-mail') from public.orders where id='$r4'")
+[ "$f4" = "false|sin-mail" ] && echo "✔ sin factura el mail no es obligatorio" || { echo "✘ guardó: $f4"; exit 1; }
+e5=$(nuevo2 shipping "'Ensenada'" false null null | err)
+[ "$e5" = "Escribí la calle de tu domicilio." ] && echo "✔ envío sin dirección: se rechaza" || { echo "✘ envío sin dirección dio: $e5"; exit 1; }
+e6=$(nuevo2 shipping "'Ensenada'" false null "jsonb_build_object('calle','Calle 7','numero','1','localidad','Ensenada','cp','19')" | err)
+[ "$e6" = "Escribí los 4 números de tu código postal." ] && echo "✔ código postal incompleto: se rechaza" || { echo "✘ cp corto dio: $e6"; exit 1; }
+r7=$(nuevo2 shipping "'Ensenada'" false null "jsonb_build_object('calle','  Calle   7 ','numero','1234','piso','2 B','localidad','Ensenada','cp','B1925','referencia','timbre roto','otro','no')" | oid)
+d7=$(psqlm -c "select (direccion->>'calle') || '|' || (direccion->>'cp') || '|' || (direccion->>'piso') || '|' || (select count(*) from jsonb_object_keys(direccion))::text || '|' || (direccion ? 'otro')::text from public.orders where id='$r7'")
+[ "$d7" = "Calle 7|1925|2 B|6|false" ] && echo "✔ la dirección se guarda limpia (espacios, código sólo con dígitos, sin campos de más)" || { echo "✘ dirección guardada: $d7"; exit 1; }
+falla_v=$(psqlm -F '|' -f "$AQUI/verificar-factura-y-direccion.sql" | grep -c '|f$' || true)
+[ "$falla_v" = "0" ] && echo "✔ el verificador de factura y dirección: todo en true" || { echo "✘ el verificador marca $falla_v en false"; exit 1; }

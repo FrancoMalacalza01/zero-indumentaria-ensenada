@@ -1,4 +1,5 @@
 import { ArrowRight, Search, ShoppingBag, SlidersHorizontal } from "lucide-react";
+import { textoDireccion } from "./datosDelPedido.mjs";
 import type { Order } from "./types";
 import { paymentLabel } from "./payment";
 import { money, dateLabel, orderStatuses, pagoEtiquetas, Empty } from "./adminComunes";
@@ -92,6 +93,12 @@ export function AdminPedidos({
                         <strong>#{o.id.slice(-8).toUpperCase()}</strong>
                         <span>{o.customer}</span>
                         <small>{dateLabel(o.date)}</small>
+                        {o.factura && (
+                          <small className="admin-factura">
+                            <b>Pidió factura</b>
+                            {o.email ? ` · ${o.email}` : " · sin mail cargado"}
+                          </small>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -118,6 +125,18 @@ export function AdminPedidos({
                             ? o.zone || "A convenir"
                             : "En el local"}
                         </span>
+                        {o.delivery === "shipping" && o.direccion && (
+                          <small className="admin-direccion">
+                            {textoDireccion(o.direccion)}
+                            <button
+                              type="button"
+                              className="admin-text-button"
+                              onClick={() => navigator.clipboard?.writeText(textoDireccion(o.direccion))}
+                            >
+                              Copiar dirección
+                            </button>
+                          </small>
+                        )}
                         {o.payment && (
                           <small>{paymentLabel(o.payment)}</small>
                         )}

@@ -2798,3 +2798,11 @@ svg {
 .pausa-tienda b {
   margin-right: 6px;
 }
+
+/* Checkout: factura sí/no y dirección de entrega. */
+.factura-opciones { border: 0; padding: 0; margin: 0 0 14px; }
+.factura-opciones legend { font-size: 14px; margin-bottom: 6px; padding: 0; }
+.factura-opcion { display: inline-flex; align-items: center; gap: 6px; margin-right: 18px; cursor: pointer; }
+.direccion-entrega { margin-top: 14px; }
+.direccion-entrega h3 { font-size: 16px; margin: 0 0 8px; }
+.direccion-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

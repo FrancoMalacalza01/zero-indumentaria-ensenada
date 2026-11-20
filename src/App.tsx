@@ -40,6 +40,7 @@ import NotaDeCambios from "./NotaDeCambios";
 import { guardarEleccion, leerEleccion } from "./zonaElegida";
 import SelectorDeZona from "./SelectorDeZona";
 import MarcaLogo from "./MarcaLogo";
+import { faltaEnElPedido, limpiarDireccion } from "./datosDelPedido.mjs";
 import CalculadoraDeEnvio from "./CalculadoraDeEnvio";
 import { DetallesDePrenda, TablaDeTalles, useFichasDeMarca } from "./FichaDeMarca";
 import { promosDePrecio, textoEnvioGratis } from "./promos.mjs";
@@ -1325,6 +1326,9 @@ function Checkout() {
   const { cart, products, placeOrder, catalogSource, settings } = useStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  // Factura: con "sí" el mail es obligatorio (ahí se la mandamos). La factura la emite el local; acá sólo se pide.
+  const [factura, setFactura] = useState(false);
+  const [dir, setDir] = useState({ calle: "", numero: "", piso: "", localidad: "", referencia: "" });
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1352,9 +1356,23 @@ function Checkout() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
+    const direccion = { ...dir, cp };
+    if (enVivo) {
+      const falta = faltaEnElPedido({ factura, email, entrega: delivery, direccion });
+      if (falta) {
+        setError(falta);
+        return;
+      }
+    }
     setBusy(true);
     setError("");
-    const result = await placeOrder(delivery, name, method, zone);
+    const result = await placeOrder(
+      delivery,
+      name,
+      method,
+      zone,
+      enVivo ? { factura, email: email.trim(), direccion: limpiarDireccion(direccion) } : undefined,
+    );
     if (result.error) {
       setError(result.error);
       setBusy(false);
@@ -1457,6 +1475,7 @@ function Checkout() {
         {email && (
           <p className="reference-price">
             Te mandamos la confirmación a <b>{email}</b>.
+            {order.factura ? " La factura te llega a ese mismo mail." : ""}
           </p>
         )}
         {chosen && <PaymentBlock option={chosen} />}
@@ -1550,16 +1569,29 @@ function Checkout() {
           </label>
           {enVivo && (
             <label className="field">
-              Tu mail (opcional)
+              {factura ? "Tu mail (obligatorio para la factura)" : "Tu mail (opcional)"}
               <input
                 type="email"
                 maxLength={120}
                 autoComplete="email"
-                placeholder="para mandarte la confirmación"
+                required={factura}
+                placeholder={factura ? "ahí te mandamos la factura" : "para mandarte la confirmación"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
+          )}
+          {enVivo && (
+            <fieldset className="field factura-opciones">
+              <legend>¿Querés factura?</legend>
+              <label className="factura-opcion">
+                <input type="radio" name="factura" checked={!factura} onChange={() => setFactura(false)} /> No
+              </label>
+              <label className="factura-opcion">
+                <input type="radio" name="factura" checked={factura} onChange={() => setFactura(true)} /> Sí
+              </label>
+              {factura && <small>Te la mandamos por mail, por eso necesitamos tu mail.</small>}
+            </fieldset>
           )}
           <h2>2. Forma de entrega</h2>
           {deliveryAvailable(settings) ? (
@@ -1607,6 +1639,33 @@ function Checkout() {
                   whatsapp={settings.whatsapp}
                   localidades={settings.envio.localidades}
                 />
+              )}
+              {delivery === "shipping" && enVivo && (
+                <div className="direccion-entrega">
+                  <h3>Adónde lo mandamos</h3>
+                  <label className="field">
+                    Calle
+                    <input type="text" maxLength={80} autoComplete="address-line1" required value={dir.calle} onChange={(e) => setDir({ ...dir, calle: e.target.value })} />
+                  </label>
+                  <div className="direccion-fila">
+                    <label className="field">
+                      Número
+                      <input type="text" maxLength={10} required placeholder="o s/n" value={dir.numero} onChange={(e) => setDir({ ...dir, numero: e.target.value })} />
+                    </label>
+                    <label className="field">
+                      Piso / depto (opcional)
+                      <input type="text" maxLength={20} value={dir.piso} onChange={(e) => setDir({ ...dir, piso: e.target.value })} />
+                    </label>
+                  </div>
+                  <label className="field">
+                    Localidad
+                    <input type="text" maxLength={60} autoComplete="address-level2" required value={dir.localidad} onChange={(e) => setDir({ ...dir, localidad: e.target.value })} />
+                  </label>
+                  <label className="field">
+                    Referencia (opcional)
+                    <input type="text" maxLength={140} placeholder="ej. timbre roto, entre calles…" value={dir.referencia} onChange={(e) => setDir({ ...dir, referencia: e.target.value })} />
+                  </label>
+                </div>
               )}
               <p className="reference-price">
                 {sinZona ? (

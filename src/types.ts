@@ -37,6 +37,10 @@ export interface CartItem {
 }
 export interface Order {
   id: string;
+  /** El cliente pidió factura (y dejó su mail para mandársela). */
+  factura?: boolean;
+  /** Dirección de entrega de un envío a domicilio. */
+  direccion?: { calle: string; numero: string; piso: string; localidad: string; cp: string; referencia: string };
   /** Código para cobrar este pedido. Sólo lo recibe quien lo acaba de hacer; no se guarda en el navegador. */
   pagoToken?: string;
   date: string;

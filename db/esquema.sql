@@ -489,6 +489,8 @@ grant execute on function public.guardar_producto_con_stock(jsonb,jsonb,jsonb) t
 -- ---------------------------------------------------------------------------
 
 alter table public.orders add column if not exists pago_token text;
+alter table public.orders add column if not exists factura boolean not null default false;
+alter table public.orders add column if not exists direccion jsonb;
 alter table public.orders add column if not exists pago_intentos integer not null default 0;
 
 comment on column public.orders.pago_token is

@@ -8,6 +8,8 @@
 
 import { hastaValido } from "./ofertas.mjs";
 
+import { limpiarDireccion } from "./datosDelPedido.mjs";
+
 const CATEGORIAS = ["Hombre", "Accesorios"];
 const MOTIVOS = ["Ingreso", "Venta", "Ajuste", "Rotura", "Devolución"];
 const ENTREGAS = ["pickup", "shipping"];
@@ -186,6 +188,8 @@ export function rowToOrder(row) {
       : {}),
     ...(row?.pago_ref ? { pagoRef: texto(row.pago_ref) } : {}),
     ...(row?.email ? { email: texto(row.email) } : {}),
+    ...(row?.factura === true ? { factura: true } : {}),
+    ...(row?.direccion && typeof row.direccion === "object" ? { direccion: limpiarDireccion(row.direccion) } : {}),
     ...(row?.mail_enviado_at
       ? { mailEnviadoAt: texto(row.mail_enviado_at) }
       : {}),
