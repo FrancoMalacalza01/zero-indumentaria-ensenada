@@ -760,6 +760,79 @@ export default function AdminConfig({
         >
           <Plus size={15} /> Agregar zona
         </button>
+        <h3>Localidades</h3>
+        <Ayuda>
+          Así el cliente elige su localidad en vez de escribir el código postal. El código de cada una lo cargás vos:
+          tiene que caer en alguna zona de arriba. Si la lista queda vacía, el cliente escribe su código.
+        </Ayuda>
+        <div className="config-zonas">
+          {draft.envio.localidades.map((l, i) => (
+            <div className="config-zona" key={i}>
+              <label className="admin-field">
+                Localidad
+                <input
+                  type="text"
+                  maxLength={60}
+                  placeholder="ej. City Bell"
+                  value={l.nombre}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      envio: {
+                        ...d.envio,
+                        localidades: d.envio.localidades.map((x, j) => (j === i ? { ...x, nombre: e.target.value } : x)),
+                      },
+                    }))
+                  }
+                />
+              </label>
+              <label className="admin-field">
+                Código postal
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="ej. 1896"
+                  value={l.cp}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      envio: {
+                        ...d.envio,
+                        localidades: d.envio.localidades.map((x, j) => (j === i ? { ...x, cp: e.target.value.replace(/\D/g, "") } : x)),
+                      },
+                    }))
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className="admin-text-button"
+                onClick={() =>
+                  setDraft((d) => ({
+                    ...d,
+                    envio: { ...d.envio, localidades: d.envio.localidades.filter((_, j) => j !== i) },
+                  }))
+                }
+                aria-label={`Quitar ${l.nombre || "localidad"}`}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="admin-button"
+          onClick={() =>
+            setDraft((d) => ({
+              ...d,
+              envio: { ...d.envio, localidades: [...d.envio.localidades, { nombre: "", cp: "" }] },
+            }))
+          }
+        >
+          <Plus size={15} /> Agregar localidad
+        </button>
         <div className="config-grid">
           <label className="admin-field">
             Envío sin cargo desde ($)

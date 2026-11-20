@@ -6,6 +6,7 @@ import { money } from "./Store";
 import { codigoPostalDe, costoEnvio, deliveryZones, hayCodigosPostales, zonaPorCodigoPostal } from "./delivery";
 import { textoPlazoEnvio } from "./settingsMap.mjs";
 import { guardarEleccion, leerEleccion } from "./zonaElegida";
+import SelectorDeLocalidad, { OTRA_LOCALIDAD, localidadInicial } from "./SelectorDeLocalidad";
 
 /**
  * "Medios de envío" de la ficha de una prenda: el cliente escribe su código postal y ve cuánto
@@ -20,6 +21,8 @@ export default function CalculadoraDeEnvio({ settings, subtotal }: { settings: S
   const conCodigos = hayCodigosPostales(zonas);
   const [escrito, setEscrito] = useState(() => leerEleccion(zonas)?.cp ?? "");
   const [consultado, setConsultado] = useState(() => (conCodigos ? leerEleccion(zonas)?.cp ?? "" : ""));
+  const localidades = settings.envio.localidades;
+  const [localidad, setLocalidad] = useState(() => localidadInicial(localidades, leerEleccion(zonas)?.cp ?? ""));
   const valido = codigoPostalDe(consultado) !== null;
   const zona = conCodigos && valido ? zonaPorCodigoPostal(zonas, consultado) : null;
   const d = settings.direccion;
@@ -95,7 +98,22 @@ export default function CalculadoraDeEnvio({ settings, subtotal }: { settings: S
 
   return (
     <>
-      <form className="pdp-cp" onSubmit={consultar}>
+      {localidades.length > 0 && (
+        <SelectorDeLocalidad
+          localidades={localidades}
+          nombre={localidad}
+          onElegir={(n, cp) => {
+            setLocalidad(n);
+            if (!cp) return;
+            // Con una localidad de la lista el cálculo es inmediato: no hace falta tocar el botón.
+            setEscrito(cp);
+            setConsultado(cp);
+            const z = zonaPorCodigoPostal(zonas, cp);
+            if (z) guardarEleccion({ delivery: "shipping", zone: z.nombre, cp });
+          }}
+        />
+      )}
+      {(localidades.length === 0 || localidad === OTRA_LOCALIDAD) && <form className="pdp-cp" onSubmit={consultar}>
         <input
           aria-label="Tu código postal"
           placeholder="Tu código postal"
@@ -106,7 +124,7 @@ export default function CalculadoraDeEnvio({ settings, subtotal }: { settings: S
           onChange={(e) => setEscrito(e.target.value)}
         />
         <button type="submit" aria-label="Calcular el envío"><Plus size={20} /></button>
-      </form>
+      </form>}
       {consultado.trim() !== "" && (
         <p className="form-error" role="alert">
           {valido ? "Todavía no llegamos a ese código postal." : "Escribí los 4 números de tu código postal."}

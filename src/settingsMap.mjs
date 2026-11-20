@@ -81,6 +81,11 @@ export const porDefecto = () => ({
     ],
     /** Desde este monto de prendas, el envío va sin cargo. 0 = nunca. */
     envioGratisDesde: 100000,
+    /**
+     * Las localidades que el cliente puede elegir en vez de escribir su código postal: { nombre, cp }.
+     * Las carga el local (el código postal de cada una no se inventa acá). Vacía = sólo se pide el código.
+     */
+    localidades: [],
   },
   pedidos: {
     /**
@@ -168,6 +173,21 @@ function booleano(valor, porDefectoValor) {
  */
 export const PLAZO_CORREO_CLASICO = "2 a 5 días hábiles";
 const PLAZO_MAXIMO = 80;
+
+/** Las localidades del envío: nombre y un código postal de 4 dígitos; sin repetir nombre. */
+function localidades(valor) {
+  if (!Array.isArray(valor)) return [];
+  const salida = [];
+  for (const l of valor) {
+    const nombre = texto(l?.nombre).trim().slice(0, 60);
+    const cp = codigoPostalDe(l?.cp);
+    if (!nombre || cp === null) continue;
+    if (salida.some((x) => x.nombre.toLowerCase() === nombre.toLowerCase())) continue;
+    salida.push({ nombre, cp: String(cp) });
+    if (salida.length >= 100) break;
+  }
+  return salida;
+}
 
 function zonas(valor, base) {
   if (!Array.isArray(valor)) return base;
@@ -300,6 +320,7 @@ export function leerSettings(datos) {
         envio.envioGratisDesde,
         base.envio.envioGratisDesde,
       ),
+      localidades: localidades(envio.localidades),
     },
     pedidos: {
       vencenEnHoras: Math.min(720, entero(ped.vencenEnHoras, base.pedidos.vencenEnHoras)),

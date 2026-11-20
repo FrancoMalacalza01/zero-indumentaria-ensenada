@@ -410,3 +410,25 @@ test("las horas para que venza un pedido sin pagar: 48 de fábrica, 0 = nunca, c
   assert.equal(leerSettings({ pedidos: { vencenEnHoras: "mucho" } }).pedidos.vencenEnHoras, 48);
   assert.equal(leerSettings({ pedidos: { vencenEnHoras: 99999 } }).pedidos.vencenEnHoras, 720);
 });
+
+test("las localidades del envío: nombre y código de 4 dígitos; lo que no sirve o se repite, afuera", () => {
+  assert.deepEqual(leerSettings({}).envio.localidades, []);
+  const s = leerSettings({
+    envio: {
+      localidades: [
+        { nombre: "City Bell", cp: "1896" },
+        { nombre: "city bell", cp: "1896" },
+        { nombre: "Ensenada", cp: "B1925" },
+        { nombre: "Sin código", cp: "" },
+        { nombre: "", cp: "1900" },
+        { nombre: "Código raro", cp: "19" },
+        "basura",
+      ],
+    },
+  });
+  assert.deepEqual(s.envio.localidades, [
+    { nombre: "City Bell", cp: "1896" },
+    { nombre: "Ensenada", cp: "1925" },
+  ]);
+  assert.deepEqual(leerSettings({ envio: { localidades: "no" } }).envio.localidades, []);
+});
