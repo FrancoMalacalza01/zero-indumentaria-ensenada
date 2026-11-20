@@ -399,9 +399,9 @@ fecha, la oferta dura hasta que se termine a mano, como antes.
 ## Tablas de talle de referencia
 
 Las prendas de Brooksfield sin tabla propia (pantalones, bermudas, buzos, chalecos) muestran la de la prenda más
-parecida (jeans o sweaters), con el aviso *"Medidas de referencia"*. Los shorts de baño y los accesorios no tienen tabla.
+parecida (jeans o sweaters), (marcadas `deReferencia`, sin aviso al cliente por decisión del local). Los shorts de baño y los accesorios no tienen tabla.
 Las de Mistral cuya ficha no trae medidas (remeras, polos, camisas, camperas, buzos) usan la tabla equivalente de
-Brooksfield, con el aviso de que es de referencia y de otra marca. Los joggings de Mistral y las fragancias no tienen tabla.
+Brooksfield, (también `deReferencia`, sin aviso). Los joggings de Mistral y las fragancias no tienen tabla.
 
 ## Localidades en el envío
 

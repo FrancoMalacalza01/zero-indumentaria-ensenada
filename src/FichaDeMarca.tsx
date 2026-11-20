@@ -78,8 +78,8 @@ export function TablaDeTalles({ product, fichas, abierta = false }: { product: P
           <img src={tabla.src} alt={tabla.alt} loading="lazy" />
         </a>
       )}
-      {tabla.tipo === "imagen" && tabla.referencia && <p>{tabla.referencia}</p>}
-      <small>Tabla de {tabla.marca}.</small>
+      {/* La que se toma de otra prenda no se presenta como "Tabla de <marca>": no es la de esta prenda. */}
+      {!(tabla.tipo === "imagen" && tabla.deReferencia) && <small>Tabla de {tabla.marca}.</small>}
     </details>
   );
 }
