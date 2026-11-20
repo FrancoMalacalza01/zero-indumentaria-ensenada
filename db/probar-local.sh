@@ -31,6 +31,7 @@ psql -h "$RAIZ" -p "$PUERTO" -U postgres -qc "create database mistral"
 psqlm -q -v ON_ERROR_STOP=1 <<'SQL'
 create role anon nologin;
 create role authenticated nologin;
+create role service_role nologin;
 grant usage on schema public to anon, authenticated;
 create schema if not exists auth;
 create table if not exists auth.users (id uuid primary key, email text);
@@ -43,6 +44,10 @@ SQL
 
 echo "→ aplicando esquema.sql y crear_pedido.sql"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/esquema.sql" 2>/dev/null
+psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/crear_pedido.sql" 2>/dev/null
+echo "→ aplicando pagos-seguros.sql (también sobre una base que ya lo tiene)"
+psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/pagos-seguros.sql" 2>/dev/null
+psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/pagos-seguros.sql" 2>/dev/null
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/crear_pedido.sql" 2>/dev/null
 echo "→ aplicando ofertas-con-vencimiento.sql (también sobre una base que ya lo tiene)"
 psqlm -q -v ON_ERROR_STOP=1 -f "$AQUI/ofertas-con-vencimiento.sql" 2>/dev/null
@@ -169,3 +174,47 @@ else
   echo "✘ la cuenta no cierra: se vendió algo que no estaba"
   exit 1
 fi
+
+echo
+echo "→ pagos seguros: código de pago, intentos y vencimiento"
+psqlm -q -c "update public.orders set fecha = fecha - interval '10 minutes'"
+psqlm -q <<'SQL'
+insert into public.products (id,name,category,type,price,image,color,color_hex,sizes)
+values ('ps','Prenda pagos','Hombre','Remera',5000,'/p.webp','Azul','#132457',array['M']);
+insert into public.stock (product_id,size,qty) values ('ps','M',10);
+SQL
+nuevo() { psqlm -c "select public.crear_pedido('[{\"productId\":\"ps\",\"size\":\"M\",\"quantity\":1}]'::jsonb,'$1','pickup',null,'$2')"; }
+r1=$(nuevo 'Pago A' credito)
+id1=$(echo "$r1" | python3 -c "import sys,json;print(json.load(sys.stdin)['order']['id'])")
+tok1=$(echo "$r1" | python3 -c "import sys,json;print(json.load(sys.stdin)['pagoToken'])")
+if [ "${#tok1}" -ge 40 ]; then echo "✔ el pedido nuevo trae un código de pago"; else echo "✘ sin código de pago"; exit 1; fi
+rc() { psqlm -c "select public.reservar_cobro('$1','$2','tx$3',3)->>'error'"; }
+e=$(rc "$id1" "equivocado" 1); [ "$e" = "no_encontrado" ] && echo "✔ código equivocado: rechazado" || { echo "✘ código equivocado dio: $e"; exit 1; }
+e=$(rc "M-99999" "x" 1); [ "$e" = "no_encontrado" ] && echo "✔ pedido inexistente: misma respuesta" || { echo "✘ inexistente dio: $e"; exit 1; }
+e=$(rc "$id1" "$tok1" 1); [ -z "$e" ] && echo "✔ con el código, se reserva el cobro" || { echo "✘ reserva dio: $e"; exit 1; }
+e=$(rc "$id1" "$tok1" 2); [ "$e" = "en_curso" ] && echo "✔ no se reserva dos veces a la vez" || { echo "✘ doble reserva dio: $e"; exit 1; }
+for n in 1 2 3; do
+  psqlm -q -c "update public.orders set payment_status='rechazado' where id='$id1'"
+  e=$(rc "$id1" "$tok1" "r$n")
+done
+[ "$e" = "intentos" ] && echo "✔ tras 3 intentos, no se puede seguir probando tarjetas" || { echo "✘ el límite de intentos no corta: $e"; exit 1; }
+# Vencimiento: uno de pago online sin pagar y viejo vence; uno de efectivo y uno pagado, no.
+r2=$(nuevo 'Pago B' debito); id2=$(echo "$r2" | python3 -c "import sys,json;print(json.load(sys.stdin)['order']['id'])")
+r3=$(nuevo 'Pago C' efectivo); id3=$(echo "$r3" | python3 -c "import sys,json;print(json.load(sys.stdin)['order']['id'])")
+r4=$(nuevo 'Pago D' credito); id4=$(echo "$r4" | python3 -c "import sys,json;print(json.load(sys.stdin)['order']['id'])")
+psqlm -q -c "update public.orders set payment_status='aprobado' where id='$id4'"
+psqlm -q -c "update public.orders set fecha = fecha - interval '3 days' where id in ('$id2','$id3','$id4')"
+antes=$(psqlm -c "select qty from public.stock where product_id='ps' and size='M'")
+psqlm -q -c "select public.vencer_pedidos_sin_pago()"
+despues=$(psqlm -c "select qty from public.stock where product_id='ps' and size='M'")
+s2=$(psqlm -c "select status from public.orders where id='$id2'")
+s3=$(psqlm -c "select status from public.orders where id='$id3'")
+s4=$(psqlm -c "select status from public.orders where id='$id4'")
+if [ "$s2" = "Cancelado" ] && [ "$s3" = "Pendiente" ] && [ "$s4" = "Pendiente" ] && [ "$((despues-antes))" = "1" ]; then
+  echo "✔ vence sólo el pedido online sin pagar y devuelve su unidad; efectivo y pagado quedan"
+else
+  echo "✘ vencimiento incorrecto: B=$s2 C=$s3 D=$s4 stock $antes→$despues"; exit 1
+fi
+psqlm -q -c "select public.vencer_pedidos_sin_pago()"
+final=$(psqlm -c "select qty from public.stock where product_id='ps' and size='M'")
+[ "$final" = "$despues" ] && echo "✔ volver a correrlo no devuelve dos veces" || { echo "✘ devolvió de más"; exit 1; }

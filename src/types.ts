@@ -37,6 +37,8 @@ export interface CartItem {
 }
 export interface Order {
   id: string;
+  /** Código para cobrar este pedido. Sólo lo recibe quien lo acaba de hacer; no se guarda en el navegador. */
+  pagoToken?: string;
   date: string;
   items: (CartItem & { name: string; price: number; image: string })[];
   total: number;
@@ -147,6 +149,10 @@ export interface Settings {
     zonas: ZonaEnvio[];
     /** Monto de prendas desde el que el envío va sin cargo. 0 = nunca. */
     envioGratisDesde: number;
+  };
+  pedidos: {
+    /** Horas hasta que un pedido de pago online sin pagar se cancela solo y devuelve el stock. 0 = nunca. */
+    vencenEnHoras: number;
   };
   /** Quién vende. El consumidor tiene que poder saberlo antes de comprar. */
   empresa: {

@@ -1432,9 +1432,10 @@ function Checkout() {
             )}
           </div>
         )}
-        {cobroPayway && (
+        {cobroPayway && order.pagoToken && (
           <PagoPayway
             pedido={order.id}
+            codigoPago={order.pagoToken}
             total={order.total}
             url={settings.pago.paywayUrl}
             clavePublica={settings.pago.paywayClavePublica}

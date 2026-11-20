@@ -15,17 +15,20 @@
  * que no entendemos, el pedido NO se da por pagado.
  *
  * QUÉ VALIDA ANTES DE COBRAR (paso 3 de la documentación de Payway):
- *   - que el pedido exista y esté activo, y sea de hace menos de dos horas;
- *   - que no esté ya pagado, ni con un cobro en curso (evita cobrar dos veces:
- *     el pedido se "reserva" con una sola escritura antes de llamar a Payway);
+ *   - que el pedido exista y quien paga tenga su **código de pago** (un valor al azar que sólo recibe
+ *     quien hizo el pedido: sin él no se puede cobrar un pedido ajeno);
+ *   - que esté activo, sea de hace menos de dos horas y no haya gastado sus 3 intentos de cobro;
+ *   - que no esté ya pagado, ni con un cobro en curso (evita cobrar dos veces: la base lo "reserva"
+ *     en una sola operación antes de llamar a Payway);
  *   - que el monto sea el del pedido.
+ *   Todo eso lo hace `reservar_cobro` en la base (db/pagos-seguros.sql).
  *
  * SIN LA CLAVE NO HACE NADA. Mientras el local no cargue PAYWAY_PRIVATE_API_KEY,
  * contesta que no está configurado y la tienda sigue con lo de siempre.
  *
  * POR QUÉ NO PIDE JWT. La llama la tienda, donde el cliente no tiene cuenta. Lo
- * que la protege es lo de arriba: sólo cobra un pedido que ya existe, reciente y
- * sin pagar, por el monto que dice la base. Y la tarjeta no pasa por acá.
+ * que la protege es lo de arriba: sólo cobra un pedido que ya existe, reciente, sin pagar, con su
+ * código de pago y por el monto que dice la base. Y la tarjeta no pasa por acá.
  *
  * CÓMO SE CONFIGURA:
  *   1. Payway te da, para Sandbox, una clave pública y una privada (Pagos Online).
@@ -61,8 +64,8 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-/** Un pedido viejo no se puede pagar: evita que alguien ande probando ids. */
-const VENTANA_HORAS = 2;
+/** Cuántas veces se puede intentar cobrar un mismo pedido (tarjeta rechazada, error de tipeo). */
+const MAX_INTENTOS = 3;
 /** Payway tarda unos 6 segundos; más de esto, se deja el pedido "en revisión". */
 const ESPERA_MAXIMA_MS = 25_000;
 
@@ -71,6 +74,20 @@ function responder(cuerpo: unknown, status = 200) {
     status,
     headers: { ...CORS, "Content-Type": "application/json" },
   });
+}
+
+/** Qué se le dice a la tienda cuando `reservar_cobro` no deja cobrar. Mismo texto para "no existe" y "código malo". */
+function rechazoDeReserva(motivo?: string) {
+  const textos: Record<string, string> = {
+    no_encontrado: "No encontramos ese pedido.",
+    inactivo: "Ese pedido ya no está activo.",
+    pagado: "Ese pedido ya está pagado.",
+    en_curso: "Ese pedido ya tiene un cobro en curso. Esperá un momento y revisá tu WhatsApp.",
+    vencido: "Ese pedido es de hace rato. Escribinos por WhatsApp y lo cobramos.",
+    intentos: "Ese pedido ya tuvo demasiados intentos de pago. Escribinos por WhatsApp y lo resolvemos.",
+    monto: "El pedido no tiene un monto válido.",
+  };
+  return { error: textos[motivo || ""] || "No pudimos procesar el pago." };
 }
 
 async function base(ruta: string, init: RequestInit = {}) {
@@ -98,10 +115,11 @@ Deno.serve(async (req: Request) => {
       mensaje: "El cobro con tarjeta todavía no está disponible. Escribinos por WhatsApp y lo resolvemos.",
     }, 503);
 
-  let pedidoId = "", token = "", bin = "", medio = 0;
+  let pedidoId = "", codigoPago = "", token = "", bin = "", medio = 0;
   try {
     const c = await req.json();
     pedidoId = String(c?.pedido || "").trim().slice(0, 40);
+    codigoPago = String(c?.codigoPago || "").trim();
     token = String(c?.token || "").trim();
     bin = String(c?.bin || "").trim();
     medio = Number(c?.medio);
@@ -109,43 +127,33 @@ Deno.serve(async (req: Request) => {
     return responder({ error: "No entendí el pedido." }, 400);
   }
   if (!pedidoId) return responder({ error: "Falta el número de pedido." }, 400);
+  if (!/^[a-f0-9]{64}$/.test(codigoPago)) return responder({ error: "Falta el código de pago del pedido." }, 400);
   if (!/^[A-Za-z0-9-]{16,64}$/.test(token)) return responder({ error: "Falta el token de la tarjeta." }, 400);
   if (!/^\d{6}$/.test(bin)) return responder({ error: "Faltan los primeros dígitos de la tarjeta." }, 400);
   if (!medioValido(medio)) return responder({ error: "Ese medio de pago no está disponible." }, 400);
 
   try {
-    const filas = await base(
-      `orders?id=eq.${encodeURIComponent(pedidoId)}&select=id,total,fecha,status,payment_status`,
-    );
-    const pedido = Array.isArray(filas) ? filas[0] : null;
-    if (!pedido) return responder({ error: "No encontramos ese pedido." }, 404);
+    // Todo lo que decide si se puede cobrar vive en la base, en UNA operación con el pedido trabado
+    // (`reservar_cobro`, db/pagos-seguros.sql): que el código de pago sea el del pedido, que esté activo,
+    // reciente, sin pagar ni con un cobro en curso, y que no haya agotado sus intentos. Así nadie puede ir
+    // probando tarjetas contra números de pedido ajenos, y dos cobros a la vez no pasan los dos.
+    const tx = idTransaccion(pedidoId);
+    const r0 = await base("rpc/reservar_cobro", {
+      method: "POST",
+      body: JSON.stringify({ p_pedido: pedidoId, p_codigo: codigoPago, p_tx: tx, p_max_intentos: MAX_INTENTOS }),
+    });
+    if (!r0 || r0.error) return responder(rechazoDeReserva(r0?.error), r0?.error === "no_encontrado" ? 404 : 409);
 
-    if (["Cancelado", "Devuelto"].includes(pedido.status))
-      return responder({ error: "Ese pedido ya no está activo." }, 409);
-    if (pedido.payment_status === "aprobado")
-      return responder({ error: "Ese pedido ya está pagado." }, 409);
-
-    const edad = Date.now() - new Date(pedido.fecha).getTime();
-    if (edad > VENTANA_HORAS * 3600_000)
-      return responder({ error: "Ese pedido es de hace rato. Escribinos por WhatsApp y lo cobramos." }, 409);
-
-    // El monto sale de la base. Si no sirve, no se cobra.
-    const monto = Number(pedido.total);
-    if (!centavos(monto)) return responder({ error: "El pedido no tiene un monto válido." }, 409);
-
-    // Se "reserva" el pedido con UNA escritura condicional: sólo pasa si estaba
-    // sin pago o rechazado. Si dos cobros llegan a la vez, uno solo sigue.
-    const tx = idTransaccion(pedido.id);
-    const reservado = await base(
-      `orders?id=eq.${encodeURIComponent(pedido.id)}&payment_status=in.(sin_pago,rechazado)&select=id`,
-      {
-        method: "PATCH",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify({ payment_status: "pendiente", pago_ref: `payway-tx:${tx}` }),
-      },
-    );
-    if (!Array.isArray(reservado) || !reservado.length)
-      return responder({ error: "Ese pedido ya tiene un cobro en curso. Esperá un momento y revisá tu WhatsApp." }, 409);
+    const pedido = { id: String(r0.id) };
+    // El monto sale de la base. Si no sirve, no se cobra (y el pedido vuelve a poder pagarse).
+    const monto = Number(r0.total);
+    if (!centavos(monto)) {
+      await base(
+        `orders?id=eq.${encodeURIComponent(pedido.id)}&pago_ref=eq.${encodeURIComponent(`payway-tx:${tx}`)}`,
+        { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ payment_status: "sin_pago", pago_ref: null }) },
+      );
+      return responder({ error: "El pedido no tiene un monto válido." }, 409);
+    }
 
     const cuerpo = cuerpoDePago({
       idTransaccion: tx,

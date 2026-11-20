@@ -82,6 +82,15 @@ export const porDefecto = () => ({
     /** Desde este monto de prendas, el envío va sin cargo. 0 = nunca. */
     envioGratisDesde: 100000,
   },
+  pedidos: {
+    /**
+     * A las cuántas horas un pedido de pago online (tarjeta, Mercado Pago) que nadie pagó se cancela solo
+     * y devuelve el stock. Sin esto, alguien podría crear pedidos sin pagar y dejar el local sin prendas.
+     * 0 = no vencen. Los de efectivo o transferencia no vencen solos. La regla real está en la base
+     * (`vencer_pedidos_sin_pago`); acá se guarda el número que ella lee.
+     */
+    vencenEnHoras: 48,
+  },
   /**
    * Quién vende. El consumidor tiene que poder saberlo antes de comprar:
    * nombre o razón social, CUIT y domicilio. Sin esto cargado, el sitio no
@@ -237,6 +246,7 @@ export function leerSettings(datos) {
   const pago = d.pago && typeof d.pago === "object" ? d.pago : {};
   const banco = pago.banco && typeof pago.banco === "object" ? pago.banco : {};
   const envio = d.envio && typeof d.envio === "object" ? d.envio : {};
+  const ped = d.pedidos && typeof d.pedidos === "object" ? d.pedidos : {};
   const dev =
     d.devoluciones && typeof d.devoluciones === "object" ? d.devoluciones : {};
   const dir =
@@ -290,6 +300,9 @@ export function leerSettings(datos) {
         envio.envioGratisDesde,
         base.envio.envioGratisDesde,
       ),
+    },
+    pedidos: {
+      vencenEnHoras: Math.min(720, entero(ped.vencenEnHoras, base.pedidos.vencenEnHoras)),
     },
     empresa: {
       razonSocial: texto(emp.razonSocial).trim(),

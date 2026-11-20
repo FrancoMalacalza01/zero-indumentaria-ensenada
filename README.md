@@ -208,7 +208,9 @@ clave **privada**).
 | Qué | Cómo |
 |---|---|
 | **El monto** | Sale del pedido guardado en la base, no del navegador. |
-| **Doble cobro** | El pedido se reserva con una sola escritura condicional (sólo pasa si estaba *sin pago* o *rechazado*) antes de llamar a Payway: dos cobros a la vez no pueden seguir los dos. |
+| **Quién puede cobrar un pedido** | Cada pedido nace con un **código de pago** al azar (`pago_token`, 64 caracteres) que sólo recibe quien lo hizo, en la respuesta de `crear_pedido`. Sin ese código la función no cobra: los números de pedido son correlativos y, sin esto, cualquiera podía probar tarjetas robadas contra pedidos ajenos. Un pedido inexistente y un código equivocado dan la **misma** respuesta. El código no se guarda en el navegador ni viaja por mail. |
+| **Intentos** | Cada pedido admite **3** intentos de cobro (`pago_intentos`); después hay que escribir al local. Corta el "probar tarjetas" aun con el código. |
+| **Doble cobro** | La base reserva el pedido (`reservar_cobro`, con el pedido trabado) antes de llamar a Payway: sólo pasa si estaba *sin pago* o *rechazado*; dos cobros a la vez no pueden seguir los dos. |
 | **Cada intento** | Lleva su propio `site_transaction_id` (alfanumérico, hasta 40). Un pago rechazado se reintenta con uno nuevo. |
 | **Estados** | `approved` → el pedido queda *pagado* y pasa a *Preparando*; `rejected` → *rechazado* y se puede reintentar con otra tarjeta; **cualquier otra cosa (`review`, `preapproved`, un error) NO se da por pagada**. |
 | **Sin respuesta** | Si Payway no contesta, el pedido queda *pendiente* y se le dice al cliente que no repita el pago: puede haber cobrado. Se revisa en el backoffice de Payway por el `site_transaction_id`. |
@@ -384,6 +386,26 @@ fecha, la oferta dura hasta que se termine a mano, como antes.
   `db/catalogo-editable.sql` y `db/crear_pedido.sql` en el SQL Editor, y mirar que
   `db/verificar-ofertas-con-vencimiento.sql` dé todo en `true`. Hasta entonces el sitio
   anda como antes (la tienda tolera que falte la columna), pero no hay que usar fechas.
+
+## Pedidos sin pagar que no traban el stock
+
+Cada pedido descuenta las unidades al crearse. Sin un límite, alguien podía crear pedidos
+sin pagarlos y dejar una prenda "agotada". Por eso, un pedido **de pago online** (tarjeta o
+Mercado Pago) que nadie paga se **cancela solo a las 48 horas** y devuelve su stock, con su
+movimiento de *Devolución*. Las horas se cambian en el panel (Configuración → *Pedidos sin
+pagar*; 0 = no vencen). Los de efectivo o transferencia **no** vencen solos, porque se arreglan
+con el local y pueden tardar: esos los cancela una persona desde Pedidos.
+
+La limpieza la corre la propia compra (`crear_pedido` llama a `vencer_pedidos_sin_pago()`), así
+que no hace falta ningún horario programado.
+
+- **Para activarlo**, en el SQL Editor y en este orden: `db/pagos-seguros.sql`, luego
+  `db/crear_pedido.sql`, y mirar que `db/verificar-pagos-seguros.sql` dé todo en `true`.
+  Después, volver a desplegar `payway-pagar`. **El orden importa:** `crear_pedido.sql` usa lo que
+  crea `pagos-seguros.sql`, y la tienda nueva espera el código de pago.
+- Probado en `db/probar-local.sh` (código equivocado, inexistente, 3 intentos, vencimiento que
+  sólo toca lo de pago online sin pagar y no devuelve dos veces) y en
+  `supabase/functions/payway-pagar/prueba.ts`.
 
 ## Venta del mostrador
 
@@ -820,7 +842,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 304 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 305 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -835,7 +857,7 @@ completar esos datos con información confirmada del local.
 | `ordenProductos.test.mjs` | el orden por precio de las prendas de hombre: menor a mayor y al revés, que con precios iguales se conserve el orden del catálogo, que una prenda sin precio válido vaya al final y que no se modifique la lista original | 5 |
 | `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
 | `whatsapp.test.mjs` | el enlace de consulta por WhatsApp: el mensaje con tildes, saltos de línea y símbolos que romperían una URL, que un número inválido no dé enlace (no manda al cliente a un desconocido) y que falte la marca o el precio no rompa el mensaje; y que una prenda en oferta diga de cuánto era | 9 |
-| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente | 38 |
+| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente; y las horas para que venza un pedido sin pagar (48 de fábrica, 0 = nunca, con tope) | 39 |
 | `tablasTalle.test.mjs` | qué tabla de talles se muestra en cada prenda de hombre: las medidas de la ficha de esa prenda (Mistral o Brooksfield), la imagen general de Brooksfield por tipo de prenda (y la de jeans por nombre) cuando la ficha no trae medidas, que sin tabla publicada no se invente una, y que las imágenes existan | 10 |
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los párrafos de la marca salgan tal cual, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 6 |
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |

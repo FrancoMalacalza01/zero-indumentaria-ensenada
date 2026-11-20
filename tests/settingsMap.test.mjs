@@ -401,3 +401,12 @@ test("la nota de cambios de la ficha usa los días de la configuración", () => 
   assert.match(t, /sin uso/);
   assert.match(t, /etiquetas/);
 });
+
+test("las horas para que venza un pedido sin pagar: 48 de fábrica, 0 = nunca, con tope", () => {
+  assert.equal(leerSettings({}).pedidos.vencenEnHoras, 48);
+  assert.equal(leerSettings({ pedidos: { vencenEnHoras: 24 } }).pedidos.vencenEnHoras, 24);
+  assert.equal(leerSettings({ pedidos: { vencenEnHoras: 0 } }).pedidos.vencenEnHoras, 0);
+  assert.equal(leerSettings({ pedidos: { vencenEnHoras: -5 } }).pedidos.vencenEnHoras, 48);
+  assert.equal(leerSettings({ pedidos: { vencenEnHoras: "mucho" } }).pedidos.vencenEnHoras, 48);
+  assert.equal(leerSettings({ pedidos: { vencenEnHoras: 99999 } }).pedidos.vencenEnHoras, 720);
+});

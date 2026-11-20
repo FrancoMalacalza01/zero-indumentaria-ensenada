@@ -29,6 +29,19 @@ globalThis.fetch = (async (entrada: string | URL | Request, init?: RequestInit) 
     llamadasPayway.push({ url, apikey: new Headers(init?.headers).get("apikey"), cuerpo });
     return await paywayRespuesta();
   }
+  if (url === "https://x.supabase.co/rest/v1/rpc/reservar_cobro") {
+    // Imita db/pagos-seguros.sql (la lógica real se prueba contra Postgres en db/probar-local.sh).
+    const p = pedidos[String(cuerpo.p_pedido)];
+    if (!p || !p.pago_token || p.pago_token !== cuerpo.p_codigo) return Response.json({ error: "no_encontrado" });
+    if (["Cancelado", "Devuelto"].includes(String(p.status))) return Response.json({ error: "inactivo" });
+    if (p.payment_status === "aprobado") return Response.json({ error: "pagado" });
+    if (!["sin_pago", "rechazado"].includes(String(p.payment_status))) return Response.json({ error: "en_curso" });
+    if (Date.now() - new Date(String(p.fecha)).getTime() > 2 * 3600_000) return Response.json({ error: "vencido" });
+    if (Number(p.pago_intentos) >= Number(cuerpo.p_max_intentos)) return Response.json({ error: "intentos" });
+    if (Number(p.total) <= 0) return Response.json({ error: "monto" });
+    p.payment_status = "pendiente"; p.pago_ref = `payway-tx:${cuerpo.p_tx}`; p.pago_intentos = Number(p.pago_intentos) + 1;
+    return Response.json({ ok: true, total: p.total, id: p.id });
+  }
   if (url.startsWith("https://x.supabase.co/rest/v1/orders")) {
     const u = new URL(url);
     const id = (u.searchParams.get("id") || "").replace("eq.", "");
@@ -46,13 +59,14 @@ globalThis.fetch = (async (entrada: string | URL | Request, init?: RequestInit) 
   return realFetch(entrada, init);
 }) as typeof fetch;
 
-const nuevo = (extra: Fila = {}): Fila => ({ id: "M-00007", total: 35900, fecha: new Date().toISOString(), status: "Nuevo", payment_status: "sin_pago", pago_ref: null, ...extra });
+const CODIGO = "a".repeat(64);
+const nuevo = (extra: Fila = {}): Fila => ({ id: "M-00007", total: 35900, fecha: new Date().toISOString(), status: "Nuevo", payment_status: "sin_pago", pago_ref: null, pago_token: CODIGO, pago_intentos: 0, ...extra });
 const llamar = async (cuerpo: unknown) => {
   const r = await handler(new Request("https://x/functions/v1/payway-pagar", { method: "POST", body: JSON.stringify(cuerpo) }));
   return { status: r.status, datos: await r.json() };
 };
 const TOKEN = "4f7c2d1e-aaaa-bbbb-cccc-123456789012";
-const valido = { pedido: "M-00007", token: TOKEN, bin: "450799", medio: 1 };
+const valido = { pedido: "M-00007", codigoPago: CODIGO, token: TOKEN, bin: "450799", medio: 1 };
 let fallos = 0;
 const chk = (n: string, c: unknown) => { console.log(c ? "OK  " : "FAIL", n); if (!c) fallos++; };
 
@@ -121,6 +135,11 @@ chk("sin token: 400", (await llamar({ ...valido, token: "x" })).status === 400);
 chk("bin roto: 400", (await llamar({ ...valido, bin: "12" })).status === 400);
 chk("medio no permitido: 400", (await llamar({ ...valido, medio: 15 })).status === 400);
 chk("pedido inexistente: 404", (await llamar({ ...valido, pedido: "M-99999" })).status === 404);
+chk("sin código de pago: 400", (await llamar({ ...valido, codigoPago: "" })).status === 400);
+chk("código de pago equivocado: 404, igual que un pedido inexistente", (await llamar({ ...valido, codigoPago: "b".repeat(64) })).status === 404);
+chk("el pedido ajeno no quedó reservado por el intento fallido", pedidos["M-00007"].payment_status === "sin_pago" && pedidos["M-00007"].pago_intentos === 0);
+pedidos = { "M-00007": nuevo({ pago_intentos: 3 }) };
+chk("tras 3 intentos: 409 y no llega a Payway", (await llamar(valido)).status === 409);
 pedidos = { "M-00007": nuevo({ status: "Cancelado" }) };
 chk("pedido cancelado: 409", (await llamar(valido)).status === 409);
 pedidos = { "M-00007": nuevo({ fecha: new Date(Date.now() - 3 * 3600_000).toISOString() }) };
