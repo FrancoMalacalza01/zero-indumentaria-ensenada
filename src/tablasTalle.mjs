@@ -18,7 +18,7 @@ const IMAGENES_BROOKSFIELD = Object.freeze({
 });
 
 // Prendas para las que Brooksfield no publicó una tabla propia: se les muestra la de la prenda más parecida,
-// AVISANDO que es de referencia. Los pantalones y bermudas usan las medidas de cintura, cadera y largo de sus
+// y se marca `deReferencia` (la tienda no la presenta como la de esa prenda). Los pantalones y bermudas usan las medidas de cintura, cadera y largo de sus
 // jeans; los buzos y chalecos, las de sus sweaters. Los cortes distintos pueden variar un poco.
 const REFERENCIA_BROOKSFIELD = Object.freeze({
   Pantalones: { tipo: "jeans", como: "jeans" },
@@ -50,7 +50,7 @@ export function tablaDeTalles(prenda, detalles) {
         marca: "Brooksfield",
         src: `/men-medidas/brooksfield-${ref.tipo}.jpg`,
         alt: `Tabla de medidas de Brooksfield: ${ref.como}`,
-        referencia: `Medidas de referencia: son las de los ${ref.como} de Brooksfield. En otros cortes pueden variar; ante la duda, consultanos.`,
+        deReferencia: true,
       };
     }
     return {
@@ -61,7 +61,7 @@ export function tablaDeTalles(prenda, detalles) {
     };
   }
   // Mistral cuya ficha no trae medidas: se usa la tabla de la prenda equivalente que pasó el local (la de
-  // Brooksfield), AVISANDO que es de referencia y de otra marca. Los joggings y las fragancias quedan sin tabla.
+  // Brooksfield), y marcándola `deReferencia`. Los joggings y las fragancias quedan sin tabla.
   const tipoMistral = Object.hasOwn(IMAGENES_BROOKSFIELD, prenda.category)
     ? IMAGENES_BROOKSFIELD[prenda.category]
     : prenda.category === "Buzos"
@@ -73,7 +73,7 @@ export function tablaDeTalles(prenda, detalles) {
       marca: "Brooksfield",
       src: `/men-medidas/brooksfield-${tipoMistral}.jpg`,
       alt: `Tabla de medidas de referencia: ${tipoMistral}`,
-      referencia: `Medidas de referencia: Mistral no publicó una tabla para esta prenda; son las de ${tipoMistral} de Brooksfield. Pueden variar un poco; ante la duda, consultanos.`,
+      deReferencia: true,
     };
   }
   return null;

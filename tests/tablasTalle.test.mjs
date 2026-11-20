@@ -38,13 +38,13 @@ test("Brooksfield: sin medidas en la ficha, la imagen por tipo de prenda, y los 
   // Sin tabla propia, la de la prenda más parecida, y avisando que es de referencia.
   const chino = img("Pantalones", "Pantalón Chino");
   assert.equal(chino.src, "/men-medidas/brooksfield-jeans.jpg");
-  assert.match(chino.referencia, /referencia/i);
+  assert.equal(chino.deReferencia, true);
   assert.equal(img("Bermudas").src, "/men-medidas/brooksfield-jeans.jpg");
   assert.equal(img("Buzos").src, "/men-medidas/brooksfield-sweaters.jpg");
   assert.equal(img("Chalecos").src, "/men-medidas/brooksfield-sweaters.jpg");
   // Las que sí tienen la suya no llevan el aviso.
-  assert.equal(img("Camperas").referencia, undefined);
-  assert.equal(img("Pantalones", "Jean Slim Azul").referencia, undefined);
+  assert.equal(img("Camperas").deReferencia, undefined);
+  assert.equal(img("Pantalones", "Jean Slim Azul").deReferencia, undefined);
 });
 
 test("Brooksfield: accesorios y categorías sin tabla no muestran ninguna", () => {
@@ -101,7 +101,7 @@ test("Mistral sin medidas en su ficha: la tabla equivalente, avisando que es de 
   assert.equal(m("Camisas").src, "/men-medidas/brooksfield-camisas.jpg");
   assert.equal(m("Camperas").src, "/men-medidas/brooksfield-camperas.jpg");
   assert.equal(m("Buzos").src, "/men-medidas/brooksfield-sweaters.jpg");
-  assert.match(m("Remeras").referencia, /Mistral no public/);
+  assert.equal(m("Remeras").deReferencia, true);
   // Sin equivalente, sin tabla.
   assert.equal(m("Joggings"), null);
   assert.equal(m("Fragancias"), null);

@@ -25,4 +25,5 @@ export interface FaltanteLegal {
   que: string;
   porque: string;
 }
+export function textoDePausa(settings: Settings | null | undefined): string | null;
 export function faltaParaVender(settings: Settings): FaltanteLegal[];

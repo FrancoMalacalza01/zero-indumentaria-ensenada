@@ -152,6 +152,11 @@ export interface Settings {
     /** Localidades que el cliente puede elegir en vez de escribir su código postal. */
     localidades: { nombre: string; cp: string }[];
   };
+  /** Pausa de la tienda: se ve el catálogo pero no se compra. */
+  pausa: {
+    activa: boolean;
+    mensaje: string;
+  };
   pedidos: {
     /** Horas hasta que un pedido de pago online sin pagar se cancela solo y devuelve el stock. 0 = nunca. */
     vencenEnHoras: number;

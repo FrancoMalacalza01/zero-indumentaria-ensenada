@@ -871,6 +871,34 @@ export default function AdminConfig({
       </div>
 
       <div className="config-bloque">
+        <h2>Pausar la tienda</h2>
+        <label className="config-switch">
+          <input
+            type="checkbox"
+            checked={draft.pausa.activa}
+            onChange={(e) => setDraft((d) => ({ ...d, pausa: { ...d.pausa, activa: e.target.checked } }))}
+          />
+          <span>Tienda en pausa (se ve el catálogo, pero no se puede comprar)</span>
+        </label>
+        <label className="admin-field">
+          Mensaje para los clientes
+          <textarea
+            rows={3}
+            maxLength={300}
+            placeholder="ej. Estamos de vacaciones. Volvemos el 5 de enero."
+            value={draft.pausa.mensaje}
+            onChange={(e) => setDraft((d) => ({ ...d, pausa: { ...d.pausa, mensaje: e.target.value } }))}
+          />
+        </label>
+        <Ayuda>
+          Con la pausa prendida, arriba de toda la tienda aparece un cartel con tu mensaje, el botón de agregar al carrito
+          queda apagado y no se puede confirmar ningún pedido. La base de datos también lo rechaza. Los pedidos que ya
+          entraron siguen en <i>Pedidos</i> y los podés atender igual. Para reabrir, apagá el interruptor y guardá.
+          Acordate de <b>Guardar</b> al final de la pantalla.
+        </Ayuda>
+      </div>
+
+      <div className="config-bloque">
         <h2>Pedidos sin pagar</h2>
         <div className="config-grid">
           <label className="admin-field">

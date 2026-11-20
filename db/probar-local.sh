@@ -218,3 +218,15 @@ fi
 psqlm -q -c "select public.vencer_pedidos_sin_pago()"
 final=$(psqlm -c "select qty from public.stock where product_id='ps' and size='M'")
 [ "$final" = "$despues" ] && echo "✔ volver a correrlo no devuelve dos veces" || { echo "✘ devolvió de más"; exit 1; }
+
+echo
+echo "→ tienda en pausa: no se toma ningún pedido"
+psqlm -q -c "update public.orders set fecha = fecha - interval '10 minutes'"
+psqlm -q -c "update public.settings set datos = jsonb_set(coalesce(datos,'{}'::jsonb), '{pausa}', '{\"activa\": true, \"mensaje\": \"Volvemos el 5 de enero\"}'::jsonb) where id='local'"
+antes_p=$(psqlm -c "select count(*) from public.orders")
+r_p=$(psqlm -c "select public.crear_pedido('[{\"productId\":\"ps\",\"size\":\"M\",\"quantity\":1}]'::jsonb,'Pausa','pickup',null,'efectivo')->>'error'")
+despues_p=$(psqlm -c "select count(*) from public.orders")
+if [ "$r_p" = "Volvemos el 5 de enero" ] && [ "$antes_p" = "$despues_p" ]; then echo "✔ en pausa se rechaza con el mensaje del local y no entra ningún pedido"; else echo "✘ la pausa no frena la compra: '$r_p' ($antes_p→$despues_p)"; exit 1; fi
+psqlm -q -c "update public.settings set datos = jsonb_set(datos, '{pausa,activa}', 'false'::jsonb) where id='local'"
+ok_p=$(psqlm -c "select (public.crear_pedido('[{\"productId\":\"ps\",\"size\":\"M\",\"quantity\":1}]'::jsonb,'SinPausa','pickup',null,'efectivo')->'order'->>'id') is not null")
+if [ "$ok_p" = "t" ]; then echo "✔ al apagar la pausa, se vuelve a poder comprar"; else echo "✘ con la pausa apagada no se pudo comprar"; exit 1; fi
