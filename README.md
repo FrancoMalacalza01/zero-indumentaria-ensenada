@@ -396,16 +396,13 @@ fecha, la oferta dura hasta que se termine a mano, como antes.
   `db/verificar-ofertas-con-vencimiento.sql` dé todo en `true`. Hasta entonces el sitio
   anda como antes (la tienda tolera que falte la columna), pero no hay que usar fechas.
 
-## Localidades en el envío y tablas de talle de referencia
+## Localidades en el envío
 
 - **Localidades.** En Configuración → Envíos → *Localidades* el local carga localidad + código postal. En la
   ficha, la bolsa y el checkout el cliente elige su localidad (o "Otra" y escribe el código) y el costo sale solo.
   No se consulta ningún servicio externo, así que la dirección del cliente no sale del sitio. La calle y el número
   se siguen pidiendo al confirmar el pedido (guardarlos en el pedido necesitaría un cambio en la base).
   `db/cargar-localidades-de-envio.sql` carga las de la zona de una vez.
-- **Tablas de talle.** Las prendas de Brooksfield sin tabla propia (pantalones, bermudas, buzos, chalecos) muestran
-  la de la prenda más parecida (jeans o sweaters), con el aviso *"Medidas de referencia"*. Los shorts de baño y los
-  accesorios no tienen tabla.
 
 ## Pedidos sin pagar que no traban el stock
 

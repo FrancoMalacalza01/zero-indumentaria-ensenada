@@ -78,7 +78,6 @@ export function TablaDeTalles({ product, fichas, abierta = false }: { product: P
           <img src={tabla.src} alt={tabla.alt} loading="lazy" />
         </a>
       )}
-      {tabla.tipo === "imagen" && tabla.referencia && <p>{tabla.referencia}</p>}
       <small>Tabla de {tabla.marca}.</small>
     </details>
   );

@@ -35,20 +35,11 @@ test("Brooksfield: sin medidas en la ficha, la imagen por tipo de prenda, y los 
   assert.equal(img("Remeras").src, "/men-medidas/brooksfield-remeras.jpg");
   assert.equal(img("Camperas").src, "/men-medidas/brooksfield-camperas.jpg");
   assert.equal(img("Pantalones", "Jean Slim Azul").src, "/men-medidas/brooksfield-jeans.jpg");
-  // Sin tabla propia, la de la prenda más parecida, y avisando que es de referencia.
-  const chino = img("Pantalones", "Pantalón Chino");
-  assert.equal(chino.src, "/men-medidas/brooksfield-jeans.jpg");
-  assert.match(chino.referencia, /referencia/i);
-  assert.equal(img("Bermudas").src, "/men-medidas/brooksfield-jeans.jpg");
-  assert.equal(img("Buzos").src, "/men-medidas/brooksfield-sweaters.jpg");
-  assert.equal(img("Chalecos").src, "/men-medidas/brooksfield-sweaters.jpg");
-  // Las que sí tienen la suya no llevan el aviso.
-  assert.equal(img("Camperas").referencia, undefined);
-  assert.equal(img("Pantalones", "Jean Slim Azul").referencia, undefined);
+  assert.equal(img("Pantalones", "Pantalón Chino"), null);
 });
 
 test("Brooksfield: accesorios y categorías sin tabla no muestran ninguna", () => {
-  for (const c of ["Billeteras", "Cinturones", "Fragancias", "Medias", "Hombre", "Shorts de baño"])
+  for (const c of ["Billeteras", "Cinturones", "Fragancias", "Medias", "Hombre"])
     assert.equal(tablaDeTalles({ id: "b-2", brand: "Brooksfield", category: c, name: "X" }, medidas), null);
 });
 
