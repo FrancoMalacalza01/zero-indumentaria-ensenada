@@ -1200,7 +1200,7 @@ function Cart({ onClose }: { onClose: () => void }) {
               </label>
             )}
             {conEnvio && (
-              <SelectorDeZona zonas={zonasEnvio} value={destino} onChange={elegirDestino} whatsapp={settings.whatsapp} />
+              <SelectorDeZona zonas={zonasEnvio} value={destino} onChange={elegirDestino} whatsapp={settings.whatsapp} localidades={settings.envio.localidades} />
             )}
             {conEnvio && !sinZona ? (
               <>
@@ -1593,6 +1593,7 @@ function Checkout() {
                     setCp(d.cp);
                   }}
                   whatsapp={settings.whatsapp}
+                  localidades={settings.envio.localidades}
                 />
               )}
               <p className="reference-price">

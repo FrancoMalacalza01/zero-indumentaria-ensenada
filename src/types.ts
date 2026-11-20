@@ -149,6 +149,8 @@ export interface Settings {
     zonas: ZonaEnvio[];
     /** Monto de prendas desde el que el envío va sin cargo. 0 = nunca. */
     envioGratisDesde: number;
+    /** Localidades que el cliente puede elegir en vez de escribir su código postal. */
+    localidades: { nombre: string; cp: string }[];
   };
   pedidos: {
     /** Horas hasta que un pedido de pago online sin pagar se cancela solo y devuelve el stock. 0 = nunca. */
