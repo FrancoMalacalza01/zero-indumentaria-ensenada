@@ -396,6 +396,11 @@ fecha, la oferta dura hasta que se termine a mano, como antes.
   `db/verificar-ofertas-con-vencimiento.sql` dé todo en `true`. Hasta entonces el sitio
   anda como antes (la tienda tolera que falte la columna), pero no hay que usar fechas.
 
+## Tablas de talle de referencia
+
+Las prendas de Brooksfield sin tabla propia (pantalones, bermudas, buzos, chalecos) muestran la de la prenda más
+parecida (jeans o sweaters), con el aviso *"Medidas de referencia"*. Los shorts de baño y los accesorios no tienen tabla.
+
 ## Localidades en el envío
 
 - **Localidades.** En Configuración → Envíos → *Localidades* el local carga localidad + código postal. En la
