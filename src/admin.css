@@ -40,6 +40,9 @@
   position: sticky;
   top: 0;
   height: 100dvh;
+  /* En una pantalla baja el menú es más alto que la ventana: sin esto, Devoluciones y
+     Configuración quedaban cortadas y no se podía llegar a ellas. */
+  overflow-y: auto;
 }
 .admin-brand {
   display: flex;
