@@ -29,6 +29,7 @@
  *   SMTP_DESDE     "Zero Indumentaria <elmail@gmail.com>"
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { codigoDePagoValido } from "../_shared/codigoDePago.mjs";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
@@ -192,9 +193,11 @@ Deno.serve(async (req: Request) => {
 
   let pedidoId = "";
   let mail = "";
+  let codigoPago = "";
   try {
     const cuerpo = await req.json();
     pedidoId = String(cuerpo?.pedido || "").trim().slice(0, 40);
+    codigoPago = String(cuerpo?.codigoPago || "").trim();
     mail = String(cuerpo?.email || "").trim().slice(0, 120).toLowerCase();
   } catch {
     return responder({ error: "No entendí el pedido." }, 400);
@@ -208,7 +211,10 @@ Deno.serve(async (req: Request) => {
       `orders?id=eq.${encodeURIComponent(pedidoId)}&select=*`,
     );
     const pedido = Array.isArray(filas) ? filas[0] : null;
-    if (!pedido) return responder({ error: "No encontramos ese pedido." }, 404);
+    // Sin el código de pago, ni se confirma que el pedido existe: si no, alguien podría recorrer los números
+    // y hacer que el local le mande a su mail los pedidos de otros clientes.
+    if (!pedido || !codigoDePagoValido(pedido.pago_token, codigoPago))
+      return responder({ error: "No encontramos ese pedido." }, 404);
 
     // Un pedido se confirma una sola vez.
     if (pedido.mail_enviado_at)

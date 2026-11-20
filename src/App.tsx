@@ -1351,7 +1351,7 @@ function Checkout() {
     setOrder(result.order!);
     // La confirmación sale sola y no se la espera: el pedido ya entró, y si
     // el mail no sale no hay nada que el cliente pueda hacer al respecto.
-    if (enVivo && email) mandarConfirmacion(result.order!.id, email);
+    if (enVivo && email) mandarConfirmacion(result.order!.id, result.order!.pagoToken, email);
   };
   if (order) {
     const chosen = options.find((o) => o.id === order.payment);
@@ -1409,7 +1409,7 @@ function Checkout() {
               onClick={async () => {
                 setCobrando(true);
                 setErrorPago("");
-                const r = await pedirLinkDePago(order.id);
+                const r = await pedirLinkDePago(order.id, order.pagoToken || "");
                 if (r.url) {
                   window.location.href = r.url;
                   return;

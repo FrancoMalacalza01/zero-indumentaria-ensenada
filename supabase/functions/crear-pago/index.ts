@@ -29,6 +29,7 @@
  *      Pago".
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { codigoDePagoValido } from "../_shared/codigoDePago.mjs";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const CLAVE_SERVICIO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -77,9 +78,11 @@ Deno.serve(async (req: Request) => {
     }, 503);
 
   let pedidoId = "";
+  let codigoPago = "";
   try {
     const cuerpo = await req.json();
     pedidoId = String(cuerpo?.pedido || "").trim().slice(0, 40);
+    codigoPago = String(cuerpo?.codigoPago || "").trim();
   } catch {
     return responder({ error: "No entendí el pedido." }, 400);
   }
@@ -87,10 +90,12 @@ Deno.serve(async (req: Request) => {
 
   try {
     const filas = await base(
-      `orders?id=eq.${encodeURIComponent(pedidoId)}&select=id,items,total,envio,fecha,status,payment_status,customer`,
+      `orders?id=eq.${encodeURIComponent(pedidoId)}&select=id,items,total,envio,fecha,status,payment_status,customer,pago_token`,
     );
     const pedido = Array.isArray(filas) ? filas[0] : null;
-    if (!pedido) return responder({ error: "No encontramos ese pedido." }, 404);
+    // Sin el código de pago del pedido no se arma nada. Pedido inexistente y código malo contestan lo mismo.
+    if (!pedido || !codigoDePagoValido(pedido.pago_token, codigoPago))
+      return responder({ error: "No encontramos ese pedido." }, 404);
 
     if (["Cancelado", "Devuelto"].includes(pedido.status))
       return responder({ error: "Ese pedido ya no está activo." }, 409);

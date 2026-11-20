@@ -253,6 +253,15 @@ Visa débito `31`). Para sumar otro se agrega en `MEDIOS` de
 `supabase/functions/_shared/payway.mjs` con el id de la tabla "Medios de pago
 disponibles" de Payway; no se adivinan. Pago simple, **una cuota**.
 
+**El código de pago protege todas las funciones que actúan sobre un pedido desde la tienda:**
+`payway-pagar`, `crear-pago` (Mercado Pago) y `enviar-mail` lo piden (`supabase/functions/_shared/codigoDePago.mjs`).
+Sin él, un pedido inexistente y uno con código equivocado contestan lo mismo (404), así que no se pueden recorrer
+los números de pedido para cobrar, armar links o hacer que el local mande por mail pedidos de otros clientes.
+`pago-aviso` (el aviso de Mercado Pago) además verifica que el monto pagado sea el del pedido y no deja que un
+aviso tardío pise un pago ya aprobado (sólo una devolución lo cambia). Se prueba en
+`supabase/functions/pago-aviso/prueba.ts` (con Deno). Tras cambiar estas funciones hay que **volver a desplegar**
+`payway-pagar`, `crear-pago`, `enviar-mail` y `pago-aviso`.
+
 **Se prueba sin Payway:** `tests/payway.test.mjs` cubre las cuentas y las reglas, y
 `supabase/functions/payway-pagar/prueba.ts` y `supabase/functions/payway-anular/prueba.ts` (con Deno)
 corren las funciones enteras contra una base y un Payway simulados: aprobado, rechazado, doble cobro,
@@ -842,7 +851,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 305 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 308 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -861,6 +870,7 @@ completar esos datos con información confirmada del local.
 | `tablasTalle.test.mjs` | qué tabla de talles se muestra en cada prenda de hombre: las medidas de la ficha de esa prenda (Mistral o Brooksfield), la imagen general de Brooksfield por tipo de prenda (y la de jeans por nombre) cuando la ficha no trae medidas, que sin tabla publicada no se invente una, y que las imágenes existan | 10 |
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los párrafos de la marca salgan tal cual, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 6 |
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
+| `codigoDePago.test.mjs` | el código de pago del pedido: que abra sólo con el código exacto y que un pedido sin código, vacío, en mayúsculas, de otro largo o de otro tipo no abra nunca; y que el monto de Mercado Pago coincida con el del pedido al centavo | 3 |
 | `ofertas.test.mjs` | las ofertas con fecha de fin: el último segundo del día elegido en hora de Argentina, qué fechas se rechazan, que una oferta vencida vuelva al precio de antes (en la tienda, en los precios propios de hombre y en los precios en masa), que una sin fecha o con fecha ilegible nunca venza, y que el vencimiento se guarde, se borre y se restaure al deshacer | 17 |
 | `codigoPostal.test.mjs` | el envío por código postal: cómo se lee lo que escribe el cliente (`1925`, `B1925`, `B1925ABC`), la lista de códigos de una zona (sueltos y rangos, lo ilegible se ignora), que cada código caiga en su zona y gane la primera si dos lo cubren, que uno no cubierto no tenga zona y que sólo se pida el código si el local cargó alguno | 6 |
 | `promos.test.mjs` | las promos junto al precio en la ficha: cuotas sin interés (precio dividido, sólo con tarjeta de crédito y más de una cuota), descuento por transferencia o efectivo (sólo si hay un medio que lo admita), que sin nada configurado no se muestre ninguna y el texto del envío gratis | 7 |

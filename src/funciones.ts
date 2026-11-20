@@ -57,8 +57,8 @@ async function llamar(
  * Devuelve la URL de Mercado Pago, o el motivo por el que no se pudo en
  * palabras que se le pueden mostrar al cliente.
  */
-export async function pedirLinkDePago(pedido: string) {
-  const r = await llamar("crear-pago", { pedido });
+export async function pedirLinkDePago(pedido: string, codigoPago: string) {
+  const r = await llamar("crear-pago", { pedido, codigoPago });
   if (typeof r.url === "string" && r.url) return { url: r.url };
   return { error: typeof r.error === "string" ? r.error : "No se pudo armar el cobro." };
 }
@@ -70,9 +70,10 @@ export async function pedirLinkDePago(pedido: string) {
  * pedido ya entró y eso es lo que importa. El motivo queda en la consola
  * para poder revisarlo.
  */
-export async function mandarConfirmacion(pedido: string, email: string) {
-  if (!email) return;
-  const r = await llamar("enviar-mail", { pedido, email });
+export async function mandarConfirmacion(pedido: string, codigoPago: string | undefined, email: string) {
+  // Sin el código de pago del pedido el servidor no manda nada (ver supabase/functions/_shared/codigoDePago.mjs).
+  if (!email || !codigoPago) return;
+  const r = await llamar("enviar-mail", { pedido, codigoPago, email });
   if (r?.error) console.warn("no salió el mail de confirmación:", r.error);
 }
 
