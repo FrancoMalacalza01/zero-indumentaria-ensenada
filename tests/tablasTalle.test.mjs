@@ -16,9 +16,9 @@ test("Mistral: la tabla sale de las medidas de su ficha", () => {
   assert.equal(t.nota, "Prenda en plano");
 });
 
-test("Mistral: sin medidas publicadas no hay tabla, ni se inventa una", () => {
-  assert.equal(tablaDeTalles({ id: "m-2", brand: "Mistral", category: "Remeras" }, medidas), null);
-  assert.equal(tablaDeTalles({ id: "m-9", brand: "Mistral", category: "Remeras" }, medidas), null);
+test("Mistral: sin medidas publicadas y sin tabla equivalente, no hay tabla ni se inventa una", () => {
+  assert.equal(tablaDeTalles({ id: "m-2", brand: "Mistral", category: "Joggings" }, medidas), null);
+  assert.equal(tablaDeTalles({ id: "m-9", brand: "Mistral", category: "Fragancias" }, medidas), null);
   assert.equal(tablaDeTalles({ id: "m-1", brand: "Mistral" }, null), null);
   // Un id como "constructor" no puede traer nada del prototipo.
   assert.equal(tablaDeTalles({ id: "constructor", brand: "Mistral" }, medidas), null);
@@ -92,4 +92,17 @@ test("si los talles no traen las mismas medidas, no se inventa una tabla: queda 
   assert.equal(columnasDeMedidas([{ talle: "S", medidas: "Sin números" }]), null);
   assert.equal(columnasDeMedidas([]), null);
   assert.equal(columnasDeMedidas(undefined), null);
+});
+
+test("Mistral sin medidas en su ficha: la tabla equivalente, avisando que es de referencia y de otra marca", () => {
+  const m = (category) => tablaDeTalles({ id: "m-sin-ficha", brand: "Mistral", category, name: "X" }, medidas);
+  assert.equal(m("Remeras").src, "/men-medidas/brooksfield-remeras.jpg");
+  assert.equal(m("Polos").src, "/men-medidas/brooksfield-polos.jpg");
+  assert.equal(m("Camisas").src, "/men-medidas/brooksfield-camisas.jpg");
+  assert.equal(m("Camperas").src, "/men-medidas/brooksfield-camperas.jpg");
+  assert.equal(m("Buzos").src, "/men-medidas/brooksfield-sweaters.jpg");
+  assert.match(m("Remeras").referencia, /Mistral no public/);
+  // Sin equivalente, sin tabla.
+  assert.equal(m("Joggings"), null);
+  assert.equal(m("Fragancias"), null);
 });
