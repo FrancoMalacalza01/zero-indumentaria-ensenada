@@ -87,6 +87,14 @@ export const porDefecto = () => ({
      */
     localidades: [],
   },
+  /**
+   * Pausa de la tienda (vacaciones, local cerrado). Con `activa`, se sigue viendo el catálogo pero no se puede
+   * comprar: ni en la tienda ni en la base (`crear_pedido` lo respeta). El mensaje es lo que lee el cliente.
+   */
+  pausa: {
+    activa: false,
+    mensaje: "",
+  },
   pedidos: {
     /**
      * A las cuántas horas un pedido de pago online (tarjeta, Mercado Pago) que nadie pagó se cancela solo
@@ -322,6 +330,10 @@ export function leerSettings(datos) {
       ),
       localidades: localidades(envio.localidades),
     },
+    pausa: {
+      activa: d.pausa?.activa === true,
+      mensaje: texto(d.pausa?.mensaje).trim().slice(0, 300),
+    },
     pedidos: {
       vencenEnHoras: Math.min(720, entero(ped.vencenEnHoras, base.pedidos.vencenEnHoras)),
     },
@@ -439,6 +451,15 @@ export function zonaPorCodigoPostal(zonas, entrada) {
     if (rangosDeCodigosPostales(z?.cp).some(([d, h]) => cp >= d && cp <= h)) return z;
   }
   return null;
+}
+
+/**
+ * Lo que se le dice al cliente cuando la tienda está en pausa: el mensaje del local o, si no escribió ninguno,
+ * uno genérico. `null` si la tienda no está pausada.
+ */
+export function textoDePausa(settings) {
+  if (!settings?.pausa?.activa) return null;
+  return settings.pausa.mensaje || "La tienda está en pausa por el momento. Podés mirar el catálogo, pero todavía no se puede comprar.";
 }
 
 /** La nota corta de cambios que se ve en cada ficha de producto, antes de comprar. */

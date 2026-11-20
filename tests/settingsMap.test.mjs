@@ -9,8 +9,7 @@ import {
   faltaParaEnvioGratis,
   llegaAlEnvioGratis,
   PLAZO_CORREO_CLASICO,
-  textoPlazoEnvio,
-} from "../src/settingsMap.mjs";
+  textoPlazoEnvio, textoDePausa } from "../src/settingsMap.mjs";
 
 test("una configuración vacía da la de fábrica, no una tienda rota", () => {
   for (const vacio of [null, undefined, {}, "no es un objeto", 42]) {
@@ -431,4 +430,20 @@ test("las localidades del envío: nombre y código de 4 dígitos; lo que no sirv
     { nombre: "Ensenada", cp: "1925" },
   ]);
   assert.deepEqual(leerSettings({ envio: { localidades: "no" } }).envio.localidades, []);
+});
+
+test("la pausa de la tienda: apagada de fábrica, con mensaje del local, y sin pausa no hay texto", () => {
+  const base = leerSettings({});
+  assert.equal(base.pausa.activa, false);
+  assert.equal(textoDePausa(base), null);
+  const s = leerSettings({ pausa: { activa: true, mensaje: "  Volvemos el 5 de enero  " } });
+  assert.equal(s.pausa.activa, true);
+  assert.equal(textoDePausa(s), "Volvemos el 5 de enero");
+  // Pausada sin mensaje: hay uno genérico, nunca un cartel vacío.
+  assert.match(textoDePausa(leerSettings({ pausa: { activa: true } })), /pausa/i);
+  // Sólo `true` pausa: un texto o un número no.
+  assert.equal(leerSettings({ pausa: { activa: "true" } }).pausa.activa, false);
+  assert.equal(leerSettings({ pausa: "basura" }).pausa.activa, false);
+  // Mensaje con tope.
+  assert.equal(leerSettings({ pausa: { activa: true, mensaje: "x".repeat(900) } }).pausa.mensaje.length, 300);
 });
