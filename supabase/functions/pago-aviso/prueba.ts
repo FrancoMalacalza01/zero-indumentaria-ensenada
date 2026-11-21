@@ -18,10 +18,13 @@ type Fila = Record<string, unknown>;
 let pedidos: Record<string, Fila> = {};
 let pagoMP: Record<string, unknown> = {};
 let preferencias = 0;
+let ultimaPreferencia: Record<string, unknown> = {};
+let cuotasConfig: Record<string, unknown> = { cuotasSinInteres: 3, cuotasMaximas: 0 };
 globalThis.fetch = (async (entrada: string | URL | Request, init?: RequestInit) => {
   const url = String(entrada);
   if (url.startsWith("https://api.mercadopago.com/v1/payments/")) return Response.json(pagoMP);
-  if (url === "https://api.mercadopago.com/checkout/preferences") { preferencias++; return Response.json({ init_point: "https://mp/pagar" }); }
+  if (url.startsWith("https://x.supabase.co/rest/v1/settings")) return Response.json([{ datos: { pago: cuotasConfig } }]);
+  if (url === "https://api.mercadopago.com/checkout/preferences") { preferencias++; ultimaPreferencia = JSON.parse(String(init!.body)); return Response.json({ init_point: "https://mp/pagar" }); }
   if (url.startsWith("https://x.supabase.co/rest/v1/orders")) {
     const id = (new URL(url).searchParams.get("id") || "").replace("eq.", "");
     const p = pedidos[id];
@@ -70,6 +73,12 @@ r = await pagar({ pedido: "M-99999", codigoPago: "a".repeat(64) });
 chk("pedido inexistente: 404", r.status === 404);
 r = await pagar({ pedido: "M-00007", codigoPago: "a".repeat(64) });
 chk("con el código del pedido: arma el link de pago", r.status === 200 && preferencias === 1 && (await r.json()).url === "https://mp/pagar");
+
+chk("la preferencia limita las cuotas a las del local (3)", (ultimaPreferencia.payment_methods as { installments?: number } | undefined)?.installments === 3);
+cuotasConfig = { cuotasSinInteres: 0, cuotasMaximas: 0 };
+pedidos = { "M-00007": nuevo() };
+await pagar({ pedido: "M-00007", codigoPago: "a".repeat(64) });
+chk("sin cuotas cargadas, no se pone tope", ultimaPreferencia.payment_methods === undefined);
 
 console.log(fallos ? `\n${fallos} FALLOS` : "\ntodo bien");
 Deno.exit(fallos ? 1 : 0);

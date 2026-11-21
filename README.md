@@ -412,6 +412,16 @@ según la marca elegida. Las fichas y las tarjetas muestran la marca con su logo
 - **Logos:** están en `public/marcas/mistral.png` y `public/marcas/brooksfield.png` (PNG con fondo transparente,
   recortados al contenido). Para cambiarlos se reemplazan esos archivos. Si falta alguno, se ve sólo el nombre.
 
+## Mercado Pago: cuotas y guía de puesta en marcha
+
+`crear-pago` le pide a Mercado Pago **hasta tantas cuotas como ofrece el local** (el mayor entre *Cuotas sin
+interés que bancás* y *Cuotas máximas del posnet*; sin ninguna cargada, no pone tope). Que sean **sin interés** se
+activa en la cuenta de Mercado Pago (Tu negocio → Costos y cuotas), no desde la tienda.
+
+La guía completa para el dueño, de cero y con las pruebas (débito, crédito en 1 y 3 cuotas, dinero en cuenta,
+rechazo, pendiente, devolución), está en [`docs/mercado-pago-paso-a-paso.md`](docs/mercado-pago-paso-a-paso.md).
+Tras cambiar `crear-pago` hay que volver a desplegarla.
+
 ## Pausar la tienda
 
 En Configuración → *Pausar la tienda* el local prende la pausa (vacaciones, local cerrado) y escribe un mensaje.
@@ -887,7 +897,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 314 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 316 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -908,6 +918,7 @@ completar esos datos con información confirmada del local.
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los párrafos de la marca salgan tal cual, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 6 |
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
 | `codigoDePago.test.mjs` | el código de pago del pedido: que abra sólo con el código exacto y que un pedido sin código, vacío, en mayúsculas, de otro largo o de otro tipo no abra nunca; y que el monto de Mercado Pago coincida con el del pedido al centavo | 3 |
+| `cuotas.test.mjs` | el tope de cuotas que se le pide a Mercado Pago: el mayor entre las cuotas sin interés y las máximas del local, y que sin cuotas cargadas o con valores que no sirven no se ponga tope (nunca se rompe el cobro) | 2 |
 | `ofertas.test.mjs` | las ofertas con fecha de fin: el último segundo del día elegido en hora de Argentina, qué fechas se rechazan, que una oferta vencida vuelva al precio de antes (en la tienda, en los precios propios de hombre y en los precios en masa), que una sin fecha o con fecha ilegible nunca venza, y que el vencimiento se guarde, se borre y se restaure al deshacer | 17 |
 | `codigoPostal.test.mjs` | el envío por código postal: cómo se lee lo que escribe el cliente (`1925`, `B1925`, `B1925ABC`), la lista de códigos de una zona (sueltos y rangos, lo ilegible se ignora), que cada código caiga en su zona y gane la primera si dos lo cubren, que uno no cubierto no tenga zona y que sólo se pida el código si el local cargó alguno | 6 |
 | `promos.test.mjs` | las promos junto al precio en la ficha: cuotas sin interés (precio dividido, sólo con tarjeta de crédito y más de una cuota), descuento por transferencia o efectivo (sólo si hay un medio que lo admita), que sin nada configurado no se muestre ninguna y el texto del envío gratis | 7 |

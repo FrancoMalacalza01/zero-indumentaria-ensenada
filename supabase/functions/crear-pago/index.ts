@@ -30,6 +30,7 @@
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { codigoDePagoValido } from "../_shared/codigoDePago.mjs";
+import { topeDeCuotas } from "../_shared/cuotas.mjs";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const CLAVE_SERVICIO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -120,8 +121,19 @@ Deno.serve(async (req: Request) => {
     if (!items.length) return responder({ error: "El pedido no tiene prendas." }, 409);
 
     const envio = Number(pedido.envio) || 0;
+    // Las cuotas que ofrece el local (por ejemplo 3). Si no cargó ninguna, Mercado Pago ofrece las que quiera.
+    // Que sean sin interés se activa en la cuenta de Mercado Pago, no desde acá.
+    let tope: number | null = null;
+    try {
+      const cfg = await base("settings?id=eq.local&select=datos");
+      tope = topeDeCuotas(Array.isArray(cfg) ? cfg[0]?.datos?.pago : null);
+    } catch (err) {
+      // Si no se puede leer la configuración, se cobra igual sin tope: no se frena una venta por esto.
+      console.error("no se pudo leer la configuración de cuotas", err);
+    }
     const preferencia = {
       items,
+      ...(tope ? { payment_methods: { installments: tope } } : {}),
       // El envío va como costo de envío y no como un item más, así el cliente
       // ve en Mercado Pago el mismo desglose que vio en la tienda.
       ...(envio ? { shipments: { cost: envio, mode: "not_specified" } } : {}),
