@@ -403,6 +403,22 @@ parecida (jeans o sweaters), (marcadas `deReferencia`, sin aviso al cliente por 
 Las de Mistral cuya ficha no trae medidas (remeras, polos, camisas, camperas, buzos) usan la tabla equivalente de
 Brooksfield, (también `deReferencia`, sin aviso). Los joggings de Mistral y las fragancias no tienen tabla.
 
+## Factura y dirección de entrega
+
+Al comprar, el cliente elige **¿Querés factura? Sí / No**. Con *Sí* el mail es obligatorio (ahí se le manda);
+con *No* es opcional. En los envíos a domicilio se piden calle, número, piso/depto (opcional), localidad, código
+postal (el del cálculo del envío) y una referencia (opcional). Todo queda en el pedido (`orders.factura`,
+`orders.email`, `orders.direccion`) y en **Pedidos** del panel se ve quién pidió factura, a qué mail, y la
+dirección con un botón para copiarla (por ejemplo, a MiCorreo).
+
+- **El sitio no emite la factura**: la hace el local en ARCA con su inscripción. Acá sólo se pide y se anota a quién.
+- Las reglas están en `src/datosDelPedido.mjs` (lo que avisa la pantalla) y en `crear_pedido` (la que manda).
+- **Para activarlo**, ANTES de publicar la tienda nueva: correr `db/factura-y-direccion.sql`, luego
+  `db/crear_pedido.sql`, y mirar que `db/verificar-factura-y-direccion.sql` dé todo en `true`. La tienda nueva manda
+  datos que la función vieja no conoce: sin el SQL, la compra falla.
+- `crear_pedido.sql` ahora borra las versiones anteriores de la función antes de crear la nueva (evita el error 300 por
+  dos funciones con el mismo nombre).
+
 ## Pausar la tienda
 
 En Configuración → *Pausar la tienda* el local prende la pausa (vacaciones, local cerrado) y escribe un mensaje.
