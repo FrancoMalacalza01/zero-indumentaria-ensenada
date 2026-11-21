@@ -7,7 +7,7 @@ import { unirCatalogo } from "./importarCatalogo.mjs";
 import { enlaceWhatsapp, mensajeConsultaPrenda } from "./whatsapp.mjs";
 import { descuento } from "./priceTools.mjs";
 import { ORDENES, ordenarProductos } from "./ordenProductos.mjs";
-import { categoriasPorMarca } from "./marcas.mjs";
+import { MARCAS, categoriasPorMarca } from "./marcas.mjs";
 import MarcaLogo from "./MarcaLogo";
 import catalog from "./men-catalog.json";
 import { DetallesDePrenda, TablaDeTalles, useFichasDeMarca } from "./FichaDeMarca";
@@ -155,7 +155,10 @@ function ProductGallery({ product, close, consulta }: { product: MenProduct; clo
 }
 
 export function HomeBrandCatalog() {
-  const products = useProductosVisibles();
+  // Por ahora el catálogo es sólo de Mistral y Brooksfield: las prendas de otra marca (por ejemplo las propias
+  // de Zero) no se mezclan acá.
+  const todos = useProductosVisibles();
+  const products = useMemo(() => todos.filter((p) => (MARCAS as readonly string[]).includes(p.brand)), [todos]);
   const consultaDe = useConsulta();
   const [brand, setBrand] = useState("Todas");
   const brands = useMemo(() => [...new Set(products.map((p) => p.brand))].filter(Boolean).sort((a, b) => a.localeCompare(b, "es-AR")), [products]);
@@ -215,18 +218,29 @@ export function HomeBrandCatalog() {
     </div>
     <div className="marcas-bloques">
       {brands.filter((m) => brand === "Todas" || m === brand).map((m) => (
-        <section className="marca-bloque" key={m} aria-label={`Prendas de ${m}`}>
-          <header>
-            <MarcaLogo marca={m} tamano="lg" />
-            <small>{products.filter((p) => p.brand === m).length} prendas</small>
-          </header>
-          <div className="marca-categorias" role="group" aria-label={`Secciones de ${m}`}>
-            {(porMarca[m] ?? []).map((c) => (
-              <button key={c.nombre} className={brand === m && category === c.nombre ? "active" : ""} aria-pressed={brand === m && category === c.nombre} onClick={() => elegir(m, c.nombre)}>
-                {c.nombre}<small>{c.cantidad}</small>
-              </button>
-            ))}
-          </div>
+        <section className={`marca-bloque${brand === "Todas" ? " marca-bloque-elegible" : ""}`} key={m} aria-label={`Prendas de ${m}`}>
+          {brand === "Todas" ? (
+            // Primero se elige la marca; las secciones aparecen después, ya dentro de ella.
+            <button type="button" className="marca-bloque-boton" onClick={() => changeBrand(m)} aria-label={`Ver las prendas de ${m}`}>
+              <MarcaLogo marca={m} tamano="lg" />
+              <small>{products.filter((p) => p.brand === m).length} prendas <ArrowRight size={14} /></small>
+            </button>
+          ) : (
+            <>
+              <header>
+                <MarcaLogo marca={m} tamano="lg" />
+                <small>{products.filter((p) => p.brand === m).length} prendas</small>
+              </header>
+              <div className="marca-categorias" role="group" aria-label={`Secciones de ${m}`}>
+                <button className={category === "Todas" ? "active" : ""} aria-pressed={category === "Todas"} onClick={() => elegir(m, "Todas")}>Todas</button>
+                {(porMarca[m] ?? []).map((c) => (
+                  <button key={c.nombre} className={category === c.nombre ? "active" : ""} aria-pressed={category === c.nombre} onClick={() => elegir(m, c.nombre)}>
+                    {c.nombre}<small>{c.cantidad}</small>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </section>
       ))}
     </div>

@@ -421,8 +421,9 @@ dirección con un botón para copiarla (por ejemplo, a MiCorreo).
 
 ## Mistral y Brooksfield por separado
 
-En el catálogo cada marca tiene su bloque con su nombre y logo y **sus propias categorías** (`src/marcas.mjs`):
-tocar una categoría filtra por esa marca y esa sección. La lista de secciones del desplegable también cambia
+En el catálogo se elige **primero la marca** (bloques de Mistral y Brooksfield con su nombre y logo) y recién ahí
+aparecen **sus propias secciones** (`src/marcas.mjs`): tocar una filtra por esa marca y esa sección. El catálogo es
+sólo de esas dos marcas por ahora; las prendas de otra marca (por ejemplo las propias de Zero) no se mezclan. La lista de secciones del desplegable también cambia
 según la marca elegida. Las fichas y las tarjetas muestran la marca con su logo.
 
 - **Logos:** están en `public/marcas/mistral.png` y `public/marcas/brooksfield.png` (PNG con fondo transparente,

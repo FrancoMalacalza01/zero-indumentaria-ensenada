@@ -230,3 +230,8 @@
 .marca-categorias button.active { background: #1c1c1c; color: #fff; border-color: #1c1c1c; }
 .marca-categorias button.active small { color: #cfd3df; }
 .pdp-marca { margin: 0 0 6px; }
+
+.marca-bloque-elegible { padding: 0; }
+.marca-bloque-boton { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 20px; border: 0; background: none; cursor: pointer; text-align: left; border-radius: 8px; }
+.marca-bloque-boton:hover { background: #f5f6fa; }
+.marca-bloque-boton small { display: inline-flex; align-items: center; gap: 6px; color: #6b7388; }
