@@ -494,7 +494,7 @@ export function cuitFormateado(cuit) {
  * No es una opinión de diseño: cada punto sale de algo que la ley argentina
  * le exige a quien vende por internet. Lo que devuelve esta función es lo que
  * el panel muestra como pendiente, y es a propósito que la mayoría sean datos
- * del local: el sistema no puede inventar un CUIT ni una tabla de medidas.
+ * del local: el sistema no puede inventar un CUIT.
  *
  * `impide` marca lo que no debería estar sin resolver el día que se abra la
  * tienda de verdad; el resto es recomendable.
@@ -533,17 +533,6 @@ export function faltaParaVender(settings) {
       que: "Un contacto para consultas y reclamos",
       porque:
         "La ley pide un teléfono o un medio electrónico de atención publicado en el sitio.",
-    });
-  // Una fila sin ninguna medida es un talle anunciado y nada más, que es
-  // justamente lo que la ley de talles vino a evitar. Por eso no alcanza con
-  // que la tabla tenga filas: tienen que tener medidas.
-  if (!(s.talles?.filas || []).some((f) => f.pecho || f.cintura || f.cadera))
-    faltan.push({
-      id: "talles",
-      impide: true,
-      que: "La tabla de medidas corporales",
-      porque:
-        "La Ley 27.521 (SUNITI) la exige en un lugar de fácil acceso también en la venta por internet. Son medidas: no se pueden inventar.",
     });
   if (!s.direccion?.horarios)
     faltan.push({
