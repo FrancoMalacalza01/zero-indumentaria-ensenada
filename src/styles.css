@@ -2785,3 +2785,16 @@ svg {
   line-height: 1.7;
   color: #c3c8d8;
 }
+
+/* Cartel de "tienda en pausa": arriba de todo, bien visible, sin tapar el catálogo. */
+.pausa-tienda {
+  background: #b4462f;
+  color: #fff;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.pausa-tienda b {
+  margin-right: 6px;
+}

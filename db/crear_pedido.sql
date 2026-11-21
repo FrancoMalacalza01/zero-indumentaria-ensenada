@@ -90,6 +90,15 @@ begin
     return jsonb_build_object('error', 'El pedido tiene demasiados renglones.');
   end if;
 
+  -- Tienda en pausa (vacaciones, local cerrado): no se toma ningún pedido. La pantalla ya lo impide; esto
+  -- es por si alguien le pega a la función sin pasar por la pantalla.
+  if exists (select 1 from public.settings
+              where id = 'local' and datos->'pausa'->>'activa' = 'true') then
+    return jsonb_build_object('error', coalesce(
+      nullif(btrim((select datos->'pausa'->>'mensaje' from public.settings where id = 'local')), ''),
+      'La tienda está en pausa por el momento. Todavía no se puede comprar.'));
+  end if;
+
   -- Los pedidos de pago online que nadie pagó devuelven su stock antes de contar lo que hay.
   perform public.vencer_pedidos_sin_pago();
 

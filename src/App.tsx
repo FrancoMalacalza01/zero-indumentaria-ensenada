@@ -39,6 +39,7 @@ import { Link, navigate, useRoute } from "./router";
 import NotaDeCambios from "./NotaDeCambios";
 import { guardarEleccion, leerEleccion } from "./zonaElegida";
 import SelectorDeZona from "./SelectorDeZona";
+import MarcaLogo from "./MarcaLogo";
 import CalculadoraDeEnvio from "./CalculadoraDeEnvio";
 import { DetallesDePrenda, TablaDeTalles, useFichasDeMarca } from "./FichaDeMarca";
 import { promosDePrecio, textoEnvioGratis } from "./promos.mjs";
@@ -51,7 +52,7 @@ import {
   Talles,
   Terminos,
 } from "./Legales";
-import { cuitFormateado, textoPlazoEnvio } from "./settingsMap.mjs";
+import { cuitFormateado, textoDePausa, textoPlazoEnvio } from "./settingsMap.mjs";
 import { descuento } from "./priceTools.mjs";
 import type { PaymentMethodId, Product, Order, Settings } from "./types";
 import { cartKey } from "./commerce.mjs";
@@ -269,6 +270,11 @@ function Header({ onCart }: { onCart: () => void }) {
   ];
   return (
     <>
+      {textoDePausa(settings) && (
+        <div className="pausa-tienda" role="status">
+          <b>Tienda en pausa.</b> {textoDePausa(settings)}
+        </div>
+      )}
       <div className="announcement">
         <span>ZERO INDUMENTARIA · TU ESTILO, CERCA TUYO</span>
         <span>
@@ -771,7 +777,12 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
     : null;
   const max = size ? p.stock[size] || 0 : 0;
   const photos = [p.image, ...(p.images || [])].filter(Boolean);
+  const pausa = textoDePausa(settings);
   const add = () => {
+    if (pausa) {
+      setError(pausa);
+      return;
+    }
     if (!size) {
       setError("Elegí un talle para continuar.");
       return;
@@ -835,6 +846,7 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
           )}
         </div>
         <div className="detail-info pdp">
+          {p.brand && <p className="pdp-marca"><MarcaLogo marca={p.brand} tamano="md" /></p>}
           <h1>{p.name}</h1>
           <div className="pdp-precio">
             <p className="detail-price">
@@ -910,10 +922,10 @@ function ProductDetail({ id, onCart }: { id: string; onCart: () => void }) {
             <button
               className="button button-green"
               onClick={add}
-              disabled={!Object.values(p.stock).some((n) => n > 0)}
+              disabled={Boolean(pausa) || !Object.values(p.stock).some((n) => n > 0)}
             >
               <ShoppingBag size={18} />
-              Agregar al carrito
+              {pausa ? "Tienda en pausa" : "Agregar al carrito"}
             </button>
             <button
               className={`icon-button detail-favorite ${favorites.includes(id) ? "selected" : ""}`}
@@ -1710,7 +1722,7 @@ function Checkout() {
               {error}
             </p>
           )}
-          <button className="button button-green" type="submit" disabled={busy || sinZona}>
+          <button className="button button-green" type="submit" disabled={busy || sinZona || Boolean(textoDePausa(settings))}>
             {enVivo
               ? busy
                 ? "Confirmando…"

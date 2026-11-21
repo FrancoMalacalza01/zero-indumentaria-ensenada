@@ -399,9 +399,30 @@ fecha, la oferta dura hasta que se termine a mano, como antes.
 ## Tablas de talle de referencia
 
 Las prendas de Brooksfield sin tabla propia (pantalones, bermudas, buzos, chalecos) muestran la de la prenda más
-parecida (jeans o sweaters), con el aviso *"Medidas de referencia"*. Los shorts de baño y los accesorios no tienen tabla.
+parecida (jeans o sweaters), (marcadas `deReferencia`, sin aviso al cliente por decisión del local). Los shorts de baño y los accesorios no tienen tabla.
 Las de Mistral cuya ficha no trae medidas (remeras, polos, camisas, camperas, buzos) usan la tabla equivalente de
-Brooksfield, con el aviso de que es de referencia y de otra marca. Los joggings de Mistral y las fragancias no tienen tabla.
+Brooksfield, (también `deReferencia`, sin aviso). Los joggings de Mistral y las fragancias no tienen tabla.
+
+## Mistral y Brooksfield por separado
+
+En el catálogo cada marca tiene su bloque con su nombre y logo y **sus propias categorías** (`src/marcas.mjs`):
+tocar una categoría filtra por esa marca y esa sección. La lista de secciones del desplegable también cambia
+según la marca elegida. Las fichas y las tarjetas muestran la marca con su logo.
+
+- **Logos:** están en `public/marcas/mistral.png` y `public/marcas/brooksfield.png` (PNG con fondo transparente,
+  recortados al contenido). Para cambiarlos se reemplazan esos archivos. Si falta alguno, se ve sólo el nombre.
+
+## Pausar la tienda
+
+En Configuración → *Pausar la tienda* el local prende la pausa (vacaciones, local cerrado) y escribe un mensaje.
+Con la pausa prendida se **ve todo el catálogo**, pero: arriba aparece un cartel con el mensaje, el botón de
+agregar al carrito queda apagado ("Tienda en pausa"), el checkout no deja confirmar, y **la base también rechaza
+el pedido** (`crear_pedido` lee `settings.pausa`), por si alguien le pega a la función sin pasar por la pantalla.
+Los pedidos que ya entraron siguen en *Pedidos*. Para reabrir, apagar y guardar.
+
+- **Para activarlo** hay que volver a correr `db/crear_pedido.sql` (agrega la comprobación en la base). Sin eso,
+  la pausa frena la pantalla pero no la base.
+- Probado en `db/probar-local.sh` (rechaza con el mensaje del local y no entra pedido; al apagar, se compra de nuevo).
 
 ## Localidades en el envío
 
@@ -866,7 +887,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 309 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 314 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -881,8 +902,9 @@ completar esos datos con información confirmada del local.
 | `ordenProductos.test.mjs` | el orden por precio de las prendas de hombre: menor a mayor y al revés, que con precios iguales se conserve el orden del catálogo, que una prenda sin precio válido vaya al final y que no se modifique la lista original | 5 |
 | `priceTools.test.mjs` | las cuentas de los cambios de precio: cada operación y su redondeo (terminado en 900 incluido), que una regla imposible (bajar 100%, restar más de lo que cuesta) avise y no deje un precio en cero, la vista previa, que deshacer devuelva todo exactamente como estaba (tienda y hombre), el tope del historial y que el CSV no deje colar fórmulas; y las ofertas: que repetir una no acumule descuentos, que un redondeo que se come el descuento avise, y que terminar o deshacer una oferta devuelva tienda y hombre exactamente como estaban | 36 |
 | `whatsapp.test.mjs` | el enlace de consulta por WhatsApp: el mensaje con tildes, saltos de línea y símbolos que romperían una URL, que un número inválido no dé enlace (no manda al cliente a un desconocido) y que falte la marca o el precio no rompa el mensaje; y que una prenda en oferta diga de cuánto era | 9 |
-| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente; y las horas para que venza un pedido sin pagar (48 de fábrica, 0 = nunca, con tope); y las localidades del envío (nombre y código de 4 dígitos, sin repetir ni basura) | 39 |
+| `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente; y las horas para que venza un pedido sin pagar (48 de fábrica, 0 = nunca, con tope); y las localidades del envío (nombre y código de 4 dígitos, sin repetir ni basura); y la pausa de la tienda (apagada de fábrica, sólo `true` pausa, mensaje con tope, y un texto genérico si no hay mensaje) | 40 |
 | `tablasTalle.test.mjs` | qué tabla de talles se muestra en cada prenda de hombre: las medidas de la ficha de esa prenda (Mistral o Brooksfield), la imagen general de Brooksfield por tipo de prenda (y la de jeans por nombre) cuando la ficha no trae medidas, la tabla de referencia (con aviso) para lo que no tiene la suya, incluidas las prendas de Mistral sin medidas, que sin tabla equivalente no se invente una, y que las imágenes existan | 11 |
+| `marcas.test.mjs` | las categorías de cada marca (Mistral y Brooksfield) por separado y de la más numerosa a la menos, que una categoría de una marca no aparezca en la otra, que las marcas conocidas estén siempre aunque no tengan prendas, y el nombre del archivo del logo de cada una | 4 |
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los párrafos de la marca salgan tal cual, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 6 |
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
 | `codigoDePago.test.mjs` | el código de pago del pedido: que abra sólo con el código exacto y que un pedido sin código, vacío, en mayúsculas, de otro largo o de otro tipo no abra nunca; y que el monto de Mercado Pago coincida con el del pedido al centavo | 3 |
