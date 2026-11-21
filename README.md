@@ -403,6 +403,15 @@ parecida (jeans o sweaters), (marcadas `deReferencia`, sin aviso al cliente por 
 Las de Mistral cuya ficha no trae medidas (remeras, polos, camisas, camperas, buzos) usan la tabla equivalente de
 Brooksfield, (también `deReferencia`, sin aviso). Los joggings de Mistral y las fragancias no tienen tabla.
 
+## Mistral y Brooksfield por separado
+
+En el catálogo cada marca tiene su bloque con su nombre y logo y **sus propias categorías** (`src/marcas.mjs`):
+tocar una categoría filtra por esa marca y esa sección. La lista de secciones del desplegable también cambia
+según la marca elegida. Las fichas y las tarjetas muestran la marca con su logo.
+
+- **Logos:** están en `public/marcas/mistral.png` y `public/marcas/brooksfield.png` (PNG con fondo transparente,
+  recortados al contenido). Para cambiarlos se reemplazan esos archivos. Si falta alguno, se ve sólo el nombre.
+
 ## Pausar la tienda
 
 En Configuración → *Pausar la tienda* el local prende la pausa (vacaciones, local cerrado) y escribe un mensaje.

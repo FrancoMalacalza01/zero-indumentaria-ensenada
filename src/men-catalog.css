@@ -214,10 +214,10 @@
 
 /* Marca: nombre con su logo (si el local lo cargó en public/marcas/). */
 .marca-logo { display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; }
-.marca-logo img { height: 1.4em; width: auto; max-width: 90px; object-fit: contain; }
-.marca-sm img { height: 16px; }
+.marca-logo img { height: 30px; width: auto; max-width: 110px; object-fit: contain; }
+.marca-sm img { height: 22px; max-width: 70px; }
 .marca-lg { font-size: 22px; font-weight: 700; letter-spacing: 0.02em; }
-.marca-lg img { height: 34px; max-width: 150px; }
+.marca-lg img { height: 48px; max-width: 160px; }
 .marca-nombre { text-transform: uppercase; letter-spacing: 0.06em; }
 .marca-linea { display: inline-flex; align-items: center; gap: 6px; }
 .marcas-bloques { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 18px 0; }
