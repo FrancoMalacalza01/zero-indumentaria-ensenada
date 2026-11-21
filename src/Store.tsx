@@ -14,6 +14,7 @@ import { seedProducts } from "./data";
 import { prepareOrder } from "./commerce.mjs";
 import { flattenStock, needsStockMigration } from "./migrate.mjs";
 import { fetchCatalog, fetchAjustes, fetchImportadosOcultos, crearPedido } from "./server";
+import type { DatosExtraDelPedido } from "./server";
 import { leerAjustes, ajusteAFila } from "./menOverrides.mjs";
 import { ocultosParaMostrar } from "./importarCatalogo.mjs";
 import type { AjustesHombre } from "./menOverrides.mjs";
@@ -159,6 +160,7 @@ interface Context extends StoreContextType {
     customer: string,
     payment?: PaymentMethodId,
     zone?: string,
+    extra?: DatosExtraDelPedido,
   ) => Promise<{ error?: string; order?: Order }>;
 }
 const StoreContext = createContext<Context | null>(null);
@@ -356,7 +358,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       actualizar(() => initial());
       notify("Demo restablecida.");
     },
-    placeOrder: async (delivery, customer, payment, zone) => {
+    placeOrder: async (delivery, customer, payment, zone, extra) => {
       // Tienda en pausa: no se toma ningún pedido (la base también lo rechaza, por si alguien se saltea la pantalla).
       const pausa = textoDePausa(settings);
       if (pausa) return { error: pausa };
@@ -369,6 +371,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           delivery,
           zone,
           payment,
+          extra,
         );
         if (error || !order) return { error: error || "No se pudo cerrar la compra." };
         actualizar((prev) => ({

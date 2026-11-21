@@ -1,6 +1,7 @@
 import { pedirTodasLasFilas } from "./paginar.mjs";
 import { rowsToProducts } from "./catalogMap.mjs";
 import { leerAjustes } from "./menOverrides.mjs";
+import type { Direccion } from "./datosDelPedido.mjs";
 import type { AjustesHombre } from "./menOverrides.mjs";
 import type { CartItem, Order, PaymentMethodId, Product } from "./types";
 
@@ -126,12 +127,20 @@ export async function fetchAjustes(): Promise<AjustesHombre | null> {
  * Devuelve el pedido ya armado, o el motivo del rechazo en palabras que se le
  * pueden mostrar al cliente ("Quedan 2 de Buzo Alva talle L").
  */
+/** Lo que el cliente pide además de las prendas: factura (con su mail) y, en los envíos, la dirección. */
+export type DatosExtraDelPedido = {
+  factura?: boolean;
+  email?: string;
+  direccion?: Direccion;
+};
+
 export async function crearPedido(
   cart: CartItem[],
   customer: string,
   delivery: "pickup" | "shipping",
   zone?: string,
   payment?: PaymentMethodId,
+  extra?: DatosExtraDelPedido,
 ): Promise<{ order?: Order; error?: string }> {
   if (!serverConfigured) return { error: "No hay servidor configurado." };
   const corte = new AbortController();
@@ -156,6 +165,9 @@ export async function crearPedido(
         p_entrega: delivery,
         p_zona: delivery === "shipping" ? zone || null : null,
         p_pago: payment || null,
+        p_factura: extra?.factura === true,
+        p_email: extra?.email?.trim() || null,
+        p_direccion: delivery === "shipping" ? extra?.direccion ?? null : null,
       }),
     });
     if (!respuesta.ok)

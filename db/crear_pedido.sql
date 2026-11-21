@@ -20,12 +20,21 @@
 --
 -- Devuelve {"order": {...}} o {"error": "motivo en castellano"}.
 
+-- Se borran las versiones anteriores ANTES de crear esta: si no, la base queda con dos funciones del mismo
+-- nombre y la tienda no sabe a cuál llamar (error 300). Es seguro correr este archivo las veces que haga falta.
+drop function if exists public.crear_pedido(jsonb, text, text, text, text);
+drop function if exists public.crear_pedido(jsonb, text, text, text, text, text);
+drop function if exists public.crear_pedido(jsonb, text, text, text, text, boolean, text, jsonb);
+
 create or replace function public.crear_pedido(
-  p_items   jsonb,
-  p_cliente text,
-  p_entrega text,
-  p_zona    text default null,
-  p_pago    text default null
+  p_items     jsonb,
+  p_cliente   text,
+  p_entrega   text,
+  p_zona      text default null,
+  p_pago      text default null,
+  p_factura   boolean default false,
+  p_email     text default null,
+  p_direccion jsonb default null
 ) returns jsonb
 language plpgsql
 security definer
@@ -49,6 +58,9 @@ declare
   v_gratis   int;
   v_costo    text;
   v_token    text;
+  v_email    text := lower(btrim(coalesce(p_email, '')));
+  v_dir      jsonb;
+  v_cp       text;
 begin
   -- Lo que se puede rechazar sin tocar nada, se rechaza antes de tocar nada.
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
@@ -59,6 +71,40 @@ begin
   end if;
   if p_entrega not in ('pickup', 'shipping') then
     return jsonb_build_object('error', 'La forma de entrega no es válida.');
+  end if;
+
+  -- Factura y mail. Con factura el mail es obligatorio (ahí se la mandamos); sin factura es opcional, pero si
+  -- lo escribió tiene que ser un mail. Las mismas reglas están en src/datosDelPedido.mjs (lo que avisa la pantalla).
+  if v_email <> '' and v_email !~ '^[^\s@]+@[^\s@]+\.[^\s@]{2,}$' then
+    return jsonb_build_object('error', 'Ese mail no parece un mail. Revisalo.');
+  end if;
+  if coalesce(p_factura, false) and v_email = '' then
+    return jsonb_build_object('error', 'Para mandarte la factura necesitamos tu mail.');
+  end if;
+  v_email := left(v_email, 120);
+
+  -- Dirección. Sólo en los envíos a domicilio: calle, número, localidad y código postal (4 dígitos).
+  if p_entrega = 'shipping' then
+    v_cp := left(regexp_replace(coalesce(p_direccion->>'cp', ''), '\D', '', 'g'), 4);
+    v_dir := jsonb_build_object(
+      'calle',      left(btrim(regexp_replace(coalesce(p_direccion->>'calle', ''), '\s+', ' ', 'g')), 80),
+      'numero',     left(btrim(regexp_replace(coalesce(p_direccion->>'numero', ''), '\s+', ' ', 'g')), 10),
+      'piso',       left(btrim(regexp_replace(coalesce(p_direccion->>'piso', ''), '\s+', ' ', 'g')), 20),
+      'localidad',  left(btrim(regexp_replace(coalesce(p_direccion->>'localidad', ''), '\s+', ' ', 'g')), 60),
+      'cp',         v_cp,
+      'referencia', left(btrim(regexp_replace(coalesce(p_direccion->>'referencia', ''), '\s+', ' ', 'g')), 140));
+    if v_dir->>'calle' = '' then
+      return jsonb_build_object('error', 'Escribí la calle de tu domicilio.');
+    end if;
+    if v_dir->>'numero' = '' then
+      return jsonb_build_object('error', 'Escribí el número de tu domicilio (o "s/n").');
+    end if;
+    if v_dir->>'localidad' = '' then
+      return jsonb_build_object('error', 'Escribí tu localidad.');
+    end if;
+    if length(v_cp) <> 4 then
+      return jsonb_build_object('error', 'Escribí los 4 números de tu código postal.');
+    end if;
   end if;
   if p_entrega = 'shipping' and v_zona = '' then
     return jsonb_build_object('error', 'Falta la zona de envío.');
@@ -232,10 +278,12 @@ begin
     -- Código de pago: sólo lo recibe quien hace el pedido y hace falta para cobrarlo (ver reservar_cobro).
     v_token := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
 
-    insert into public.orders (id, fecha, customer, items, total, envio, delivery, zone, payment, status, pago_token)
+    insert into public.orders (id, fecha, customer, items, total, envio, delivery, zone, payment, status, pago_token,
+                               email, factura, direccion)
     values (v_id, v_fecha, v_cliente, v_items, v_total + v_envio, v_envio, p_entrega,
             case when p_entrega = 'shipping' then v_zona end,
-            p_pago, 'Pendiente', v_token);
+            p_pago, 'Pendiente', v_token,
+            nullif(v_email, ''), coalesce(p_factura, false), v_dir);
 
     insert into public.movements (id, fecha, product_id, product_name, size, delta, reason, order_id)
     select v_id || '-' || (ord - 1),
@@ -272,14 +320,15 @@ begin
     'status',   'Pendiente',
     'customer', v_cliente,
     'payment',  p_pago,
-    'zone',     case when p_entrega = 'shipping' then v_zona end),
+    'zone',     case when p_entrega = 'shipping' then v_zona end,
+    'factura',  coalesce(p_factura, false)),
     'pagoToken', v_token);
 end;
 $fn$;
 
-revoke all on function public.crear_pedido(jsonb, text, text, text, text) from public;
-grant execute on function public.crear_pedido(jsonb, text, text, text, text) to anon;
-grant execute on function public.crear_pedido(jsonb, text, text, text, text) to authenticated;
+revoke all on function public.crear_pedido(jsonb, text, text, text, text, boolean, text, jsonb) from public;
+grant execute on function public.crear_pedido(jsonb, text, text, text, text, boolean, text, jsonb) to anon;
+grant execute on function public.crear_pedido(jsonb, text, text, text, text, boolean, text, jsonb) to authenticated;
 
-comment on function public.crear_pedido(jsonb, text, text, text, text) is
+comment on function public.crear_pedido(jsonb, text, text, text, text, boolean, text, jsonb) is
   'Crea un pedido y descuenta el stock en un solo paso. Devuelve {order} o {error}. Los precios salen de la base; el navegador solo dice qué y cuánto.';

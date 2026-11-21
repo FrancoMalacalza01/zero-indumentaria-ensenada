@@ -403,6 +403,22 @@ parecida (jeans o sweaters), (marcadas `deReferencia`, sin aviso al cliente por 
 Las de Mistral cuya ficha no trae medidas (remeras, polos, camisas, camperas, buzos) usan la tabla equivalente de
 Brooksfield, (también `deReferencia`, sin aviso). Los joggings de Mistral y las fragancias no tienen tabla.
 
+## Factura y dirección de entrega
+
+Al comprar, el cliente elige **¿Querés factura? Sí / No**. Con *Sí* el mail es obligatorio (ahí se le manda);
+con *No* es opcional. En los envíos a domicilio se piden calle, número, piso/depto (opcional), localidad, código
+postal (el del cálculo del envío) y una referencia (opcional). Todo queda en el pedido (`orders.factura`,
+`orders.email`, `orders.direccion`) y en **Pedidos** del panel se ve quién pidió factura, a qué mail, y la
+dirección con un botón para copiarla (por ejemplo, a MiCorreo).
+
+- **El sitio no emite la factura**: la hace el local en ARCA con su inscripción. Acá sólo se pide y se anota a quién.
+- Las reglas están en `src/datosDelPedido.mjs` (lo que avisa la pantalla) y en `crear_pedido` (la que manda).
+- **Para activarlo**, ANTES de publicar la tienda nueva: correr `db/factura-y-direccion.sql`, luego
+  `db/crear_pedido.sql`, y mirar que `db/verificar-factura-y-direccion.sql` dé todo en `true`. La tienda nueva manda
+  datos que la función vieja no conoce: sin el SQL, la compra falla.
+- `crear_pedido.sql` ahora borra las versiones anteriores de la función antes de crear la nueva (evita el error 300 por
+  dos funciones con el mismo nombre).
+
 ## Mistral y Brooksfield por separado
 
 En el catálogo cada marca tiene su bloque con su nombre y logo y **sus propias categorías** (`src/marcas.mjs`):
@@ -887,7 +903,7 @@ completar esos datos con información confirmada del local.
 
 ## Validación
 
-`pnpm test` ejecuta 314 pruebas, todas sin navegador ni red:
+`pnpm test` ejecuta 319 pruebas, todas sin navegador ni red:
 
 | Archivo | Qué cubre | |
 |---|---|---|
@@ -905,6 +921,7 @@ completar esos datos con información confirmada del local.
 | `settingsMap.test.mjs` | la configuración del local: una config vacía o con basura no puede dejar la tienda sin zonas, el costo del envío, los topes que no se pueden bajar (los 10 días de la ley) y **qué falta para estar en condiciones de vender**, con su motivo legal; y el plazo de entrega: el de Paq.ar Clásico de fábrica en las zonas de Correo, el vacío a propósito que se respeta, la basura que se ignora y la frase que lee el cliente; y las horas para que venza un pedido sin pagar (48 de fábrica, 0 = nunca, con tope); y las localidades del envío (nombre y código de 4 dígitos, sin repetir ni basura); y la pausa de la tienda (apagada de fábrica, sólo `true` pausa, mensaje con tope, y un texto genérico si no hay mensaje) | 40 |
 | `tablasTalle.test.mjs` | qué tabla de talles se muestra en cada prenda de hombre: las medidas de la ficha de esa prenda (Mistral o Brooksfield), la imagen general de Brooksfield por tipo de prenda (y la de jeans por nombre) cuando la ficha no trae medidas, la tabla de referencia (con aviso) para lo que no tiene la suya, incluidas las prendas de Mistral sin medidas, que sin tabla equivalente no se invente una, y que las imágenes existan | 11 |
 | `marcas.test.mjs` | las categorías de cada marca (Mistral y Brooksfield) por separado y de la más numerosa a la menos, que una categoría de una marca no aparezca en la otra, que las marcas conocidas estén siempre aunque no tengan prendas, y el nombre del archivo del logo de cada una | 4 |
+| `datosDelPedido.test.mjs` | lo que se pide al comprar: con factura el mail es obligatorio y sin factura no, un mail escrito tiene que ser un mail, el envío a domicilio pide calle, número, localidad y código postal de 4 dígitos, la dirección se limpia (espacios, largos, campos de más) y se muestra en una línea para el panel | 5 |
 | `detallesPrenda.test.mjs` | lo que cuenta la marca de una prenda (material, color, características y cuidados): que se junte bien, que la composición no se repita, que sin ficha igual se muestre el color, que los párrafos de la marca salgan tal cual, que los renglones repetidos salgan una vez y que los textos rotos se descarten | 6 |
 | `payway.test.mjs` | las cuentas y reglas del cobro con tarjeta por Payway: el número de tarjeta y el vencimiento, que la tarjeta sólo viaje a una dirección https de Payway, el identificador de cada operación, el importe en centavos, el cuerpo exacto de `/payments`, los medios permitidos cómo se interpreta la respuesta (aprobado, rechazado con su motivo, y que un estado raro nunca se dé por pagado) y la anulación (el id del pago sale de `pago_ref`, la dirección de `/refunds` y que sólo un estado de anulado confirmado cuente) | 17 |
 | `codigoDePago.test.mjs` | el código de pago del pedido: que abra sólo con el código exacto y que un pedido sin código, vacío, en mayúsculas, de otro largo o de otro tipo no abra nunca; y que el monto de Mercado Pago coincida con el del pedido al centavo | 3 |

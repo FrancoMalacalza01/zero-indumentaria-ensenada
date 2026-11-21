@@ -3593,3 +3593,7 @@ tr:hover .admin-precios-ofertar,
 .admin-habilitar-acciones .admin-button { min-height: 44px; }
 .admin-habilitar-resultado { padding: 10px 12px; border-radius: 8px; background: #eef5ee; }
 .admin-habilitar-resultado ul { margin: 6px 0 0; padding-left: 18px; }
+
+.admin-factura { color: #1d5f3a; }
+.admin-direccion { display: block; max-width: 260px; }
+.admin-direccion .admin-text-button { display: block; padding: 2px 0; }
