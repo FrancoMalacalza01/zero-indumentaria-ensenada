@@ -181,7 +181,7 @@ test("el CUIT guarda sólo dígitos y no más de once", () => {
 test("una tienda recién instalada no está en condiciones de vender, y dice por qué", () => {
   const faltan = faltaParaVender(leerSettings({}));
   const ids = faltan.map((f) => f.id);
-  for (const id of ["razonSocial", "cuit", "domicilio", "contacto", "talles"])
+  for (const id of ["razonSocial", "cuit", "domicilio", "contacto"])
     assert.ok(ids.includes(id), `falta avisar de ${id}`);
   // Cada punto explica de dónde sale: si no, es una lista de caprichos.
   assert.ok(faltan.every((f) => f.porque.length > 20));
@@ -195,46 +195,13 @@ test("con los datos cargados, lo que impide vender desaparece", () => {
       cuit: "30712345670",
       domicilioLegal: "La Merced 327, Ensenada",
     },
-    talles: { filas: [{ talle: "M", pecho: "96", cintura: "80", cadera: "100" }] },
   });
   assert.deepEqual(faltaParaVender(s).filter((f) => f.impide), []);
 });
 
-test("sin tabla de medidas no se puede vender ropa, aunque esté todo lo demás", () => {
-  const s = leerSettings({
-    whatsapp: "5492211234567",
-    empresa: { razonSocial: "X", cuit: "30712345670", domicilioLegal: "Y" },
-  });
-  assert.deepEqual(
-    faltaParaVender(s).filter((f) => f.impide).map((f) => f.id),
-    ["talles"],
-  );
-});
-
-test("una tabla de talles sin ninguna medida cargada no cuenta como tabla", () => {
-  // Es el estado en que queda la tienda con los talles precargados: S, M, L...
-  // y todas las medidas vacías. Tiene filas, pero no informa nada.
-  const vacia = leerSettings({
-    whatsapp: "5492211234567",
-    empresa: { razonSocial: "X", cuit: "30712345670", domicilioLegal: "Y" },
-    talles: {
-      filas: [
-        { talle: "S", pecho: "", cintura: "", cadera: "" },
-        { talle: "M", pecho: "", cintura: "", cadera: "" },
-      ],
-    },
-  });
-  assert.deepEqual(
-    faltaParaVender(vacia).filter((f) => f.impide).map((f) => f.id),
-    ["talles"],
-  );
-  // Con una sola medida real en alguna fila, la tabla ya informa algo.
-  const conUna = leerSettings({
-    whatsapp: "5492211234567",
-    empresa: { razonSocial: "X", cuit: "30712345670", domicilioLegal: "Y" },
-    talles: { filas: [{ talle: "S", pecho: "", cintura: "", cadera: "" }, { talle: "M", pecho: "96", cintura: "", cadera: "" }] },
-  });
-  assert.deepEqual(faltaParaVender(conUna).filter((f) => f.impide), []);
+test("la tabla de medidas corporales ya no figura entre lo que falta para vender (decisión del local)", () => {
+  const ids = faltaParaVender(leerSettings({})).map((f) => f.id);
+  assert.equal(ids.includes("talles"), false);
 });
 
 test("un mail de contacto alcanza aunque no haya WhatsApp", () => {
